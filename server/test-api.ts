@@ -167,9 +167,8 @@ async function runTests() {
     await testCreateNote();
     await testUpsertNotesForMultiplePasses();
     await testFetchNotes(2);
-    // await testDeleteOldNotes();
     await testDeleteAllNotes();
-    await testFetchNotes(1); // Verify deletion
+    await testFetchNotes(1);
 
     console.log('\n' + '='.repeat(60));
     console.log('All tests passed!');
@@ -181,7 +180,7 @@ async function runTests() {
     console.log('4. Navigate to database:', process.env.MONGODB_DB || 'viking');
     console.log('5. Collection: sanding_notes');
 
-    // Optional: cleanup
+    // cleanup
     const cleanup = process.argv.includes('--cleanup');
     if (cleanup) {
       await cleanupTestData();
