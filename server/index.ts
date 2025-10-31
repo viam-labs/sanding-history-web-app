@@ -3,7 +3,6 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// Load .env from server directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, '.env') });
@@ -36,7 +35,7 @@ async function getCollection(): Promise<Collection> {
   return db.collection(COLLECTION);
 }
 
-// Create note (we delete existing for this pass first to preserve current behavior)
+// Create note (delete existing for this pass first)
 app.post('/api/notes', async (req, res) => {
   try {
     const {

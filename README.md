@@ -147,7 +147,6 @@ Delete old notes for a pass (keeps the newest one).
 - `src/` - Frontend React application
   - `App.tsx` - Main application component
   - `AppInterface.tsx` - Main UI interface
-  - `lib/notesManager.ts` - Notes management logic
 - `server/` - Backend Express API
   - `index.ts` - API server
   - `test-api.ts` - API test suite
