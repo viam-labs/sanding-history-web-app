@@ -28,9 +28,14 @@ let db: Db | null = null;
 
 async function getCollection(): Promise<Collection> {
   if (!db) {
-    await client.connect();
-    db = client.db(DB_NAME);
-    console.log(`Connected to MongoDB: ${DB_NAME}`);
+    try {
+      await client.connect();
+      db = client.db(DB_NAME);
+      console.log(`Connected to MongoDB: ${DB_NAME}`);
+    } catch (error) {
+      console.error('Failed to connect to MongoDB:', error);
+      throw error;
+    }
   }
   return db.collection(COLLECTION);
 }
@@ -171,6 +176,25 @@ app.delete('/api/notes/old', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Notes API listening on http://localhost:${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, closing server...');
+  server.close(async () => {
+    await client.close();
+    console.log('MongoDB connection closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, closing server...');
+  server.close(async () => {
+    await client.close();
+    console.log('MongoDB connection closed');
+    process.exit(0);
+  });
 });
