@@ -47,8 +47,8 @@ async function testCreateNote() {
   }
 }
 
-async function testCreateMultipleNotes() {
-  console.log('\n2. Testing multiple notes for different passes...');
+async function testUpsertNotesForMultiplePasses() {
+  console.log('\n2. Testing upsert notes for different passes...');
 
   const notes = [
     {
@@ -106,46 +106,8 @@ async function testFetchNotes() {
   }
 }
 
-async function testDeleteOldNotes() {
-  console.log('\n4. Testing DELETE /api/notes/old (Delete Old Notes)...');
-
-  // First create multiple notes for the same pass
-  console.log('Creating multiple notes for the same pass...');
-  for (let i = 0; i < 3; i++) {
-    await fetch(`${API_BASE}/notes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        organization_id: TEST_ORG_ID,
-        location_id: TEST_LOCATION_ID,
-        robot_id: TEST_ROBOT_ID,
-        pass_id: TEST_PASS_ID_1,
-        note_text: `Note version ${i + 1}`,
-        created_by: 'test-script'
-      })
-    });
-    // Small delay to ensure different timestamps
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  const params = new URLSearchParams({
-    organizationId: TEST_ORG_ID,
-    robotId: TEST_ROBOT_ID,
-    locationId: TEST_LOCATION_ID,
-    passId: TEST_PASS_ID_1
-  });
-
-  const response = await fetch(`${API_BASE}/notes/old?${params}`, {
-    method: 'DELETE'
-  });
-
-  const result = await response.json();
-  console.log('Response:', response.status, result);
-  console.log(`✓ Deleted ${result.deletedCount} old notes`);
-}
-
 async function testDeleteAllNotes() {
-  console.log('\n5. Testing DELETE /api/notes (Delete All Notes for Pass)...');
+  console.log('\n4. Testing DELETE /api/notes (Delete All Notes for Pass)...');
 
   const params = new URLSearchParams({
     organizationId: TEST_ORG_ID,
@@ -194,9 +156,9 @@ async function runTests() {
 
   try {
     await testCreateNote();
-    await testCreateMultipleNotes();
+    await testUpsertNotesForMultiplePasses();
     await testFetchNotes();
-    await testDeleteOldNotes();
+    // await testDeleteOldNotes();
     await testDeleteAllNotes();
     await testFetchNotes(); // Verify deletion
 

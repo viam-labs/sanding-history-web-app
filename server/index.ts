@@ -40,7 +40,7 @@ async function getCollection(): Promise<Collection> {
   return db.collection(COLLECTION);
 }
 
-// Create note (delete existing for this pass first)
+// Create or update a note for a pass
 app.post('/api/notes', async (req, res) => {
   try {
     const {
@@ -56,18 +56,22 @@ app.post('/api/notes', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: organization_id, location_id, robot_id, pass_id, note_text' });
     }
     const col = await getCollection();
-    await col.deleteMany({ organization_id, location_id, robot_id, pass_id });
-    const doc = {
-      organization_id,
-      location_id,
-      robot_id,
-      pass_id,
-      note_text,
-      created_at: created_at || new Date().toISOString(),
-      created_by: created_by || 'summary-web-app',
+    const filter = { organization_id, location_id, robot_id, pass_id };
+    const update = {
+      $set: {
+        note_text,
+        created_at: created_at || new Date().toISOString(),
+        created_by: created_by || 'summary-web-app',
+      },
+      $setOnInsert: {
+        organization_id,
+        location_id,
+        robot_id,
+        pass_id,
+      }
     };
-    const result = await col.insertOne(doc);
-    return res.status(201).json({ _id: result.insertedId });
+    const result = await col.findOneAndUpdate(filter, update, { upsert: true, returnDocument: 'after' });
+    return res.status(200).json(result);
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ error: 'Failed to save note' });
@@ -140,38 +144,6 @@ app.delete('/api/notes', async (req, res) => {
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ error: 'Failed to delete notes' });
-  }
-});
-
-// Delete old notes (keep newest)
-app.delete('/api/notes/old', async (req, res) => {
-  try {
-    const organizationId = String(req.query.organizationId || '');
-    const robotId = String(req.query.robotId || '');
-    const locationId = String(req.query.locationId || '');
-    const passId = String(req.query.passId || '');
-
-    if (!organizationId || !locationId || !robotId || !passId) {
-      return res.status(400).json({ error: 'Missing required query params: organizationId, locationId, robotId, passId' });
-    }
-
-    const col = await getCollection();
-    const query: any = {
-      organization_id: organizationId,
-      location_id: locationId,
-      robot_id: robotId,
-      pass_id: passId
-    };
-
-    const docs = await col.find(query).sort({ created_at: -1 }).toArray();
-    if (docs.length <= 1) return res.json({ deletedCount: 0 });
-
-    const idsToDelete = docs.slice(1).map(d => d._id as ObjectId);
-    const result = await col.deleteMany({ _id: { $in: idsToDelete } });
-    return res.json({ deletedCount: result.deletedCount });
-  } catch (e: any) {
-    console.error(e);
-    return res.status(500).json({ error: 'Failed to delete old notes' });
   }
 });
 
