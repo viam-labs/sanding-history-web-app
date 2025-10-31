@@ -25,7 +25,7 @@ npm install
 
 ### 2. Configure MongoDB
 
-Create a `.env` file in the `server/` directory:
+Create a `.env` file in the `/` directory:
 
 ```bash
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
