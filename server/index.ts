@@ -71,6 +71,9 @@ app.post('/api/notes', async (req, res) => {
       }
     };
     const result = await col.findOneAndUpdate(filter, update, { upsert: true, returnDocument: 'after' });
+    if (!result) {
+      return res.status(500).json({ error: 'Failed to save note: operation returned null.' });
+    }
     return res.status(200).json(result);
   } catch (e: any) {
     console.error(e);

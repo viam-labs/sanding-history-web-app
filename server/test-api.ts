@@ -19,6 +19,12 @@ const TEST_ROBOT_ID = 'test-robot-789';
 const TEST_PASS_ID_1 = 'pass-001-test';
 const TEST_PASS_ID_2 = 'pass-002-test';
 
+function assert(condition: any, message: string) {
+  if (!condition) {
+    throw new Error(`Assertion failed: ${message}`);
+  }
+}
+
 async function testCreateNote() {
   console.log('\n1. Testing POST /api/notes (Create Note)...');
 
@@ -38,13 +44,11 @@ async function testCreateNote() {
   });
 
   const result = await response.json();
-  console.log('Response:', response.status, result);
+  console.log('Response:', response.status);
 
-  if (response.ok) {
-    console.log('✓ Note created successfully');
-  } else {
-    console.error('✗ Failed to create note');
-  }
+  assert(response.ok, `Expected response.ok to be true, got ${response.status}`);
+  assert(result.pass_id === TEST_PASS_ID_1, `Expected pass_id to be ${TEST_PASS_ID_1}`);
+  console.log('✓ Note created successfully');
 }
 
 async function testUpsertNotesForMultiplePasses() {
@@ -75,13 +79,16 @@ async function testUpsertNotesForMultiplePasses() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(note)
     });
-    console.log(`Pass ${note.pass_id}:`, response.status, await response.json());
+    const result = await response.json();
+    console.log(`Pass ${note.pass_id}:`, response.status);
+    assert(response.ok, `Upsert failed for pass ${note.pass_id} with status ${response.status}`);
+    assert(result.note_text === note.note_text, `Note text for ${note.pass_id} was not updated`);
   }
-  console.log('✓ Multiple notes created');
+  console.log('✓ Multiple notes upserted');
 }
 
-async function testFetchNotes() {
-  console.log('\n3. Testing GET /api/notes (Fetch Notes)...');
+async function testFetchNotes(expectedLength: number) {
+  console.log(`\n3. Testing GET /api/notes (Fetch ${expectedLength} Notes)...`);
 
   const params = new URLSearchParams({
     organizationId: TEST_ORG_ID,
@@ -94,16 +101,15 @@ async function testFetchNotes() {
   const notes: PassNote[] = await response.json();
 
   console.log('Response:', response.status);
+  assert(response.ok, `Expected response.ok to be true, got ${response.status}`);
+  assert(notes.length === expectedLength, `Expected to fetch ${expectedLength} notes, but got ${notes.length}`);
+
   console.log('Notes fetched:', notes.length);
   notes.forEach(note => {
     console.log(`  - Pass ${note.pass_id}: "${note.note_text}"`);
   });
 
-  if (notes.length > 0) {
-    console.log('✓ Notes fetched successfully');
-  } else {
-    console.log('⚠ No notes found');
-  }
+  console.log('✓ Notes fetched successfully');
 }
 
 async function testDeleteAllNotes() {
@@ -122,6 +128,8 @@ async function testDeleteAllNotes() {
 
   const result = await response.json();
   console.log('Response:', response.status, result);
+  assert(response.ok, `Expected response.ok to be true, got ${response.status}`);
+  assert(result.deletedCount === 1, `Expected deletedCount to be 1, but got ${result.deletedCount}`);
   console.log(`✓ Deleted ${result.deletedCount} notes for pass ${TEST_PASS_ID_2}`);
 }
 
@@ -138,9 +146,10 @@ async function cleanupTestData() {
       passId
     });
 
-    await fetch(`${API_BASE}/notes?${params}`, {
+    const response = await fetch(`${API_BASE}/notes?${params}`, {
       method: 'DELETE'
     });
+    assert(response.ok, `Cleanup failed for pass ${passId} with status ${response.status}`);
   }
   console.log('✓ Test data cleaned up');
 }
@@ -157,13 +166,13 @@ async function runTests() {
   try {
     await testCreateNote();
     await testUpsertNotesForMultiplePasses();
-    await testFetchNotes();
+    await testFetchNotes(2);
     // await testDeleteOldNotes();
     await testDeleteAllNotes();
-    await testFetchNotes(); // Verify deletion
+    await testFetchNotes(1); // Verify deletion
 
     console.log('\n' + '='.repeat(60));
-    console.log('All tests completed!');
+    console.log('All tests passed!');
     console.log('='.repeat(60));
     console.log('\nTo view data in MongoDB Atlas:');
     console.log('1. Go to https://cloud.mongodb.com/');
