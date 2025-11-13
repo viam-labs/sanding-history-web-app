@@ -12,6 +12,7 @@ import {
 import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
 import { formatDurationMs } from './lib/uiUtils';
 import { PassNote, createNotesManager } from './lib/notesManager';
+import { getRobotConfigAtTime, downloadRobotConfig } from './lib/configUtils';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -89,6 +90,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set());
   const [noteSuccess, setNoteSuccess] = useState<Set<string>>(new Set());
+  const [downloadingConfigs, setDownloadingConfigs] = useState<Set<string>>(new Set());
 
   // Initialize note inputs from existing notes
   useEffect(() => {
@@ -351,6 +353,41 @@ const AppInterface: React.FC<AppViewProps> = ({
     return 'Save note';
   };
 
+  const handleDownloadConfig = async (pass: Pass) => {
+    if (!viamClient || !partId) {
+      alert('Unable to download config: missing required information');
+      return;
+    }
+
+    const passId = pass.pass_id;
+    
+    // Add to downloading state
+    setDownloadingConfigs(prev => new Set(prev).add(passId));
+
+    try {
+      // Fetch the config that was active at the pass start time
+      const config = await getRobotConfigAtTime(viamClient, partId, pass.start);
+      
+      if (!config) {
+        alert('No configuration found for this time period');
+        return;
+      }
+
+      // Download the config
+      downloadRobotConfig(config, passId, pass.start);
+    } catch (error) {
+      console.error('Error downloading config:', error);
+      alert('Failed to download configuration. Please try again.');
+    } finally {
+      // Remove from downloading state
+      setDownloadingConfigs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(passId);
+        return newSet;
+      });
+    }
+  };
+
   return (
     <div className="appInterface">
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
@@ -558,7 +595,62 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       {/* Build information section moved inside expanded row */}
                                       {pass.build_info && (
                                         <div className="build-info-section">
-                                          <h4>Build information</h4>
+                                          <div style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center',
+                                            marginBottom: '12px'
+                                          }}>
+                                            <h4 style={{ margin: 0 }}>Build information</h4>
+                                            <button
+                                              onClick={() => handleDownloadConfig(pass)}
+                                              disabled={downloadingConfigs.has(pass.pass_id)}
+                                              style={{
+                                                padding: '6px 12px',
+                                                fontSize: '12px',
+                                                backgroundColor: downloadingConfigs.has(pass.pass_id) ? '#9ca3af' : '#3b82f6',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                cursor: downloadingConfigs.has(pass.pass_id) ? 'not-allowed' : 'pointer',
+                                                transition: 'background-color 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
+                                              }}
+                                              onMouseEnter={(e) => {
+                                                if (!downloadingConfigs.has(pass.pass_id)) {
+                                                  e.currentTarget.style.backgroundColor = '#2563eb';
+                                                }
+                                              }}
+                                              onMouseLeave={(e) => {
+                                                if (!downloadingConfigs.has(pass.pass_id)) {
+                                                  e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                }
+                                              }}
+                                            >
+                                              {downloadingConfigs.has(pass.pass_id) ? (
+                                                <>
+                                                  <div
+                                                    style={{
+                                                      width: '12px',
+                                                      height: '12px',
+                                                      border: '2px solid #ffffff',
+                                                      borderTop: '2px solid transparent',
+                                                      borderRadius: '50%',
+                                                      animation: 'spin 1s linear infinite'
+                                                    }}
+                                                  />
+                                                  Downloading...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  📥 Download config
+                                                </>
+                                              )}
+                                            </button>
+                                          </div>
+
                                           {(pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
                                             <div className="build-info-grid">
                                               {/* Version */}
@@ -975,6 +1067,54 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               </div>
                                             )}
                                           </div>
+                                        </div>
+
+                                        {/* Download config button */}
+                                        <div style={{ marginTop: '16px' }}>
+                                          <button
+                                            onClick={() => handleDownloadConfig(pass)}
+                                            disabled={downloadingConfigs.has(pass.pass_id)}
+                                            style={{
+                                              padding: '8px 12px',
+                                              fontSize: '14px',
+                                              backgroundColor: downloadingConfigs.has(pass.pass_id) ? '#9ca3af' : '#3b82f6',
+                                              color: 'white',
+                                              border: 'none',
+                                              borderRadius: '4px',
+                                              cursor: downloadingConfigs.has(pass.pass_id) ? 'not-allowed' : 'pointer',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              transition: 'background-color 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              if (!downloadingConfigs.has(pass.pass_id)) {
+                                                e.currentTarget.style.backgroundColor = '#2563eb';
+                                              }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              if (!downloadingConfigs.has(pass.pass_id)) {
+                                                e.currentTarget.style.backgroundColor = '#3b82f6';
+                                              }
+                                            }}
+                                          >
+                                            {downloadingConfigs.has(pass.pass_id) ? (
+                                              <>
+                                                <span className="loader-icon" style={{
+                                                  display: 'inline-block',
+                                                  width: '16px',
+                                                  height: '16px',
+                                                  border: '2px solid transparent',
+                                                  borderTop: '2px solid white',
+                                                  borderRadius: '50%',
+                                                  animation: 'spin 1s linear infinite'
+                                                }}></span>
+                                                Downloading config...
+                                              </>
+                                            ) : (
+                                              'Download Robot Config'
+                                            )}
+                                          </button>
                                         </div>
                                       </div>
                                     </div>
