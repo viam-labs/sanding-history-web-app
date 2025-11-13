@@ -6,7 +6,6 @@ import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
 import { PassNote, createNotesManager } from './lib/notesManager';
-import { testGetRobotPartHistory } from './lib/configUtils';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -261,12 +260,6 @@ function App() {
       });
 
       setPassSummaries(processedPasses);
-
-      // Add test function to window for debugging
-      if (viamClient && extractedPartId) {
-        (window as any).testConfigAPI = () => testGetRobotPartHistory(viamClient, machineId, extractedPartId);
-        console.log("Test function available: window.testConfigAPI()");
-      }
 
       // Fetch all notes for all passes
       if (processedPasses.length > 0 && extractedPartId) {
