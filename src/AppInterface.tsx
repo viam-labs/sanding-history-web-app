@@ -287,7 +287,14 @@ const AppInterface: React.FC<AppViewProps> = ({
       const pass = groupedPasses[dateKey]?.[passIndex];
       
       if (pass && !configMetadata.has(pass.pass_id) && !loadingConfigMetadata.has(pass.pass_id)) {
-        fetchConfigMetadata(pass);
+        // Find the previous pass to fetch its config as well
+        const flatPasses = Object.values(groupedPasses).flat();
+        const currentPassGlobalIndex = flatPasses.findIndex(p => p.pass_id === pass.pass_id);
+        const prevPass = currentPassGlobalIndex > -1 && currentPassGlobalIndex < flatPasses.length - 1
+          ? flatPasses[currentPassGlobalIndex + 1]
+          : null;
+        
+        fetchConfigMetadata(pass, prevPass);
       }
     } else {
       newExpandedRows.delete(index);
@@ -295,24 +302,44 @@ const AppInterface: React.FC<AppViewProps> = ({
     setExpandedRows(newExpandedRows);
   };
 
-  const fetchConfigMetadata = async (pass: Pass) => {
+  const fetchConfigMetadata = async (pass: Pass, prevPass: Pass | null) => {
     if (!viamClient || !partId) return;
 
     const passId = pass.pass_id;
-    setLoadingConfigMetadata(prev => new Set(prev).add(passId));
+    const prevPassId = prevPass?.pass_id;
+
+    const idsToLoad = [passId];
+    if (prevPassId && !configMetadata.has(prevPassId)) {
+      idsToLoad.push(prevPassId);
+    }
+
+    setLoadingConfigMetadata(prev => new Set([...prev, ...idsToLoad]));
 
     try {
-      const result = await getRobotConfigAtTime(viamClient, partId, pass.start);
+      const promises = [getRobotConfigAtTime(viamClient, partId, pass.start)];
+      if (prevPass) {
+        promises.push(getRobotConfigAtTime(viamClient, partId, prevPass.start));
+      }
+
+      const results = await Promise.all(promises);
       
-      if (result) {
-        setConfigMetadata(prev => new Map(prev).set(passId, result.metadata));
+      const newMetadatas = new Map<string, RobotConfigMetadata>();
+      if (results[0]) {
+        newMetadatas.set(passId, results[0].metadata);
+      }
+      if (prevPassId && results[1]) {
+        newMetadatas.set(prevPassId, results[1].metadata);
+      }
+
+      if (newMetadatas.size > 0) {
+        setConfigMetadata(prev => new Map([...prev, ...newMetadatas]));
       }
     } catch (error) {
       console.error('Error fetching config metadata:', error);
     } finally {
       setLoadingConfigMetadata(prev => {
         const newSet = new Set(prev);
-        newSet.delete(passId);
+        idsToLoad.forEach(id => newSet.delete(id));
         return newSet;
       });
     }
