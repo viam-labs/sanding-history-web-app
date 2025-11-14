@@ -11,7 +11,13 @@ import {
 } from './lib/videoUtils';
 import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
 import { formatDurationMs } from './lib/uiUtils';
-import { PassNote, createNotesManager } from './lib/notesManager';
+import { createNotesManager } from './lib/notesManager';
+import {
+  getRobotConfigAtTime,
+  downloadRobotConfig,
+  getPassConfigComparison,
+} from './lib/configUtils';
+import { Pass, PassNote, Step, RobotConfigMetadata } from './types';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -37,27 +43,6 @@ interface AppViewProps {
     daysPerPage?: boolean;
     currentDaysDisplayed?: number;
     totalEntries?: number;
-  };
-}
-
-export interface Step {
-  name: string;
-  start: Date;
-  end: Date;
-  pass_id: string;
-}
-
-export interface Pass {
-  start: Date;
-  end: Date;
-  steps: Step[];
-  success: boolean;
-  pass_id: string;
-  err_string?: string | null;
-  build_info?: {
-    version?: string;
-    git_revision?: string;
-    date_compiled?: string;
   };
 }
 
@@ -89,6 +74,9 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set());
   const [noteSuccess, setNoteSuccess] = useState<Set<string>>(new Set());
+  const [downloadingConfigs, setDownloadingConfigs] = useState<Set<string>>(new Set());
+  const [configMetadata, setConfigMetadata] = useState<Map<string, RobotConfigMetadata>>(new Map());
+  const [loadingConfigMetadata, setLoadingConfigMetadata] = useState<Set<string>>(new Set());
 
   // Initialize note inputs from existing notes
   useEffect(() => {
@@ -274,10 +262,66 @@ const AppInterface: React.FC<AppViewProps> = ({
 
     if (isExpanding) {
       newExpandedRows.add(index);
+      
+      // Fetch config metadata when expanding a row
+      const [dayIndexStr, passIndexStr] = index.split('-');
+      const dayIndex = parseInt(dayIndexStr);
+      const passIndex = parseInt(passIndexStr);
+      const dateKey = Object.keys(groupedPasses)[dayIndex];
+      const pass = groupedPasses[dateKey]?.[passIndex];
+      
+      if (pass && !configMetadata.has(pass.pass_id) && !loadingConfigMetadata.has(pass.pass_id)) {
+        const flatPasses = Object.values(groupedPasses).flat();
+        const { prevPass } = getPassConfigComparison(pass, flatPasses, configMetadata);
+        fetchConfigMetadata(pass, prevPass);
+      }
     } else {
       newExpandedRows.delete(index);
     }
     setExpandedRows(newExpandedRows);
+  };
+
+  const fetchConfigMetadata = async (pass: Pass, prevPass: Pass | null) => {
+    if (!viamClient || !partId) return;
+
+    const passId = pass.pass_id;
+    const prevPassId = prevPass?.pass_id;
+
+    const idsToLoad = [passId];
+    if (prevPassId && !configMetadata.has(prevPassId)) {
+      idsToLoad.push(prevPassId);
+    }
+
+    setLoadingConfigMetadata(prev => new Set([...prev, ...idsToLoad]));
+
+    try {
+      const promises = [getRobotConfigAtTime(viamClient, partId, pass.start)];
+      if (prevPass) {
+        promises.push(getRobotConfigAtTime(viamClient, partId, prevPass.start));
+      }
+
+      const results = await Promise.all(promises);
+      
+      const newMetadatas = new Map<string, RobotConfigMetadata>();
+      if (results[0]) {
+        newMetadatas.set(passId, results[0].metadata);
+      }
+      if (prevPassId && results[1]) {
+        newMetadatas.set(prevPassId, results[1].metadata);
+      }
+
+      if (newMetadatas.size > 0) {
+        setConfigMetadata(prev => new Map([...prev, ...newMetadatas]));
+      }
+    } catch (error) {
+      console.error('Error fetching config metadata:', error);
+    } finally {
+      setLoadingConfigMetadata(prev => {
+        const newSet = new Set(prev);
+        idsToLoad.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    }
   };
 
   const getStatusBadge = (success: boolean) => {
@@ -349,6 +393,46 @@ const AppInterface: React.FC<AppViewProps> = ({
       );
     }
     return 'Save note';
+  };
+
+  const handleDownloadConfig = async (pass: Pass) => {
+    if (!viamClient || !partId) {
+      alert('Unable to download config: missing required information');
+      return;
+    }
+
+    const passId = pass.pass_id;
+    
+    // Add to downloading state
+    setDownloadingConfigs(prev => new Set(prev).add(passId));
+
+    try {
+      // Fetch the config that was active at the pass start time
+      const result = await getRobotConfigAtTime(viamClient, partId, pass.start);
+      
+      if (!result) {
+        alert('No configuration found for this time period');
+        return;
+      }
+
+      // Store metadata for display (if not already stored)
+      if (!configMetadata.has(passId)) {
+        setConfigMetadata(prev => new Map(prev).set(passId, result.metadata));
+      }
+
+      // Download the config
+      downloadRobotConfig(result.config, passId, pass.start, machineId);
+    } catch (error) {
+      console.error('Error downloading config:', error);
+      alert('Failed to download configuration. Please try again.');
+    } finally {
+      // Remove from downloading state
+      setDownloadingConfigs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(passId);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -557,39 +641,172 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     <div className="pass-details">
                                       {/* Build information section moved inside expanded row */}
                                       {pass.build_info && (
-                                        <div className="build-info-section">
-                                          <h4>Build information</h4>
-                                          {(pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
-                                            <div className="build-info-grid">
-                                              {/* Version */}
-                                              {pass.build_info.version && (
-                                                <div className="build-info-item">
-                                                  <span className="build-info-label">Version</span>
-                                                  <span className="build-info-value">{pass.build_info.version}</span>
-                                                </div>
-                                              )}
-
-                                              {/* Git Revision */}
-                                              {pass.build_info.git_revision && (
-                                                <div className="build-info-item">
-                                                  <span className="build-info-label">Git revision</span>
-                                                  <span className="build-info-value">{pass.build_info.git_revision}</span>
-                                                </div>
-                                              )}
-
-                                              {/* Date Compiled */}
-                                              {pass.build_info.date_compiled && (
-                                                <div className="build-info-item">
-                                                  <span className="build-info-label">Date compiled</span>
-                                                  <span className="build-info-value">{pass.build_info.date_compiled}</span>
-                                                </div>
-                                              )}
+                                        <div className="flex gap-8">
+                                          <div className="info-section">
+                                            <div style={{ 
+                                              display: 'flex', 
+                                              alignItems: 'center',
+                                              marginBottom: '12px'
+                                            }}>
+                                              <h4 style={{ margin: 0 }}>Build information</h4>
                                             </div>
-                                          ) : (
-                                            <div className="build-info-notice">
-                                              Build information not available for this run.
+
+                                            {(pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
+                                              <div className="info-grid">
+                                                {/* Version */}
+                                                {pass.build_info.version && (
+                                                  <div className="info-item">
+                                                    <span className="info-label">Version</span>
+                                                    <span className="info-value">{pass.build_info.version}</span>
+                                                  </div>
+                                                )}
+
+                                                {/* Git Revision */}
+                                                {pass.build_info.git_revision && (
+                                                  <div className="info-item">
+                                                    <span className="info-label">Git revision</span>
+                                                    <span className="info-value">{pass.build_info.git_revision}</span>
+                                                  </div>
+                                                )}
+
+                                                {/* Date Compiled */}
+                                                {pass.build_info.date_compiled && (
+                                                  <div className="info-item">
+                                                    <span className="info-label">Date compiled</span>
+                                                    <span className="info-value">{pass.build_info.date_compiled}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              <div className="info-notice">
+                                                Build information not available for this run.
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="info-section">
+                                            <div style={{ 
+                                              display: 'flex', 
+                                              alignItems: 'center',
+                                              marginBottom: '12px'
+                                            }}>
+                                              <h4 style={{ margin: 0 }}>Config information</h4>
+                                              {(() => {
+                                                const flatPasses = Object.values(groupedPasses).flat();
+                                                const { prevPass, configChanged } = getPassConfigComparison(pass, flatPasses, configMetadata);
+
+                                                // If the previous pass exists but we don't have its metadata yet,
+                                                // trigger a fetch. The UI will update on the next render cycle.
+                                                if (prevPass && !configMetadata.has(prevPass.pass_id) && !loadingConfigMetadata.has(prevPass.pass_id)) {
+                                                  fetchConfigMetadata(pass, prevPass);
+                                                }
+
+                                                // Only show the badge if the metadata for both passes has been loaded and they are different.
+                                                if (configChanged) {
+                                                  return (
+                                                    <div style={{
+                                                      marginLeft: '12px',
+                                                      fontSize: '12px',
+                                                      color: '#4f46e5',
+                                                      backgroundColor: '#eef2ff',
+                                                      padding: '2px 8px',
+                                                      borderRadius: '9999px',
+                                                      fontWeight: 500,
+                                                    }}>
+                                                      Config changed since last run
+                                                    </div>
+                                                  );
+                                                }
+                                                return null;
+                                              })()}
                                             </div>
-                                          )}
+                                            
+                                            {loadingConfigMetadata.has(pass.pass_id) ? (
+                                              <div style={{ 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                gap: '8px',
+                                                marginBottom: '12px',
+                                                color: '#6b7280',
+                                                fontSize: '14px'
+                                              }}>
+                                                <div style={{
+                                                  width: '16px',
+                                                  height: '16px',
+                                                  border: '2px solid rgba(59, 130, 246, 0.2)',
+                                                  borderTop: '2px solid #3b82f6',
+                                                  borderRadius: '50%',
+                                                  animation: 'spin 1s linear infinite'
+                                                }} />
+                                                Loading config info...
+                                              </div>
+                                            ) : configMetadata.has(pass.pass_id) ? (
+                                              <div className="info-grid" style={{ marginBottom: '12px' }}>
+                                                {(() => {
+                                                  const metadata = configMetadata.get(pass.pass_id)!;
+                                                  return (
+                                                    <>
+                                                      <div className="info-item">
+                                                        <span className="info-label">Timestamp</span>
+                                                        <span className="info-value">
+                                                          {metadata.configTimestamp.toLocaleString()}
+                                                        </span>
+                                                      </div>
+                                                      <div className="info-item">
+                                                        <button
+                                                          onClick={() => handleDownloadConfig(pass)}
+                                                          disabled={downloadingConfigs.has(pass.pass_id)}
+                                                          style={{
+                                                            padding: '6px 12px',
+                                                            fontSize: '12px',
+                                                            backgroundColor: downloadingConfigs.has(pass.pass_id) ? '#9ca3af' : '#3b82f6',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            cursor: downloadingConfigs.has(pass.pass_id) ? 'not-allowed' : 'pointer',
+                                                            transition: 'background-color 0.2s',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px'
+                                                          }}
+                                                          onMouseEnter={(e) => {
+                                                            if (!downloadingConfigs.has(pass.pass_id)) {
+                                                              e.currentTarget.style.backgroundColor = '#2563eb';
+                                                            }
+                                                          }}
+                                                          onMouseLeave={(e) => {
+                                                            if (!downloadingConfigs.has(pass.pass_id)) {
+                                                              e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                            }
+                                                          }}
+                                                        >
+                                                          {downloadingConfigs.has(pass.pass_id) ? (
+                                                            <>
+                                                              <div
+                                                                style={{
+                                                                  width: '12px',
+                                                                  height: '12px',
+                                                                  border: '2px solid #ffffff',
+                                                                  borderTop: '2px solid transparent',
+                                                                  borderRadius: '50%',
+                                                                  animation: 'spin 1s linear infinite'
+                                                                }}
+                                                              />
+                                                              Downloading...
+                                                            </>
+                                                          ) : (
+                                                            <>
+                                                              Download config
+                                                            </>
+                                                          )}
+                                                        </button>
+                                                      </div>
+                                                      
+                                                    </>
+                                                  );
+                                                })()}
+                                              </div>
+                                            ) : null}
+                                          </div>
                                         </div>
                                       )}
 
@@ -709,272 +926,269 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           })}
                                         </div>
 
-                                        {/* Parent container for Files and Notes columns */}
-                                        <div style={{ display: 'flex', margin: '10px 3px 0 0' }}>
-                                          {/* Column 1: Files captured during this pass */}
-                                          <div style={{ flex: '2 1 0%', minWidth: 0 }}>
-                                            {(() => {
-                                              const passStart = new Date(pass.start);
-                                              const passEnd = new Date(pass.end);
+                                        {/* Pass Notes Section */}
+                                        <div style={{ margin: '10px 3px 0 10px' }}>
+                                          {fetchingNotes && passNotesData.length === 0 ? (
+                                            <div className="pass-notes-section" style={{ maxWidth: 'calc(50% - 15px)' }}>
+                                              <label className="flex pass-notes-label">
+                                                <h4>Pass notes</h4>
+                                              </label>
+                                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                                                <span style={{
+                                                  display: 'inline-block',
+                                                  width: '24px',
+                                                  height: '24px',
+                                                  border: '3px solid rgba(59, 130, 246, 0.2)',
+                                                  borderTopColor: '#3b82f6',
+                                                  borderRadius: '50%',
+                                                  animation: 'spin 1s linear infinite'
+                                                }}></span>
+                                                <span style={{ marginLeft: '12px', color: '#6b7280' }}>Loading notes...</span>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="pass-notes-section" style={{ maxWidth: 'calc(50% - 15px)' }}>
+                                              <label htmlFor={`pass-notes-${passId}`} className="pass-notes-label">
+                                                <h4>Pass notes</h4>
+                                              </label>
 
-                                              // Always include files that fall within the pass time range (this includes .pcd files)
-                                              const passTimeRangeFileIDS: string[] = [];
-                                              files.forEach((file, binaryDataId) => {
-                                                if (file.metadata?.timeRequested) {
-                                                  const fileTime = file.metadata.timeRequested.toDate();
-                                                  if (fileTime >= passStart && fileTime <= passEnd) {
-                                                    passTimeRangeFileIDS.push(binaryDataId);
+                                              <textarea
+                                                id={`pass-notes-${passId}`}
+                                                className="notes-textarea"
+                                                value={noteInputs[passId] || ''}
+                                                onChange={(e) => handleNoteChange(passId, e.target.value)}
+                                                placeholder="Add a note for this pass..."
+                                                style={{
+                                                  width: '100%',
+                                                  height: '144px',
+                                                  padding: '12px',
+                                                  fontSize: '14px',
+                                                  border: '1px solid #e5e7eb',
+                                                  borderRadius: '3px',
+                                                  resize: 'vertical',
+                                                  fontFamily: 'inherit',
+                                                  backgroundColor: '#ffffff',
+                                                  boxSizing: 'border-box'
+                                                }}
+                                                aria-label={`Notes for pass ${passId}`}
+                                                aria-describedby={`pass-notes-help-${passId}`}
+                                              />
+                                              <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'flex-end',
+                                                marginTop: '4px'
+                                              }}>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => saveNote(passId)}
+                                                  disabled={
+                                                    savingNotes.has(passId) ||
+                                                    noteSuccess.has(passId) ||
+                                                    (passNotesData.length > 0
+                                                      ? passNotesData[0].note_text === (noteInputs[passId] || '').trim()
+                                                      : !(noteInputs[passId] || '').trim())
                                                   }
+                                                  style={getSaveButtonStyles(passId)}
+                                                  onMouseEnter={(e) => {
+                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                      e.currentTarget.style.backgroundColor = '#2563eb';
+                                                    }
+                                                  }}
+                                                  onMouseLeave={(e) => {
+                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                      e.currentTarget.style.backgroundColor = getSaveButtonStyles(passId).backgroundColor;
+                                                    }
+                                                  }}
+                                                >
+                                                  {getSaveButtonText(passId)}
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Files captured during this pass */}
+                                        <div style={{ margin: '0 3px 0 10px' }}>
+                                          {(() => {
+                                            const passStart = new Date(pass.start);
+                                            const passEnd = new Date(pass.end);
+
+                                            // Always include files that fall within the pass time range (this includes .pcd files)
+                                            const passTimeRangeFileIDS: string[] = [];
+                                            files.forEach((file, binaryDataId) => {
+                                              if (file.metadata?.timeRequested) {
+                                                const fileTime = file.metadata.timeRequested.toDate();
+                                                if (fileTime >= passStart && fileTime <= passEnd) {
+                                                  passTimeRangeFileIDS.push(binaryDataId);
+                                                }
+                                              }
+                                            });
+
+
+                                            // Additionally include pass-specific files if pass_id is not blank
+                                            const passFileIDs: string[] = [];
+                                            if (pass.pass_id && pass.pass_id.trim() !== '') {
+                                              files.forEach((file, binaryDataId) => {
+                                                if (file.metadata?.fileName && file.metadata.fileName.split("/").filter((y) => y == pass.pass_id).length > 0) {
+                                                  passFileIDs.push(binaryDataId);
                                                 }
                                               });
+                                            }
 
 
-                                              // Additionally include pass-specific files if pass_id is not blank
-                                              const passFileIDs: string[] = [];
-                                              if (pass.pass_id && pass.pass_id.trim() !== '') {
-                                                files.forEach((file, binaryDataId) => {
-                                                  if (file.metadata?.fileName && file.metadata.fileName.split("/").filter((y) => y == pass.pass_id).length > 0) {
-                                                    passFileIDs.push(binaryDataId);
-                                                  }
-                                                });
-                                              }
+                                            const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
+                                            const passFiles = Array.from(files.values()).filter((x) => ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
+                                              const timeA = a.metadata!.timeRequested!.toDate().getTime();
+                                              const timeB = b.metadata!.timeRequested!.toDate().getTime();
+                                              return timeA - timeB;
+                                            })
 
+                                            // Determine if we are in a loading state for this specific row.
+                                            const isLoading = fetchTimestamp && fetchTimestamp > pass.start;
 
-                                              const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
-                                              const passFiles = Array.from(files.values()).filter((x) => ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
-                                                const timeA = a.metadata!.timeRequested!.toDate().getTime();
-                                                const timeB = b.metadata!.timeRequested!.toDate().getTime();
-                                                return timeA - timeB;
-                                              })
-
-                                              // Determine if we are in a loading state for this specific row.
-                                              const isLoading = fetchTimestamp && fetchTimestamp > pass.start;
-
-                                              // Show a loading indicator inside the expanded row while fetching files for this pass.
-                                              if (isLoading && passFiles.length === 0) {
-                                                return (
-                                                  <div className="pass-files-section" style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    padding: '20px',
-                                                    minHeight: '100px',
-                                                  }}>
-                                                    <span style={{
-                                                      display: 'inline-block',
-                                                      width: '28px',
-                                                      height: '28px',
-                                                      border: '3px solid rgba(59, 130, 246, 0.2)',
-                                                      borderTopColor: '#3b82f6',
-                                                      borderRadius: '50%',
-                                                      animation: 'spin 1s linear infinite'
-                                                    }}></span>
-                                                    <p style={{ marginTop: '12px', color: '#6b7280', fontSize: '14px' }}>
-                                                      Loading files...
-                                                    </p>
-                                                  </div>
-                                                );
-                                              }
-
+                                            // Show a loading indicator inside the expanded row while fetching files for this pass.
+                                            if (isLoading && passFiles.length === 0) {
                                               return (
-                                                <div className="pass-files-section">
-                                                  <h4>
-                                                    Files captured during this pass
-                                                  </h4>
-
-                                                  {passFiles.length > 0 && (
-                                                    <div style={{
-                                                      display: 'flex',
-                                                      flexWrap: 'wrap',
-                                                      gap: '8px',
-                                                      overflowY: 'auto',
-                                                      padding: '4px',
-                                                    }}>
-                                                      {passFiles.map((file, fileIndex) => {
-                                                        const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
-
-                                                        return (
-                                                          <div
-                                                            key={fileIndex}
-                                                            style={{
-                                                              display: 'flex',
-                                                              alignItems: 'center',
-                                                              justifyContent: 'space-between',
-                                                              padding: '8px 12px',
-                                                              backgroundColor: '#f9fafb',
-                                                              border: '1px solid #e5e7eb',
-                                                              borderRadius: '6px',
-                                                              fontSize: '13px',
-                                                              cursor: 'pointer',
-                                                              transition: 'all 0.2s ease',
-                                                              flex: '1 0 calc(50% - 8px)',
-                                                              minWidth: '280px',
-                                                              maxWidth: 'calc(50% - 8px)',
-                                                              boxSizing: 'border-box'
-                                                            }}
-                                                            onMouseEnter={(e) => {
-                                                              e.currentTarget.style.backgroundColor = '#e5e7eb';
-                                                              e.currentTarget.style.transform = 'translateY(-1px)';
-                                                            }}
-                                                            onMouseLeave={(e) => {
-                                                              e.currentTarget.style.backgroundColor = '#f9fafb';
-                                                              e.currentTarget.style.transform = 'translateY(0)';
-                                                            }}
-                                                          >
-                                                            <div style={{
-                                                              display: 'flex',
-                                                              alignItems: 'center',
-                                                              gap: '8px',
-                                                              flex: 1,
-                                                              minWidth: 0,
-                                                              overflow: 'hidden'
-                                                            }}>
-                                                              <span style={{
-                                                                color: '#374151',
-                                                                textOverflow: 'ellipsis',
-                                                                overflow: 'hidden',
-                                                                whiteSpace: 'nowrap',
-                                                                flex: 1
-                                                              }} title={fileName}>
-                                                                {fileName}
-                                                              </span>
-                                                              <span style={{
-                                                                color: '#9ca3af',
-                                                                fontSize: '12px',
-                                                                whiteSpace: 'nowrap',
-                                                                flexShrink: 0
-                                                              }}>
-                                                                {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
-                                                              </span>
-                                                            </div>
-                                                            <a
-                                                              href={file.metadata?.uri}
-                                                              download={file.metadata?.fileName?.split('/').pop() || 'download'}
-                                                              style={{
-                                                                marginLeft: '12px',
-                                                                padding: '6px 8px',
-                                                                backgroundColor: '#3b82f6',
-                                                                color: 'white',
-                                                                borderRadius: '4px',
-                                                                textDecoration: 'none',
-                                                                fontSize: '12px',
-                                                                whiteSpace: 'nowrap',
-                                                                transition: 'background-color 0.2s',
-                                                                flexShrink: 0,
-                                                                cursor: 'pointer',
-                                                                display: 'inline-block',
-                                                                border: 'none'
-                                                              }}
-                                                              onClick={(e) => {
-                                                                e.stopPropagation();
-                                                              }}
-                                                              onMouseEnter={(e) => {
-                                                                e.currentTarget.style.backgroundColor = '#2563eb';
-                                                              }}
-                                                              onMouseLeave={(e) => {
-                                                                e.currentTarget.style.backgroundColor = '#3b82f6';
-                                                              }}
-                                                            >
-                                                              Download
-                                                            </a>
-                                                          </div>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  )}
-
-                                                  {/* Show message if no files are found in the current view */}
-                                                  {passFiles.length === 0 && !isLoading && (
-                                                    <p>
-                                                      No files found for this pass.
-                                                    </p>
-                                                  )}
-                                                </div>
-                                              );
-                                            })()}
-                                          </div>
-
-                                          {/* Column 2: Pass Notes */}
-                                          <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-                                            {fetchingNotes && passNotesData.length === 0 ? (
-                                              <div className="pass-notes-section">
-                                                <label className="flex pass-notes-label">
-                                                  <h4>Pass notes</h4>
-                                                </label>
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                                                <div className="pass-files-section" style={{
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  padding: '20px',
+                                                  minHeight: '100px',
+                                                }}>
                                                   <span style={{
                                                     display: 'inline-block',
-                                                    width: '24px',
-                                                    height: '24px',
+                                                    width: '28px',
+                                                    height: '28px',
                                                     border: '3px solid rgba(59, 130, 246, 0.2)',
                                                     borderTopColor: '#3b82f6',
                                                     borderRadius: '50%',
                                                     animation: 'spin 1s linear infinite'
                                                   }}></span>
-                                                  <span style={{ marginLeft: '12px', color: '#6b7280' }}>Loading notes...</span>
+                                                  <p style={{ marginTop: '12px', color: '#6b7280', fontSize: '14px' }}>
+                                                    Loading files...
+                                                  </p>
                                                 </div>
-                                              </div>
-                                            ) : (
-                                              <div className="pass-notes-section">
-                                                <label htmlFor={`pass-notes-${passId}`} className="pass-notes-label">
-                                                  <h4>Pass notes</h4>
-                                                </label>
+                                              );
+                                            }
 
-                                                <textarea
-                                                  id={`pass-notes-${passId}`}
-                                                  className="notes-textarea"
-                                                  value={noteInputs[passId] || ''}
-                                                  onChange={(e) => handleNoteChange(passId, e.target.value)}
-                                                  placeholder="Add a note for this pass..."
-                                                  style={{
-                                                    width: '100%',
-                                                    minHeight: '300px',
-                                                    padding: '12px',
-                                                    fontSize: '14px',
-                                                    border: '1px solid #e5e7eb',
-                                                    borderRadius: '3px',
-                                                    resize: 'vertical',
-                                                    fontFamily: 'inherit',
-                                                    backgroundColor: '#ffffff',
-                                                    boxSizing: 'border-box'
-                                                  }}
-                                                  aria-label={`Notes for pass ${passId}`}
-                                                  aria-describedby={`pass-notes-help-${passId}`}
-                                                />
-                                                <div style={{
-                                                  display: 'flex',
-                                                  justifyContent: 'flex-end',
-                                                  marginTop: '4px'
-                                                }}>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => saveNote(passId)}
-                                                    disabled={
-                                                      savingNotes.has(passId) ||
-                                                      noteSuccess.has(passId) ||
-                                                      (passNotesData.length > 0
-                                                        ? passNotesData[0].note_text === (noteInputs[passId] || '').trim()
-                                                        : !(noteInputs[passId] || '').trim())
-                                                    }
-                                                    style={getSaveButtonStyles(passId)}
-                                                    onMouseEnter={(e) => {
-                                                      if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
-                                                        e.currentTarget.style.backgroundColor = '#2563eb';
-                                                      }
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                      if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
-                                                        e.currentTarget.style.backgroundColor = getSaveButtonStyles(passId).backgroundColor;
-                                                      }
-                                                    }}
-                                                  >
-                                                    {getSaveButtonText(passId)}
-                                                  </button>
-                                                </div>
+                                            return (
+                                              <div className="pass-files-section">
+                                                <h4>
+                                                  Files captured during this pass
+                                                </h4>
+
+                                                {passFiles.length > 0 && (
+                                                  <div style={{
+                                                    display: 'flex',
+                                                    flexWrap: 'wrap',
+                                                    gap: '8px',
+                                                    overflowY: 'auto',
+                                                    padding: '0',
+                                                  }}>
+                                                    {passFiles.map((file, fileIndex) => {
+                                                      const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
+
+                                                      return (
+                                                        <div
+                                                          key={fileIndex}
+                                                          style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            padding: '8px 12px',
+                                                            backgroundColor: '#f9fafb',
+                                                            border: '1px solid #e5e7eb',
+                                                            borderRadius: '6px',
+                                                            fontSize: '13px',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            flex: '1 0 calc(50% - 8px)',
+                                                            minWidth: '280px',
+                                                            maxWidth: 'calc(50% - 8px)',
+                                                            boxSizing: 'border-box'
+                                                          }}
+                                                          onMouseEnter={(e) => {
+                                                            e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                                          }}
+                                                          onMouseLeave={(e) => {
+                                                            e.currentTarget.style.backgroundColor = '#f9fafb';
+                                                            e.currentTarget.style.transform = 'translateY(0)';
+                                                          }}
+                                                        >
+                                                          <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            flex: 1,
+                                                            minWidth: 0,
+                                                            overflow: 'hidden'
+                                                          }}>
+                                                            <span style={{
+                                                              color: '#374151',
+                                                              textOverflow: 'ellipsis',
+                                                              overflow: 'hidden',
+                                                              whiteSpace: 'nowrap',
+                                                              flex: 1
+                                                            }} title={fileName}>
+                                                              {fileName}
+                                                            </span>
+                                                            <span style={{
+                                                              color: '#9ca3af',
+                                                              fontSize: '12px',
+                                                              whiteSpace: 'nowrap',
+                                                              flexShrink: 0
+                                                            }}>
+                                                              {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
+                                                            </span>
+                                                          </div>
+                                                          <a
+                                                            href={file.metadata?.uri}
+                                                            download={file.metadata?.fileName?.split('/').pop() || 'download'}
+                                                            style={{
+                                                              marginLeft: '12px',
+                                                              padding: '6px 8px',
+                                                              backgroundColor: '#3b82f6',
+                                                              color: 'white',
+                                                              borderRadius: '4px',
+                                                              textDecoration: 'none',
+                                                              fontSize: '12px',
+                                                              whiteSpace: 'nowrap',
+                                                              transition: 'background-color 0.2s',
+                                                              flexShrink: 0,
+                                                              cursor: 'pointer',
+                                                              display: 'inline-block',
+                                                              border: 'none'
+                                                            }}
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                              e.currentTarget.style.backgroundColor = '#2563eb';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                              e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                            }}
+                                                          >
+                                                            Download
+                                                          </a>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                )}
+
+                                                {/* Show message if no files are found in the current view */}
+                                                {passFiles.length === 0 && !isLoading && (
+                                                  <p>
+                                                    No files found for this pass.
+                                                  </p>
+                                                )}
                                               </div>
-                                            )}
-                                          </div>
+                                            );
+                                          })()}
                                         </div>
                                       </div>
                                     </div>
