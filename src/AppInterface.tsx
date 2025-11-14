@@ -695,7 +695,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 if (!metadata) return null;
 
                                                 const flatPasses = Object.values(groupedPasses).flat();
-                                                const { configChanged } = getPassConfigComparison(pass, flatPasses, configMetadata);
+                                                const { prevPass, configChanged } = getPassConfigComparison(pass, flatPasses, configMetadata);
+
+                                                // If prevPass exists but its metadata is missing, fetch it.
+                                                if (prevPass && !configMetadata.has(prevPass.pass_id) && !loadingConfigMetadata.has(prevPass.pass_id)) {
+                                                  fetchConfigMetadata(pass, prevPass);
+                                                }
 
                                                 if (configChanged) {
                                                   return (
