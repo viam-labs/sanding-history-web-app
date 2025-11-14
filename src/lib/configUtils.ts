@@ -25,55 +25,35 @@ export const getRobotConfigAtTime = async (
   timestamp: Date
 ): Promise<{ config: any; metadata: RobotConfigMetadata } | null> => {
   try {
-    console.log("Fetching robot config for timestamp:", timestamp);
-
-    // Fetch the robot part history
+    // Fetch the robot part history. The history is sorted from newest to oldest.
     const history = await viamClient.appClient.getRobotPartHistory(partId);
 
     if (!history || history.length === 0) {
-      console.warn("No history found for part:", partId);
       return null;
     }
 
-    console.log(`Found ${history.length} history entries`);
+    // Find the first entry in the history (from newest to oldest) that is at or before our timestamp.
+    // This is the configuration that was active at that moment.
+    const activeConfigEntry = history.find(entry => {
+      const entryTime = entry.when?.toDate();
+      return entryTime && entryTime <= timestamp;
+    });
 
-    // Find the config that was active at the given timestamp
-    // We need the most recent entry where 'when' <= our timestamp
-    let activeConfigEntry = null;
-
-    for (const entry of history) {
-      const entryTime = entry.when?.toDate ? entry.when.toDate() : null;
-
-      if (!entryTime) continue;
-
-      // Only consider entries at or before our target timestamp
-      if (entryTime <= timestamp) {
-        const activeConfigEntryTime = activeConfigEntry?.when?.toDate();
-
-        if (!activeConfigEntryTime || entryTime > activeConfigEntryTime) {
-          activeConfigEntry = entry;
-        }
-      }
-    }
-
+    // If no entry is found, it means the timestamp is before all recorded history.
     if (!activeConfigEntry) {
-      console.warn("No config found for timestamp:", timestamp);
       return null;
     }
 
     const metadata = extractConfigMetadata(activeConfigEntry);
 
-    console.log("Found matching config entry from:", metadata.configTimestamp);
-    console.log("Config entry details:", metadata);
-
-    // Return both the config and its metadata - extract only robotConfig
+    // Return both the config and its metadata
     return {
       config: activeConfigEntry.old?.robotConfig || activeConfigEntry.old,
-      metadata
+      metadata,
     };
   } catch (error) {
     console.error("Error getting robot config at time:", error);
-    throw error;
+    return null;
   }
 };
 
