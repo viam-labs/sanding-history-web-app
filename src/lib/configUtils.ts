@@ -1,15 +1,5 @@
 import * as VIAM from "@viamrobotics/sdk";
-
-/**
- * Metadata about a robot configuration entry
- */
-export interface RobotConfigMetadata {
-  partId: string;
-  robotId: string;
-  configTimestamp: Date;
-  editedBy?: { email: string };
-  hasOldConfig: boolean;
-}
+import { Pass, RobotConfigMetadata } from '../types';
 
 /**
  * Extract metadata from a robot part history entry
@@ -88,6 +78,33 @@ export const getRobotConfigAtTime = async (
 };
 
 /**
+ * Compares the configuration of a pass with the previous pass.
+ */
+export const getPassConfigComparison = (
+  pass: Pass,
+  allPasses: Pass[],
+  configMetadata: Map<string, RobotConfigMetadata>
+): { prevPass: Pass | null; configChanged: boolean } => {
+  const currentPassIndex = allPasses.findIndex(p => p.pass_id === pass.pass_id);
+  const prevPass = currentPassIndex > 0 ? allPasses[currentPassIndex - 1] : null;
+
+  if (!prevPass) {
+    return { prevPass: null, configChanged: false };
+  }
+
+  const currentMeta = configMetadata.get(pass.pass_id);
+  const prevMeta = configMetadata.get(prevPass.pass_id);
+
+  const configChanged = !!(
+    currentMeta &&
+    prevMeta &&
+    currentMeta.configTimestamp.getTime() !== prevMeta.configTimestamp.getTime()
+  );
+
+  return { prevPass, configChanged };
+};
+
+/**
  * Download robot configuration as a JSON file
  */
 export const downloadRobotConfig = (
@@ -97,9 +114,19 @@ export const downloadRobotConfig = (
   machineId: string
 ): void => {
   try {
-    // Format the timestamp for filename (YYYY-MM-DD-HH-MM-SS)
-    const dateStr = timestamp.toISOString().split('T')[0];
-    const timeStr = timestamp.toISOString().split('T')[1].split('.')[0].replace(/:/g, '-');
+    // Helper to pad numbers with a leading zero
+    const pad = (num: number) => num.toString().padStart(2, '0');
+
+    // Format the timestamp for filename using local time (YYYY-MM-DD-HH-MM-SS)
+    const year = timestamp.getFullYear();
+    const month = pad(timestamp.getMonth() + 1); // getMonth() is zero-based
+    const day = pad(timestamp.getDate());
+    const hours = pad(timestamp.getHours());
+    const minutes = pad(timestamp.getMinutes());
+    const seconds = pad(timestamp.getSeconds());
+
+    const dateStr = `${year}-${month}-${day}`;
+    const timeStr = `${hours}-${minutes}-${seconds}`;
     const fileName = `config-${machineId.substring(0, 8)}-pass-${passId.substring(0, 8)}-${dateStr}-${timeStr}.json`;
 
     // Create a blob with formatted JSON

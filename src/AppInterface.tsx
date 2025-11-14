@@ -11,8 +11,13 @@ import {
 } from './lib/videoUtils';
 import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
 import { formatDurationMs } from './lib/uiUtils';
-import { PassNote, createNotesManager } from './lib/notesManager';
-import { getRobotConfigAtTime, downloadRobotConfig, RobotConfigMetadata } from './lib/configUtils';
+import { createNotesManager } from './lib/notesManager';
+import {
+  getRobotConfigAtTime,
+  downloadRobotConfig,
+  getPassConfigComparison,
+} from './lib/configUtils';
+import { Pass, PassNote, Step, RobotConfigMetadata } from './types';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -38,27 +43,6 @@ interface AppViewProps {
     daysPerPage?: boolean;
     currentDaysDisplayed?: number;
     totalEntries?: number;
-  };
-}
-
-export interface Step {
-  name: string;
-  start: Date;
-  end: Date;
-  pass_id: string;
-}
-
-export interface Pass {
-  start: Date;
-  end: Date;
-  steps: Step[];
-  success: boolean;
-  pass_id: string;
-  err_string?: string | null;
-  build_info?: {
-    version?: string;
-    git_revision?: string;
-    date_compiled?: string;
   };
 }
 
@@ -287,13 +271,8 @@ const AppInterface: React.FC<AppViewProps> = ({
       const pass = groupedPasses[dateKey]?.[passIndex];
       
       if (pass && !configMetadata.has(pass.pass_id) && !loadingConfigMetadata.has(pass.pass_id)) {
-        // Find the previous pass to fetch its config as well
         const flatPasses = Object.values(groupedPasses).flat();
-        const currentPassGlobalIndex = flatPasses.findIndex(p => p.pass_id === pass.pass_id);
-        const prevPass = currentPassGlobalIndex > -1 && currentPassGlobalIndex < flatPasses.length - 1
-          ? flatPasses[currentPassGlobalIndex + 1]
-          : null;
-        
+        const { prevPass } = getPassConfigComparison(pass, flatPasses, configMetadata);
         fetchConfigMetadata(pass, prevPass);
       }
     } else {
@@ -715,15 +694,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 const metadata = configMetadata.get(pass.pass_id);
                                                 if (!metadata) return null;
 
-                                                // Find previous pass to compare config timestamps
                                                 const flatPasses = Object.values(groupedPasses).flat();
-                                                const currentPassIndex = flatPasses.findIndex(p => p.pass_id === pass.pass_id);
-                                                const prevPass = currentPassIndex > -1 && currentPassIndex < flatPasses.length - 1
-                                                  ? flatPasses[currentPassIndex + 1]
-                                                  : null;
-
-                                                const prevMetadata = prevPass ? configMetadata.get(prevPass.pass_id) : null;
-                                                const configChanged = prevMetadata && metadata.configTimestamp.getTime() !== prevMetadata.configTimestamp.getTime();
+                                                const { configChanged } = getPassConfigComparison(pass, flatPasses, configMetadata);
 
                                                 if (configChanged) {
                                                   return (
