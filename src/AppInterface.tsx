@@ -684,6 +684,37 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               marginBottom: '12px'
                                             }}>
                                               <h4 style={{ margin: 0 }}>Config information</h4>
+                                              {(() => {
+                                                const metadata = configMetadata.get(pass.pass_id);
+                                                if (!metadata) return null;
+
+                                                // Find previous pass to compare config timestamps
+                                                const flatPasses = Object.values(groupedPasses).flat();
+                                                const currentPassIndex = flatPasses.findIndex(p => p.pass_id === pass.pass_id);
+                                                const prevPass = currentPassIndex > -1 && currentPassIndex < flatPasses.length - 1
+                                                  ? flatPasses[currentPassIndex + 1]
+                                                  : null;
+
+                                                const prevMetadata = prevPass ? configMetadata.get(prevPass.pass_id) : null;
+                                                const configChanged = prevMetadata && metadata.configTimestamp.getTime() !== prevMetadata.configTimestamp.getTime();
+
+                                                if (configChanged) {
+                                                  return (
+                                                    <div style={{
+                                                      marginLeft: '12px',
+                                                      fontSize: '12px',
+                                                      color: '#4f46e5',
+                                                      backgroundColor: '#eef2ff',
+                                                      padding: '2px 8px',
+                                                      borderRadius: '9999px',
+                                                      fontWeight: 500,
+                                                    }}>
+                                                      Config changed since last run
+                                                    </div>
+                                                  );
+                                                }
+                                                return null;
+                                              })()}
                                             </div>
                                             
                                             {loadingConfigMetadata.has(pass.pass_id) ? (
@@ -766,6 +797,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                           )}
                                                         </button>
                                                       </div>
+                                                      
                                                     </>
                                                   );
                                                 })()}
