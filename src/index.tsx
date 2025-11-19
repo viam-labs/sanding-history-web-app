@@ -6,12 +6,24 @@ if ('serviceWorker' in navigator) {
   console.log('🔧 Service Worker is supported');
   window.addEventListener('load', () => {
     console.log('🔧 Window loaded, attempting SW registration');
+    
+    // Check if we just reloaded for SW activation
+    const swReloaded = sessionStorage.getItem('sw-reloaded');
+    
     navigator.serviceWorker.register('/sw.js').then(registration => {
       console.log('✅ SW registered:', registration);
       
-      // If there's no controller, the page needs to be reloaded once
-      if (!navigator.serviceWorker.controller) {
-        console.log('⚠️ No controller on first load - SW will control after reload');
+      // On first registration without controller, reload once
+      if (!navigator.serviceWorker.controller && !swReloaded) {
+        console.log('🔄 First time SW registration - reloading to activate');
+        sessionStorage.setItem('sw-reloaded', 'true');
+        window.location.reload();
+        return;
+      }
+      
+      // Clear the flag after successful activation
+      if (navigator.serviceWorker.controller && swReloaded) {
+        sessionStorage.removeItem('sw-reloaded');
       }
     }).catch(registrationError => {
       console.error('❌ SW registration failed:', registrationError);
@@ -46,8 +58,7 @@ export async function updateServiceWorkerToken(token: string) {
     });
     console.log('✅ Token sent to service worker');
   } else {
-    console.warn('⚠️ Service worker controller not available - videos may not load');
-    console.warn('⚠️ Try refreshing the page once');
+    console.error('❌ Service worker controller not available - this should not happen');
   }
   
   // Listen for controller changes (for future SW updates)
@@ -60,7 +71,7 @@ export async function updateServiceWorkerToken(token: string) {
       });
       console.log('✅ Token sent after controller change');
     }
-  }, { once: true }); // Only listen once
+  }, { once: true });
 }
 
 const root = ReactDOM.createRoot(
