@@ -46,14 +46,6 @@ export class NotesManager {
 
     // Log all loaded notes
     console.log(`📝 Loaded ${notes.size} notes from metadata:`);
-    if (notes.size > 0) {
-      console.table(Array.from(notes.entries()).map(([passId, note]) => ({
-        passId,
-        noteText: note.note_text.substring(0, 50) + (note.note_text.length > 50 ? '...' : ''),
-        createdAt: note.created_at,
-        createdBy: note.created_by
-      })));
-    }
 
     return notes;
   }
