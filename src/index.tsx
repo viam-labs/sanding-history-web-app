@@ -39,7 +39,7 @@ if ('serviceWorker' in navigator) {
 
 // Export function to update token from App component
 export async function updateServiceWorkerToken(token: string) {
-  console.log('🔑 updateServiceWorkerToken called with token length:', token.length);
+  console.log('🔑 Sending auth token to service worker');
   
   // Wait for service worker to be ready
   await navigator.serviceWorker.ready;
@@ -58,7 +58,7 @@ export async function updateServiceWorkerToken(token: string) {
     });
     console.log('✅ Token sent to service worker');
   } else {
-    console.error('❌ Service worker controller not available - this should not happen');
+    console.error('❌ Service worker controller not available');
   }
   
   // Listen for controller changes (for future SW updates)

@@ -4,13 +4,11 @@ let authToken = null;
 
 self.addEventListener('install', (event) => {
   console.log('📦 Service Worker installing');
-  // Skip waiting immediately to take control
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   console.log('✅ Service Worker activated');
-  // Claim all clients immediately
   event.waitUntil(
     self.clients.claim().then(() => {
       console.log('✅ Service Worker claimed all clients');
@@ -19,10 +17,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  console.log('📨 Service Worker received message:', event.data);
+  console.log('📨 Service Worker received message:', { type: event.data?.type });
   if (event.data && event.data.type === 'SET_TOKEN') {
     authToken = event.data.token;
-    console.log('🔐 Service Worker: Auth token received, length:', authToken.length);
+    console.log('🔐 Service Worker: Auth token received');
   }
 });
 
