@@ -6,6 +6,7 @@ import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
 import { PassNote, createNotesManager } from './lib/notesManager';
+import { updateServiceWorkerToken } from './index';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -141,6 +142,10 @@ function App() {
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
       setViamClient(viamClient);
+
+      // Send the API key to the service worker for authenticated requests
+      const authToken = btoa(`${apiKeyId}:${apiKeySecret}`);
+      await updateServiceWorkerToken(authToken);
 
       try {
         const robotClient = await viamClient.connectToMachine({
