@@ -473,10 +473,12 @@ const AppInterface: React.FC<AppViewProps> = ({
       totalPassCount: number;
       executionPercentage: number;
       formattedDate: string;
+      totalBluePoints: number;
     }>, [dateKey, passes]) => {
       let totalFactoryTime = 0;
       let totalExecutionTime = 0;
       let totalOtherStepsTime = 0;
+      let totalBluePoints = 0;
 
       // Calculate both time and execution metrics
       passes.forEach(pass => {
@@ -497,6 +499,11 @@ const AppInterface: React.FC<AppViewProps> = ({
             }
           });
         }
+
+        // Sum up blue points
+        if (pass.blue_point_count !== undefined) {
+          totalBluePoints += pass.blue_point_count;
+        }
       });
 
       const totalStepsTime = totalExecutionTime + totalOtherStepsTime;
@@ -513,7 +520,8 @@ const AppInterface: React.FC<AppViewProps> = ({
         totalOtherStepsTime,
         totalPassCount: passes.length,
         executionPercentage,
-        formattedDate
+        formattedDate,
+        totalBluePoints
       };
 
       return acc;
@@ -798,6 +806,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                     <th>End time</th>
                     <th>Total duration</th>
                     <th>Execution time</th>
+                    <th>Blue points</th>
                     <th>Steps</th>
                     <th>Error</th>
                   </tr>
@@ -816,7 +825,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                     return (
                       <React.Fragment key={dateKey}>
                         <tr className="day-summary-header">
-                          <td colSpan={10}>
+                          <td colSpan={11}>
                             <div className="day-summary-content">
                               <div className="day-summary-date">{formattedDate}</div>
                               <div className="day-summary-stats">
@@ -905,6 +914,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                   {formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
                                 </td>
                                 <td className="text-zinc-700">
+                                  {pass.blue_point_count !== undefined ? pass.blue_point_count.toLocaleString() : '—'}
+                                </td>
+                                <td className="text-zinc-700">
                                   {pass.steps ? `${pass.steps.length} steps` : '—'}
                                 </td>
                                 <td className="text-zinc-700">
@@ -965,7 +977,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 </td>
                               </tr>{expandedRows.has(globalIndex) && (
                                 <tr className="expanded-content">
-                                  <td colSpan={10}>
+                                  <td colSpan={11}>
                                     <div className="pass-details">
                                       {/* Build information section moved inside expanded row */}
                                       {pass.build_info && (

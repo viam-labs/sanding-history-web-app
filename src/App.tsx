@@ -255,7 +255,8 @@ function App() {
           success: pass.success ?? true,
           pass_id: pass.pass_id,
           err_string: pass.err_string || null,
-          build_info: buildInfo
+          build_info: buildInfo,
+          blue_point_count: pass.target_points_count
         };
       });
 
