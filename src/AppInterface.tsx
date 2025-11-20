@@ -979,13 +979,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 <tr className="expanded-content">
                                   <td colSpan={11}>
                                     <div className="pass-details">
-                                      {/* Region of Interest Section */}
                                       {(pass.blue_point_count !== undefined || pass.sanding_distance_mm !== undefined) && (
-                                        <div className="build-info-section" style={{ marginBottom: '16px' }}>
-                                          <div className="build-info-grid">
+                                        <div className="info-section">
+                                          <div className="info-grid">
                                             {pass.blue_point_count !== undefined && (
-                                              <div className="build-info-item">
-                                                <span className="build-info-label" style={{ color: '#374151' }}>
+                                              <div className="info-item">
+                                                <span className="info-label" style={{ color: '#374151' }}>
                                                   Blue Points
                                                   {pass.blue_point_diff_percent !== undefined && (
                                                     <span style={{ 
@@ -998,16 +997,16 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     </span>
                                                   )}
                                                 </span>
-                                                <span className="build-info-value">
+                                                <span className="info-value">
                                                   {pass.blue_point_count.toLocaleString()}
                                                 </span>
                                               </div>
                                             )}
                                             
                                             {pass.sanding_distance_mm !== undefined && (
-                                              <div className="build-info-item">
-                                                <span className="build-info-label" style={{ color: '#374151' }}>Sanding Distance</span>
-                                                <span className="build-info-value">
+                                              <div className="info-item">
+                                                <span className="info-label" style={{ color: '#374151' }}>Sanding Distance</span>
+                                                <span className="info-value">
                                                   {pass.sanding_distance_mm >= 1000 
                                                     ? `${(pass.sanding_distance_mm / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} m`
                                                     : `${pass.sanding_distance_mm.toFixed(1)} mm`
