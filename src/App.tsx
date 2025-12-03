@@ -11,7 +11,7 @@ const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
 const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
 const machineNameRegex = /\/machine\/(.+?)-main\./;
-const BATCH_SIZE = 100;
+const BATCH_SIZE = 200;
 
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
@@ -25,6 +25,7 @@ function App() {
   const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
   const [fetchingNotes, setFetchingNotes] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const itemsPerPage = 7; // 7 days per page
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
@@ -289,6 +290,7 @@ function App() {
         setFetchingNotes(false);
       }
 
+      setIsInitialLoading(false);
       console.log("Fetching data end");
     };
 
@@ -349,6 +351,7 @@ function App() {
       passNotes={passNotes}
       onNotesUpdate={setPassNotes}
       fetchingNotes={fetchingNotes}
+      isInitialLoading={isInitialLoading}
       pagination={{
         currentPage,
         totalPages,

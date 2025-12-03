@@ -283,6 +283,7 @@ interface AppViewProps {
   passNotes: Map<string, PassNote[]>;
   onNotesUpdate: React.Dispatch<React.SetStateAction<Map<string, PassNote[]>>>;
   fetchingNotes: boolean;
+  isInitialLoading?: boolean;
   pagination?: {
     currentPage: number;
     totalPages: number;
@@ -310,6 +311,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   passNotes,
   onNotesUpdate,
   fetchingNotes,
+  isInitialLoading = false,
   pagination,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
@@ -726,6 +728,14 @@ const AppInterface: React.FC<AppViewProps> = ({
 
   return (
     <div className="appInterface">
+      {isInitialLoading && (
+        <div className="initial-loading-overlay">
+          <div className="initial-loading-content">
+            <div className="initial-loading-spinner"></div>
+            <p className="initial-loading-text">Loading sanding summaries...</p>
+          </div>
+        </div>
+      )}
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
         <div className="w-1/3 h-5 font-semibold text-zinc-900">Sanding history</div>
 

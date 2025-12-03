@@ -1637,3 +1637,40 @@ button:focus {
     margin-bottom: 0;
   }
 }
+
+/* Initial Loading Overlay */
+.initial-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.initial-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+}
+
+.initial-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.initial-loading-text {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #6b7280;
+  font-weight: 500;
+}
