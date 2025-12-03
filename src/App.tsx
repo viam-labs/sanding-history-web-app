@@ -165,10 +165,52 @@ function App() {
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
 
-      // batched fetching of pass summaries
+      // Helper function to process raw tabular data into Pass objects
+      const processTabularData = (tabularData: any[]): Pass[] => {
+        const passes: Pass[] = tabularData.map((item: any) => {
+          const pass = item.data!.readings!;
+          const buildInfo = pass.build_info ? pass.build_info : {};
+
+          return {
+            start: new Date(pass.start),
+            end: new Date(pass.end),
+            steps: pass.steps ? pass.steps.map((x: any) => ({
+              name: x.name!,
+              start: new Date(x.start),
+              end: new Date(x.end),
+              pass_id: pass.pass_id,
+            })) : [],
+            success: pass.success ?? true,
+            pass_id: pass.pass_id,
+            err_string: pass.err_string || null,
+            build_info: buildInfo,
+            blue_point_count: (pass.target_points_count !== undefined && pass.target_points_count !== null) ? Number(pass.target_points_count) : undefined,
+            sanding_distance_mm: (pass.sanding_distance_mm !== undefined && pass.sanding_distance_mm !== null) ? Number(pass.sanding_distance_mm) : undefined
+          };
+        });
+
+        // Calculate percentage difference in blue points
+        for (let i = 0; i < passes.length - 1; i++) {
+          const current = passes[i];
+          const previous = passes[i + 1];
+          
+          if (current.blue_point_count !== undefined && 
+              previous.blue_point_count !== undefined && 
+              previous.blue_point_count !== 0) {
+            const diff = current.blue_point_count - previous.blue_point_count;
+            current.blue_point_diff_percent = (diff / previous.blue_point_count) * 100;
+          }
+        }
+
+        return passes;
+      };
+
+      // batched fetching of pass summaries with progressive loading
       let allTabularData: any[] = [];
       let hasMoreData = true;
       let oldestTimeReceived: string | null = null;
+      let isFirstBatch = true;
+      let extractedPartId = '';
 
       while (hasMoreData) {
         const baseQuery: Record<string, JsonValue>[] = [
@@ -221,6 +263,20 @@ function App() {
 
           allTabularData = [...allTabularData, ...batchData];
 
+          // Progressive loading: update UI after each batch
+          const processedPasses = processTabularData(allTabularData);
+          setPassSummaries(processedPasses);
+
+          // Extract partId from first batch
+          if (isFirstBatch) {
+            extractedPartId = (batchData[0] as any).part_id || '';
+            setPartId(extractedPartId);
+            
+            // Hide loading spinner after first batch is displayed
+            setIsInitialLoading(false);
+            isFirstBatch = false;
+          }
+
           // If we have fewer records than the batch size, we're done
           if (batchData.length < BATCH_SIZE) {
             hasMoreData = false;
@@ -228,56 +284,18 @@ function App() {
         } else {
           // No more data
           hasMoreData = false;
+          
+          // If no data at all, still hide loading spinner
+          if (isFirstBatch) {
+            setIsInitialLoading(false);
+          }
         }
       }
 
       console.log(`Total tabular data records fetched: ${allTabularData.length}`);
 
-      let extractedPartId = '';
-      if (allTabularData && allTabularData.length > 0) {
-        extractedPartId = (allTabularData[0] as any).part_id || '';
-        setPartId(extractedPartId);
-      }
-
-      // Process tabular data into pass summaries
-      const processedPasses: Pass[] = allTabularData.map((item: any) => {
-        const pass = item.data!.readings!;
-        const buildInfo = pass.build_info ? pass.build_info : {};
-
-        return {
-          start: new Date(pass.start),
-          end: new Date(pass.end),
-          steps: pass.steps ? pass.steps.map((x: any) => ({
-            name: x.name!,
-            start: new Date(x.start),
-            end: new Date(x.end),
-            pass_id: pass.pass_id,
-          })) : [],
-          success: pass.success ?? true,
-          pass_id: pass.pass_id,
-          err_string: pass.err_string || null,
-          build_info: buildInfo,
-          blue_point_count: (pass.target_points_count !== undefined && pass.target_points_count !== null) ? Number(pass.target_points_count) : undefined,
-          sanding_distance_mm: (pass.sanding_distance_mm !== undefined && pass.sanding_distance_mm !== null) ? Number(pass.sanding_distance_mm) : undefined
-        };
-      });
-
-      // Calculate percentage difference in blue points
-      for (let i = 0; i < processedPasses.length - 1; i++) {
-        const current = processedPasses[i];
-        const previous = processedPasses[i + 1];
-        
-        if (current.blue_point_count !== undefined && 
-            previous.blue_point_count !== undefined && 
-            previous.blue_point_count !== 0) {
-          const diff = current.blue_point_count - previous.blue_point_count;
-          current.blue_point_diff_percent = (diff / previous.blue_point_count) * 100;
-        }
-      }
-
-      setPassSummaries(processedPasses);
-
       // Fetch all notes for all passes
+      const processedPasses = processTabularData(allTabularData);
       if (processedPasses.length > 0 && extractedPartId) {
         const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
 
@@ -290,7 +308,6 @@ function App() {
         setFetchingNotes(false);
       }
 
-      setIsInitialLoading(false);
       console.log("Fetching data end");
     };
 
