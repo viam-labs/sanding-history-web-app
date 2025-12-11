@@ -1,15 +1,16 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { useViamClient } from './ViamClientContext';
 
 function VideoDetailPage() {
-  const { video_id } = useParams<{ machineInfo: string, video_id: string }>();
-  const navigate = useNavigate();
-  const { locationId, organizationId, viamClient } = useViamClient();
+  const { machineInfo, video_id } = useParams<{ machineInfo: string, video_id: string }>();
+  const [searchParams] = useSearchParams();
+  const { locationId, machineName, organizationId, viamClient } = useViamClient();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const navigate = useNavigate();
   if (!video_id) {
     return <div>Video ID is required</div>;
   }
@@ -40,13 +41,31 @@ function VideoDetailPage() {
 
   return (
     <div style={{ padding: '20px', width: '100%', height: '100%' }}>
-      <h1>Video Detail</h1>
-      <p>Video ID: {video_id}</p>
+      <a href={`/machine/${machineInfo}`} className="text-blue-500">Go to sanding history</a>
+      <h2 className="font-semibold text-zinc-900">Sanding video</h2>
+      <p><span className="font-semibold text-zinc-900">Location:</span> {locationId}</p>
+      <p><span className="font-semibold text-zinc-900">Machine:</span> {machineName}</p>
+      <p><span className="font-semibold text-zinc-900">File name:</span> {searchParams.get('name')}</p>
 
       {loading && <p>Loading video...</p>}
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       {signedUrl && !loading && !error && (
-        <video src={signedUrl} controls style={{ width: '100%', height: '60%', maxWidth: '800px' }} />
+        <video
+          ref={videoRef}
+          // src={signedUrl}
+          src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          controls
+          style={{ width: '100%', height: '60%', maxWidth: '800px' }}
+          onLoadedMetadata={() => {
+            const loc = searchParams.get('loc');
+            if (loc && videoRef.current) {
+              const timestamp = parseFloat(loc);
+              if (!isNaN(timestamp)) {
+                videoRef.current.currentTime = timestamp;
+              }
+            }
+          }}
+        />
       )}
     </div>
   );
