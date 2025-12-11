@@ -14,6 +14,8 @@ const VideoModal: React.FC<VideoModalProps> = ({
 }) => {
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
+  const [videoShared, setVideoShared] = useState(false);
+  const [videoSharedFromCurrentLocation, setVideoSharedFromCurrentLocation] = useState(false);
 
 
   const closeVideoModal = () => {
@@ -66,6 +68,11 @@ const VideoModal: React.FC<VideoModalProps> = ({
 
     const url = `${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`;
     navigator.clipboard.writeText(url);
+
+    setVideoShared(true);
+    setTimeout(() => {
+      setVideoShared(false);
+    }, 2000);
   };
 
   const handleShareFromCurrentLocation = () => {
@@ -82,6 +89,11 @@ const VideoModal: React.FC<VideoModalProps> = ({
 
     const url = `${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?loc=${currentTime}&name=${selectedVideo.metadata!.fileName}`;
     navigator.clipboard.writeText(url);
+
+    setVideoSharedFromCurrentLocation(true);
+    setTimeout(() => {
+      setVideoSharedFromCurrentLocation(false);
+    }, 2000);
   };
 
   if (!selectedVideo) {
@@ -105,7 +117,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
               <video
                 id="video-player"
                 controls 
-                autoPlay
+                // autoPlay
                 // src={modalVideoUrl}
                 src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                 style={{ 
@@ -127,10 +139,36 @@ const VideoModal: React.FC<VideoModalProps> = ({
           </div>
           <div className="video-modal-info">
             <div className="video-modal-buttons">
-              <a href={`${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`} className="text-blue-500" target="_blank">Go to video</a>
-              <button className="video-modal-button primary" onClick={handleShare}>Share link</button>
-              <button className="video-modal-button secondary" onClick={handleShareFromCurrentLocation}>Share link from current location</button>
+              <a
+                href={`${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`}
+                style={{ color: '#3b82f6' }}
+                target="_blank"
+                title="Go to the video's detail page"
+              >
+                Go to video
+              </a>
+              <button
+                title="Share a link to the video's detail page"
+                className="video-modal-button primary"
+                style={{
+                  width: '90px'
+                }}
+                onClick={handleShare}
+              >
+                {videoShared ? 'Link copied!' : 'Share link'}
+              </button>
+              <button
+                title="Share link from the current location within the video"
+                className="video-modal-button secondary"
+                style={{
+                  width: '190px'
+                }}
+                onClick={handleShareFromCurrentLocation}
+              >
+                {videoSharedFromCurrentLocation ? 'Link copied!' : 'Share link from current location'}
+              </button>
             </div>
+
             <p>
               <strong>File:</strong>{' '}
               {selectedVideo.metadata?.uri ? (
