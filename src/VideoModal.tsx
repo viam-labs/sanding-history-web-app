@@ -17,6 +17,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
+
   const closeVideoModal = () => {
     // Clean up video URL if it exists
     if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
@@ -24,35 +25,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
     }
     setModalVideoUrl(null);
     onClose();
-  };
-
-  const handleDownload = async () => {
-    if (!selectedVideo || !modalVideoUrl) return;
-    
-    try {
-      // Fetch the blob data from the modalVideoUrl
-      const response = await fetch(modalVideoUrl);
-      const blob = await response.blob();
-      
-      // Create a download link
-      const fileName = selectedVideo.metadata?.fileName || 'video.mp4';
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.style.display = 'none';
-      
-      // Trigger download
-      document.body.appendChild(a);
-      a.click();
-      
-      // Cleanup
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Download failed. Please try again.');
-    }
   };
 
   // Handle escape key to close modal
@@ -79,24 +51,17 @@ const VideoModal: React.FC<VideoModalProps> = ({
         setLoadingModalVideo(true);
         try {
           console.log("fetching video", selectedVideo.metadata!.binaryDataId);
-          const binaryData = await viamClient.dataClient.binaryDataByIds([selectedVideo.metadata!.binaryDataId]);
-          if (binaryData.length > 0) {
-            setModalVideoUrl(createVideoStreamFromBase64(binaryData[0].binary));
-          }
+          const url = await viamClient.dataClient.createBinaryDataSignedURL(selectedVideo.metadata!.binaryDataId, 60);
+          setModalVideoUrl(url);
         } catch (error) {
           console.error("Error fetching video:", error);
         } finally {
           setLoadingModalVideo(false);
         }
       };
+
       fetchVideo();
     }
-
-    return () => {
-      if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(modalVideoUrl);
-      }
-    };
   }, [selectedVideo, viamClient]);
 
   if (!selectedVideo) {
