@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
-import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass, PassNote } from './types';
 import { Timestamp } from '@bufbuild/protobuf';
 import { createNotesManager } from './lib/notesManager';
+import { useViamClient } from './ViamClientContext';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
-const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
-const machineNameRegex = /\/machine\/(.+?)-main\./;
 const BATCH_SIZE = 100;
 
 function MainListPage() {
@@ -18,8 +16,6 @@ function MainListPage() {
   const [files, setFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [videoFiles, setVideoFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [imageFiles, setImageFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
-  const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
-  const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
   const [partId, setPartId] = useState<string>('');
   const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
@@ -27,22 +23,13 @@ function MainListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7; // 7 days per page
 
-  const machineNameMatch = window.location.pathname.match(machineNameRegex);
-  const machineName = machineNameMatch ? machineNameMatch[1] : null;
-
-  const locationIdMatch = window.location.pathname.match(locationIdRegex);
-  const locationId = locationIdMatch ? locationIdMatch[1] : null;
-
-  const machineInfo = window.location.pathname.split("/")[2];
-
-  const {
-    apiKey: { id: apiKeyId, key: apiKeySecret },
-    machineId,
-    hostname,
-  } = JSON.parse(Cookies.get(machineInfo)!);
+  // Get clients from context
+  const { viamClient, robotClient, machineId, machineName, locationId } = useViamClient();
 
   const fetchFiles = async (start: Date, shouldSetLoadingState: boolean = true) => {
-    if (!viamClient) return;
+    if (!viamClient) {
+      return;
+    }
 
     const end = new Date();
 
@@ -139,21 +126,9 @@ function MainListPage() {
 
   useEffect(() => {
     const fetchPasses = async () => {
+      if (!viamClient) return; // Wait for client to be ready
+      
       console.log("Fetching data start");
-
-      const viamClient = await connect(apiKeyId, apiKeySecret);
-      setViamClient(viamClient);
-
-      try {
-        const robotClient = await viamClient.connectToMachine({
-          host: hostname,
-          id: machineId,
-        });
-        setRobotClient(robotClient);
-      } catch (error) {
-        console.error('Failed to create robot client:', error);
-        setRobotClient(null);
-      }
 
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
@@ -295,7 +270,7 @@ function MainListPage() {
     };
 
     fetchPasses();
-  }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+  }, [viamClient, machineId, locationId]);
 
 
   // Fetch videos when passSummaries and viamClient are available
@@ -363,19 +338,6 @@ function MainListPage() {
       }}
     />
   );
-}
-
-async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.ViamClient> {
-  const opts: VIAM.ViamClientOptions = {
-    serviceHost: "https://app.viam.com",
-    credentials: {
-      type: "api-key",
-      authEntity: apiKeyId,
-      payload: apiKeySecret,
-    },
-  };
-
-  return await VIAM.createViamClient(opts);
 }
 
 export default MainListPage;
