@@ -106,6 +106,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
         <div className="video-modal-header">
           <button className="video-modal-close" onClick={closeVideoModal}>×</button>
         </div>
+
         <div className="video-modal-content">
           <div className="video-modal-player">
             {loadingModalVideo ? (
@@ -137,6 +138,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
               </>
             )}
           </div>
+
           <div className="video-modal-info">
             <div className="video-modal-buttons">
               <a
