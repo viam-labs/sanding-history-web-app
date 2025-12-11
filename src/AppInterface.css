@@ -1020,6 +1020,12 @@ button:focus {
     Consolas, "Courier New", monospace;
 }
 
+.video-modal-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
 .video-modal-button.primary {
   background-color: #007bff;
   color: white;
