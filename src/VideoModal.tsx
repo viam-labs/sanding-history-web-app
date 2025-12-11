@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
-import { extractCameraName } from './lib/videoUtils';
-import { createVideoStreamFromBase64 } from './lib/videoUtils';
 
 interface VideoModalProps {
   selectedVideo: VIAM.dataApi.BinaryData | null;
@@ -19,10 +17,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
 
 
   const closeVideoModal = () => {
-    // Clean up video URL if it exists
-    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(modalVideoUrl);
-    }
     setModalVideoUrl(null);
     onClose();
   };
@@ -64,6 +58,32 @@ const VideoModal: React.FC<VideoModalProps> = ({
     }
   }, [selectedVideo, viamClient]);
 
+
+  const handleShare = () => {
+    if (!selectedVideo) {
+      return;
+    }
+
+    const url = `${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`;
+    navigator.clipboard.writeText(url);
+  };
+
+  const handleShareFromCurrentLocation = () => {
+    if (!selectedVideo) {
+      return;
+    }
+
+    const videoPlayer = document.getElementById('video-player') as HTMLVideoElement;
+    if (!videoPlayer) {
+      return;
+    }
+
+    const currentTime = videoPlayer.currentTime;
+
+    const url = `${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?loc=${currentTime}&name=${selectedVideo.metadata!.fileName}`;
+    navigator.clipboard.writeText(url);
+  };
+
   if (!selectedVideo) {
     return null;
   }
@@ -82,10 +102,12 @@ const VideoModal: React.FC<VideoModalProps> = ({
                 <p>Loading video...</p>
               </>
             ) : modalVideoUrl ? (
-              <video 
+              <video
+                id="video-player"
                 controls 
                 autoPlay
-                src={modalVideoUrl}
+                // src={modalVideoUrl}
+                src="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                 style={{ 
                   width: '100%', 
                   height: '100%',
@@ -104,6 +126,11 @@ const VideoModal: React.FC<VideoModalProps> = ({
             )}
           </div>
           <div className="video-modal-info">
+            <div className="video-modal-buttons">
+              <a href={`${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`} className="text-blue-500" target="_blank">Go to video</a>
+              <button className="video-modal-button primary" onClick={handleShare}>Share link</button>
+              <button className="video-modal-button secondary" onClick={handleShareFromCurrentLocation}>Share link from current location</button>
+            </div>
             <p>
               <strong>File:</strong>{' '}
               {selectedVideo.metadata?.uri ? (
