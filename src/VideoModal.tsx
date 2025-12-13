@@ -17,9 +17,17 @@ const VideoModal: React.FC<VideoModalProps> = ({
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
-  const videoPageURL  = selectedVideo
-    ? `${window.location.href}/videos/${selectedVideo.metadata!.binaryDataId.split('/').pop()}?name=${selectedVideo.metadata!.fileName}`
-    : '';
+  const videoPageURL = React.useMemo(() => {
+    if (!selectedVideo) {
+      return '';
+    }
+    
+    const videoId = selectedVideo.metadata!.binaryDataId.split('/').pop();
+    const fileName = selectedVideo.metadata!.fileName;
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    
+    return `${baseUrl}#/videos/${videoId}?name=${encodeURIComponent(fileName)}`;
+  }, [selectedVideo]);
 
   const closeVideoModal = () => {
     setModalVideoUrl(null);

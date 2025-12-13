@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 
 import App from './App';
 import { ViamClientProvider } from './ViamClientContext';
@@ -7,13 +7,15 @@ import VideoDetailPage from './VideoDetailPage';
 function Root() {
   return (
     <ViamClientProvider>
-      <Routes>
-        {/* Main list view - matches /machine/:machineInfo */}
-        <Route path="/machine/:machineInfo" element={<App />} />
+      <HashRouter>
+        <Routes>
+          {/* Main list view - served at /machine/:machineInfo#/ */}
+          <Route path="/" element={<App />} />
 
-        {/* Video detail view - matches /machine/:machineInfo/video/:videoId */}
-        <Route path="/machine/:machineInfo/videos/:videoId" element={<VideoDetailPage />} />
-      </Routes>
+          {/* Video detail view - served at /machine/:machineInfo#/videos/:videoId */}
+          <Route path="/videos/:videoId" element={<VideoDetailPage />} />
+        </Routes>
+      </HashRouter>
     </ViamClientProvider>
   );
 }
