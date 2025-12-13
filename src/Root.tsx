@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 
 import App from './App';
 import { ViamClientProvider } from './ViamClientContext';
+import VideoDetailPage from './VideoDetailPage';
 
 function Root() {
   return (
