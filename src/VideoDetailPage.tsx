@@ -17,6 +17,7 @@ function VideoDetailPage() {
   const [videoSharedFromCurrentLocation, setVideoSharedFromCurrentLocation] = useState(false);
 
   const fileName = searchParams.get('name');
+  const videoStartingLocation = searchParams.get('loc');
 
   useEffect(() => {
     const fetchSignedUrl = async () => {
@@ -39,6 +40,17 @@ function VideoDetailPage() {
 
     fetchSignedUrl();
   }, [viamClient, videoId, locationId, organizationId]);
+
+  const setVideoStartingLocation = () => {
+    if (videoStartingLocation && videoRef.current) {
+      const timestamp = parseFloat(videoStartingLocation);
+      if (!isNaN(timestamp)) {
+        videoRef.current.currentTime = timestamp;
+      }
+    }
+  };
+
+  useEffect(setVideoStartingLocation, [videoStartingLocation]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -97,15 +109,7 @@ function VideoDetailPage() {
               aspectRatio: '16/9',
               borderRadius: '8px'
             }}
-            onLoadedMetadata={() => {
-              const loc = searchParams.get('loc');
-              if (loc && videoRef.current) {
-                const timestamp = parseFloat(loc);
-                if (!isNaN(timestamp)) {
-                  videoRef.current.currentTime = timestamp;
-                }
-              }
-            }}
+            onLoadedMetadata={setVideoStartingLocation}
           />
 
           <div className="video-modal-buttons">
