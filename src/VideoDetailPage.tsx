@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 
-import { useViamClients } from './ViamClientContext';
+import { useViamClients } from './lib/contexts/ViamClientContext';
+import VideoShareButtons from './components/VideoShareButtons';
 
 function VideoDetailPage() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -13,8 +14,6 @@ function VideoDetailPage() {
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [videoShared, setVideoShared] = useState(false);
-  const [videoSharedFromCurrentLocation, setVideoSharedFromCurrentLocation] = useState(false);
 
   const fileName = searchParams.get('name');
   const videoStartingLocation = searchParams.get('loc');
@@ -52,36 +51,6 @@ function VideoDetailPage() {
 
   useEffect(setVideoStartingLocation, [videoStartingLocation]);
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-
-    setVideoShared(true);
-    setTimeout(() => {
-      setVideoShared(false);
-    }, 2000);
-  };
-
-  const handleShareFromCurrentLocation = () => {
-    if (!videoRef.current) {
-      return;
-    }
-
-    const currentTime = videoRef.current.currentTime;
-
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('loc', currentTime.toString());
-
-    const hashPath = window.location.hash.split('?')[0];
-    const url = `${window.location.origin}${window.location.pathname}${hashPath}?${newParams.toString()}`;
-
-    navigator.clipboard.writeText(url);
-
-    setVideoSharedFromCurrentLocation(true);
-    setTimeout(() => {
-      setVideoSharedFromCurrentLocation(false);
-    }, 2000);
-  };
-
   return (
     <div style={{ padding: '20px', width: '100%', height: '100%' }}>
       <Link to="/" style={{ color: '#3b82f6' }}>Go to sanding history</Link>
@@ -113,26 +82,10 @@ function VideoDetailPage() {
           />
 
           <div className="video-modal-buttons">
-            <button
-              title="Share a link to this page"
-              className="video-modal-button primary"
-              style={{
-                width: '90px'
-              }}
-              onClick={handleShare}
-            >
-              {videoShared ? 'Link copied!' : 'Share link'}
-            </button>
-            <button
-              title="Share link to this page from the current location within the video"
-              className="video-modal-button secondary"
-              style={{
-                width: '190px'
-              }}
-              onClick={handleShareFromCurrentLocation}
-            >
-              {videoSharedFromCurrentLocation ? 'Link copied!' : 'Share link from current location'}
-            </button>
+            <VideoShareButtons
+              baseUrl={window.location.href}
+              videoRef={videoRef}
+            />
           </div>
         </React.Fragment>
       )}

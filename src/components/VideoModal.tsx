@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 
 import { useViamClients } from '../lib/contexts/ViamClientContext';
+import VideoShareButtons from './VideoShareButtons';
 
 interface VideoModalProps {
   selectedVideo: VIAM.dataApi.BinaryData | null;
@@ -14,10 +15,10 @@ const VideoModal: React.FC<VideoModalProps> = ({
 }) => {
   const { viamClient } = useViamClients();
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
-  const [videoShared, setVideoShared] = useState(false);
-  const [videoSharedFromCurrentLocation, setVideoSharedFromCurrentLocation] = useState(false);
 
   const videoPageURL = React.useMemo(() => {
     if (!selectedVideo) {
@@ -73,40 +74,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
     }
   }, [selectedVideo, viamClient]);
 
-  const handleShare = () => {
-    if (!selectedVideo) {
-      return;
-    }
-
-    navigator.clipboard.writeText(videoPageURL);
-
-    setVideoShared(true);
-    setTimeout(() => {
-      setVideoShared(false);
-    }, 2000);
-  };
-
-  const handleShareFromCurrentLocation = () => {
-    if (!selectedVideo) {
-      return;
-    }
-
-    const videoPlayer = document.getElementById('video-player') as HTMLVideoElement;
-    if (!videoPlayer) {
-      return;
-    }
-
-    const currentTime = videoPlayer.currentTime;
-
-    const url = `${videoPageURL}&loc=${currentTime}`;
-    navigator.clipboard.writeText(url);
-
-    setVideoSharedFromCurrentLocation(true);
-    setTimeout(() => {
-      setVideoSharedFromCurrentLocation(false);
-    }, 2000);
-  };
-
   if (!selectedVideo) {
     return null;
   }
@@ -127,7 +94,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
               </>
             ) : modalVideoUrl ? (
               <video
-                id="video-player"
+                ref={videoRef}
                 controls 
                 autoPlay
                 src={modalVideoUrl}
@@ -150,7 +117,10 @@ const VideoModal: React.FC<VideoModalProps> = ({
           </div>
 
           <div className="video-modal-info">
-            <div className="video-modal-buttons">
+            <VideoShareButtons
+              baseUrl={videoPageURL}
+              videoRef={videoRef}
+            >
               <a
                 href={videoPageURL}
                 style={{ color: '#3b82f6' }}
@@ -159,27 +129,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
               >
                 Go to video
               </a>
-              <button
-                title="Share a link to the video's detail page"
-                className="video-modal-button primary"
-                style={{
-                  width: '90px'
-                }}
-                onClick={handleShare}
-              >
-                {videoShared ? 'Link copied!' : 'Share link'}
-              </button>
-              <button
-                title="Share link to the video's detail page from the current location within the video"
-                className="video-modal-button secondary"
-                style={{
-                  width: '190px'
-                }}
-                onClick={handleShareFromCurrentLocation}
-              >
-                {videoSharedFromCurrentLocation ? 'Link copied!' : 'Share link from current location'}
-              </button>
-            </div>
+            </VideoShareButtons>
 
             <p>
               <strong>File:</strong>{' '}
