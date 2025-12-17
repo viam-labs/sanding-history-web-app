@@ -126,6 +126,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
                 style={{ color: '#3b82f6' }}
                 target="_blank"
                 title="Go to the video's detail page"
+                rel="noreferrer"
               >
                 Go to video
               </a>
