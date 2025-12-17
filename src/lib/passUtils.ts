@@ -1,5 +1,5 @@
 import * as VIAM from "@viamrobotics/sdk";
-import { Pass, Step } from "../types";
+import { Pass, Step } from "./types";
 
 /**
  * Get before and after images for a given pass from a list of image files.
@@ -47,7 +47,7 @@ export const getBeforeAfterImages = (
 export const getStepVideos = (step: Step, videoFiles: Map<string, VIAM.dataApi.BinaryData>): VIAM.dataApi.BinaryData[] => {
   if (!videoFiles || videoFiles.size === 0) return [];
 
-  let stepVideos: VIAM.dataApi.BinaryData[] = [];
+  const stepVideos: VIAM.dataApi.BinaryData[] = [];
 
   videoFiles.forEach((file) => {
     if (!file.metadata || !file.metadata.fileName) return;
