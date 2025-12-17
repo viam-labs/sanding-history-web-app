@@ -1,11 +1,11 @@
 {
-  "module_id": "ncs:sanding-monitoring-web-app",
+  "module_id": "katie-viam:sanding-monitoring-web-app-staging",
   "visibility": "public",
   "url": "https://github.com/viam-labs/sanding-history-web-app",
   "description": "A web app to monitor sanding",
   "applications": [
     {
-      "name": "sanding-monitoring-web-app",
+      "name": "sanding-monitoring-web-app-staging",
       "type": "single_machine",
       "entrypoint": "module/apps/dist/index.html"
     }
