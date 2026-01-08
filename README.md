@@ -66,7 +66,7 @@ When making a change to this repo, please run `npx @changesets/cli` to properly 
 
 run `npm run start` to run the production build of the app locally and also ensure you start a module proxy `viam module local-app-testing --app-url http://localhost:3000 --machine-id <MACHINE_ID>`
 
-IMPORTANT: until there is proper CI for beta env deployment, please check your change once it is deployed to production to ensure there are no regressions that were not detectable in dev
+IMPORTANT: until there is proper CI for beta env deployment, please deploy the module to a beta env for prod like testing, to achieve this, simply change the `module_id` field in the `meta-beta.json` file to point to module that you own and then run `make module-beta`
 
 ## (TEMP) App Refactor
 
