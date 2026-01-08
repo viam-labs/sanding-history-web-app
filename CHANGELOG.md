@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.6.0
+
+### Minor Changes
+
+- 35639c9: add top level toast message context
+
 ## 1.5.2
 
 ### Patch Changes
