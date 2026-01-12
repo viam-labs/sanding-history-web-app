@@ -1,91 +1,36 @@
-import { useViamClients } from './lib/contexts/ViamClientContext'
-import { useEnvironment } from './lib/contexts/EnvironmentContext'
-import AppInterface from './AppInterface'
-import NewAppInterface from './NewAppInterface'
-import { useFiles } from './lib/contexts/FilesContext'
-import { usePass } from './lib/contexts/PassContext'
-import { usePagination, DAYS_PER_PAGE } from './lib/contexts/PaginationContext'
+import './AppInterface.css'
+import { CameraProvider } from './lib/contexts/CameraContext'
+import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
+import { ResourceSelection } from './components/ResouceSelection'
+import HistoryTable from './components/HistoryTable'
+import { Pagination } from './components/HistoryTable/Pagination'
+import GlobalLoadingIndicator from './components/GlobalLoadingIndicator'
 
 function App() {
-  const { machineId, machineName } = useViamClients()
-  const { legacy } = useEnvironment()
-  const { fetchFiles, fetchTimestamp, files, videoFiles, imageFiles } =
-    useFiles()
-  const {
-    partId,
-    passNotes,
-    passSummaries,
-    passDiagnoses,
-    setPassNotes,
-    setPassDiagnoses,
-    fetchingNotes,
-  } = usePass()
-  const {
-    currentPage,
-    changePage,
-    totalPages,
-    currentPassSummaries,
-    sortedDays,
-    currentNumDaysDisplayed,
-  } = usePagination()
+  return (
+    <div className="appInterface">
+      <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
+        <div className="w-1/3 h-5 font-semibold text-zinc-900">
+          Sanding history
+        </div>
+        <div className="w-1/3"></div>
+      </header>
 
-  if (legacy) {
-    return (
-      <AppInterface
-        machineName={machineName}
-        passSummaries={currentPassSummaries}
-        files={files}
-        videoFiles={videoFiles}
-        imageFiles={imageFiles}
-        fetchVideos={fetchFiles}
-        fetchTimestamp={fetchTimestamp}
-        machineId={machineId}
-        partId={partId}
-        passNotes={passNotes}
-        onNotesUpdate={setPassNotes}
-        passDiagnoses={passDiagnoses}
-        onDiagnosesUpdate={setPassDiagnoses}
-        fetchingNotes={fetchingNotes}
-        pagination={{
-          currentPage,
-          totalPages,
-          itemsPerPage: DAYS_PER_PAGE,
-          totalItems: sortedDays.length,
-          totalEntries: passSummaries.length,
-          onPageChange: changePage,
-          currentDaysDisplayed: currentNumDaysDisplayed,
-          daysPerPage: true,
-        }}
-      />
-    )
-  } else {
-    return (
-      <NewAppInterface
-        passSummaries={currentPassSummaries}
-        files={files}
-        videoFiles={videoFiles}
-        imageFiles={imageFiles}
-        fetchVideos={fetchFiles}
-        fetchTimestamp={fetchTimestamp}
-        partId={partId}
-        passNotes={passNotes}
-        onNotesUpdate={setPassNotes}
-        passDiagnoses={passDiagnoses}
-        onDiagnosesUpdate={setPassDiagnoses}
-        fetchingNotes={fetchingNotes}
-        pagination={{
-          currentPage,
-          totalPages,
-          itemsPerPage: DAYS_PER_PAGE,
-          totalItems: sortedDays.length,
-          totalEntries: passSummaries.length,
-          onPageChange: changePage,
-          currentDaysDisplayed: currentNumDaysDisplayed,
-          daysPerPage: true,
-        }}
-      />
-    )
-  }
+      <main className="mainContent">
+        <section>
+          <CameraProvider>
+            <VideoStoreProvider>
+              <ResourceSelection />
+              <HistoryTable />
+            </VideoStoreProvider>
+          </CameraProvider>
+        </section>
+      </main>
+
+      <Pagination />
+      <GlobalLoadingIndicator />
+    </div>
+  )
 }
 
 export default App

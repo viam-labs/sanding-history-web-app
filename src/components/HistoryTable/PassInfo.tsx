@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from 'react'
 import { Pass, RobotConfigMetadata } from '../../lib/types'
 import { getPassConfigComparison } from '../../lib/configUtils'
 
@@ -26,6 +27,29 @@ export const PassInfo: React.FC<PassInfoProps> = ({
     blue_point_diff_percent: bluePointDiffPercent,
     sanding_distance_mm: sandingDistanceMm,
   } = pass
+
+  // Compute config comparison outside of render
+  const { prevPass, configChanged } = useMemo(() => {
+    const flatPasses = Object.values(groupedPasses).flat()
+    return getPassConfigComparison(pass, flatPasses, configMetadata)
+  }, [pass, groupedPasses, configMetadata])
+
+  // Trigger fetch in useEffect instead of during render
+  useEffect(() => {
+    if (
+      prevPass &&
+      !configMetadata.has(prevPass.pass_id) &&
+      !loadingConfigMetadata.has(prevPass.pass_id)
+    ) {
+      fetchConfigMetadata(pass, prevPass)
+    }
+  }, [
+    prevPass,
+    configMetadata,
+    loadingConfigMetadata,
+    fetchConfigMetadata,
+    pass,
+  ])
 
   return (
     <div className="flex gap-8">
@@ -131,44 +155,22 @@ export const PassInfo: React.FC<PassInfoProps> = ({
           }}
         >
           <h4 style={{ margin: 0 }}>Config information</h4>
-          {(() => {
-            const flatPasses = Object.values(groupedPasses).flat()
-            const { prevPass, configChanged } = getPassConfigComparison(
-              pass,
-              flatPasses,
-              configMetadata
-            )
-
-            // If the previous pass exists but we don't have its metadata yet,
-            // trigger a fetch. The UI will update on the next render cycle.
-            if (
-              prevPass &&
-              !configMetadata.has(prevPass.pass_id) &&
-              !loadingConfigMetadata.has(prevPass.pass_id)
-            ) {
-              fetchConfigMetadata(pass, prevPass)
-            }
-
-            // Only show the badge if the metadata for both passes has been loaded and they are different.
-            if (configChanged) {
-              return (
-                <div
-                  style={{
-                    marginLeft: '12px',
-                    fontSize: '12px',
-                    color: '#4f46e5',
-                    backgroundColor: '#eef2ff',
-                    padding: '2px 8px',
-                    borderRadius: '9999px',
-                    fontWeight: 500,
-                  }}
-                >
-                  Config changed since last run
-                </div>
-              )
-            }
-            return null
-          })()}
+          {/* Only show the badge if the metadata for both passes has been loaded and they are different. */}
+          {configChanged && (
+            <div
+              style={{
+                marginLeft: '12px',
+                fontSize: '12px',
+                color: '#4f46e5',
+                backgroundColor: '#eef2ff',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                fontWeight: 500,
+              }}
+            >
+              Config changed since last run
+            </div>
+          )}
         </div>
 
         {loadingConfigMetadata.has(pass.pass_id) ? (
