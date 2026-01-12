@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.6.1
+
+### Patch Changes
+
+- d698580: add camera and videoStore contexts
+
 ## 1.6.0
 
 ### Minor Changes
