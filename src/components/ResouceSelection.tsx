@@ -1,22 +1,18 @@
 import { useViamClients } from '../lib/contexts/ViamClientContext'
 import VideoStoreSelector from './VideoStoreSelector'
 import * as VIAM from '@viamrobotics/sdk'
+import { useCamera } from '../lib/contexts/CameraContext'
 
 interface ResourceSelectionProps {
   setVideoStoreClient: (client: VIAM.GenericComponentClient | null) => void
-  cameraComponentNames: string[]
-  selectedCamera: string
-  setSelectedCamera: (camera: string) => void
 }
 
 export const ResourceSelection: React.FC<ResourceSelectionProps> = ({
   setVideoStoreClient,
-  cameraComponentNames,
-  selectedCamera,
-  setSelectedCamera,
 }: ResourceSelectionProps) => {
   const { robotClient, machineName } = useViamClients()
-
+  const { selectedCamera, cameraComponentNames, setSelectedCamera } =
+    useCamera()
   return (
     <div className="flex gap-8">
       {machineName && (
