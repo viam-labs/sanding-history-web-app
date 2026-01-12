@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from 'react'
 import { usePass } from './PassContext'
+import { Pass } from '../types'
 export const DAYS_PER_PAGE = 7
 
 interface PaginationContextType {
@@ -13,6 +14,7 @@ interface PaginationContextType {
   totalPages: number
   totalEntries: number
   currentNumDaysDisplayed: number
+  currentPassSummaries: Pass[]
   changePage: (page: number) => void
   sortedDays: string[]
 }
@@ -24,6 +26,7 @@ const PaginationContext = createContext<PaginationContextType | undefined>(
 export function PaginationProvider({ children }: { children: ReactNode }) {
   const { passSummariesByDay, passSummaries } = usePass()
 
+  const [currentPassSummaries, setCurrentPassSummaries] = useState<Pass[]>([])
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
   const [totalEntries, setTotalEntries] = useState<number>(1)
@@ -51,6 +54,18 @@ export function PaginationProvider({ children }: { children: ReactNode }) {
     setCurrentNumDaysDisplayed(nextCurrentDays.length)
   }, [passSummariesByDay, passSummaries])
 
+  useEffect(() => {
+    const indexOfLastDay = currentPage * DAYS_PER_PAGE
+    const indexOfFirstDay = indexOfLastDay - DAYS_PER_PAGE
+    const currentDays = sortedDays.slice(indexOfFirstDay, indexOfLastDay)
+
+    // Get all passes for the current days
+    const currentPassSummaries = currentDays.flatMap(
+      (day) => passSummariesByDay[day]
+    )
+    setCurrentPassSummaries(currentPassSummaries)
+  }, [passSummariesByDay, currentPage, sortedDays])
+
   return (
     <PaginationContext.Provider
       value={{
@@ -58,6 +73,7 @@ export function PaginationProvider({ children }: { children: ReactNode }) {
         totalPages,
         totalEntries,
         currentNumDaysDisplayed,
+        currentPassSummaries,
         changePage: setCurrentPage,
         sortedDays,
       }}

@@ -1,18 +1,12 @@
 import React from 'react'
 import Spinner from './Spinner'
+import { useFiles } from '../lib/contexts/FilesContext'
 
-interface GlobalLoadingIndicatorProps {
-  isLoading: boolean
-  currentDate?: Date | null
-  fileCount?: number
-}
+const GlobalLoadingIndicator: React.FC = () => {
+  const { fetchTimestamp, files, videoFiles, imageFiles } = useFiles()
+  if (!fetchTimestamp) return null
 
-const GlobalLoadingIndicator: React.FC<GlobalLoadingIndicatorProps> = ({
-  isLoading,
-  currentDate,
-  fileCount,
-}) => {
-  if (!isLoading) return null
+  const fileCount = files.size + videoFiles.size + imageFiles.size
 
   return (
     <div
@@ -60,20 +54,20 @@ const GlobalLoadingIndicator: React.FC<GlobalLoadingIndicatorProps> = ({
             color: '#a1a1aa',
           }}
         >
-          {currentDate && (
+          {fetchTimestamp && (
             <>
-              {currentDate.toLocaleDateString('en-US', {
+              {fetchTimestamp.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
               })}{' '}
-              {currentDate.toLocaleTimeString('en-US', {
+              {fetchTimestamp.toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
               })}
             </>
           )}
-          {currentDate && fileCount !== undefined && fileCount > 0 && ' · '}
+          {fetchTimestamp && fileCount !== undefined && fileCount > 0 && ' · '}
           {fileCount !== undefined && fileCount > 0 && (
             <>{fileCount.toLocaleString()} files</>
           )}

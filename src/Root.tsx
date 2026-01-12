@@ -15,8 +15,8 @@ function Root() {
     <ToastProvider>
       <EnvironmentProvider>
         <ViamClientProvider>
-          <FilesProvider>
-            <PassProvider>
+          <PassProvider>
+            <FilesProvider>
               <PaginationProvider>
                 <ModalProvider>
                   <HashRouter>
@@ -33,8 +33,8 @@ function Root() {
                   </HashRouter>
                 </ModalProvider>
               </PaginationProvider>
-            </PassProvider>
-          </FilesProvider>
+            </FilesProvider>
+          </PassProvider>
         </ViamClientProvider>
       </EnvironmentProvider>
     </ToastProvider>

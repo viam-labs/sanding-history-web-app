@@ -26,7 +26,6 @@ interface PassContextType {
     React.SetStateAction<Map<string, PassDiagnosis>>
   >
   fetchingNotes: boolean
-  fetchPasses: () => Promise<void>
 }
 
 const PassContext = createContext<PassContextType | undefined>(undefined)
@@ -213,6 +212,10 @@ export function PassProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    fetchPasses()
+  }, [locationId, machineId, organizationId, viamClient])
+
+  useEffect(() => {
     const groupedByDay = passSummaries.reduce(
       (acc: Record<string, Pass[]>, pass) => {
         // Use a consistent date key (YYYY-MM-DD)
@@ -240,7 +243,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
         passDiagnoses,
         setPassDiagnoses,
         fetchingNotes,
-        fetchPasses,
       }}
     >
       {children}

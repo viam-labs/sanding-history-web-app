@@ -22,6 +22,8 @@ import { CollapsedRow } from './CollapsedRow'
 import { PassInfo } from './PassInfo'
 import { Diagnosis } from './Diagnosis'
 import { StepsGrid } from './StepsGrid'
+import { useCamera } from '../../lib/contexts/CameraContext'
+import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 
 interface HistoryTableProps {
   partId: string //TODO: can thes just be grabbed from the viam context?
@@ -33,8 +35,6 @@ interface HistoryTableProps {
   onDiagnosesUpdate: React.Dispatch<
     React.SetStateAction<Map<string, PassDiagnosis>>
   >
-  selectedCamera: string //TODO: context for this
-  videoStoreClient: VIAM.GenericComponentClient | null //TODO: context for this
   setBeforeAfterModal: (modal: {
     beforeImage: VIAM.dataApi.BinaryData | null
     afterImage: VIAM.dataApi.BinaryData | null
@@ -54,8 +54,6 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
   passDiagnoses,
   onNotesUpdate,
   onDiagnosesUpdate,
-  selectedCamera,
-  videoStoreClient,
   setBeforeAfterModal,
   imageFiles,
   videoFiles,
@@ -64,6 +62,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
   files,
 }) => {
   const { viamClient, organizationId, machineId } = useViamClients()
+  const { selectedCamera } = useCamera()
+  const { videoStoreClient } = useVideoStore()
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
   const [fileSearchInputs, setFileSearchInputs] = useState<
