@@ -1969,11 +1969,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               }
                                             >
                                               <StepsVizSnapshotCard
-                                                snapshotFile={
-                                                  binaryDataManger.current.searchBinaryDataByFileName(
-                                                    SNAPSHOT_FILE_NAME_PREFIX
-                                                  )[0]
-                                                }
+                                                snapshotFiles={binaryDataManger.current.searchBinaryDataByFileName(
+                                                  SNAPSHOT_FILE_NAME_PREFIX
+                                                )}
                                               />
                                             </RenderIf>
                                           </div>
