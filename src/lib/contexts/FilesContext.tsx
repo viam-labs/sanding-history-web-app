@@ -144,7 +144,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       const earliestVideoTime = passSummaries[passSummaries.length - 1].start
       fetchFiles(earliestVideoTime)
     }
-  }, [passSummaries, viamClient])
+  }, [passSummaries, viamClient, fetchFiles])
 
   return (
     <FilesContext.Provider
