@@ -23,15 +23,10 @@ import { StepsGrid } from './StepsGrid'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useFiles } from '../../lib/contexts/FilesContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
+import { useModal } from '../../lib/contexts/ModalContext'
+import { ModalType } from '../../lib/contexts/ModalContext'
 
-interface HistoryTableProps {
-  setBeforeAfterModal: (modal: {
-    beforeImage: VIAM.dataApi.BinaryData | null
-    afterImage: VIAM.dataApi.BinaryData | null
-  }) => void // TODO: context for this
-}
-
-const HistoryTable: React.FC<HistoryTableProps> = ({ setBeforeAfterModal }) => {
+const HistoryTable: React.FC = () => {
   const { viamClient, machineId } = useViamClients()
   const {
     partId,
@@ -42,6 +37,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ setBeforeAfterModal }) => {
     fetchingNotes,
   } = usePass()
   const { currentPassSummaries } = usePagination()
+  const { openModal } = useModal()
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
@@ -359,7 +355,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ setBeforeAfterModal }) => {
     beforeImage: VIAM.dataApi.BinaryData | null,
     afterImage: VIAM.dataApi.BinaryData | null
   ) => {
-    setBeforeAfterModal({ beforeImage, afterImage })
+    openModal({ type: ModalType.BEFORE_AFTER, beforeImage, afterImage })
   }
 
   const handleNoteChange = (passId: string, value: string) => {
