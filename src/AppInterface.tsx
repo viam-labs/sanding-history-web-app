@@ -2846,11 +2846,7 @@ const AppInterface: React.FC<AppViewProps> = ({
         />
       )}
 
-      <GlobalLoadingIndicator
-        isLoading={!!fetchTimestamp}
-        currentDate={fetchTimestamp}
-        fileCount={files.size + videoFiles.size + imageFiles.size}
-      />
+      <GlobalLoadingIndicator />
     </div>
   )
 }
