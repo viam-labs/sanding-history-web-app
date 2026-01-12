@@ -9,6 +9,7 @@ import BeforeAfterModal from './components/BeforeAfterModal'
 import { Pagination } from './components/HistoryTable/Pagination'
 import HistoryTable from './components/HistoryTable'
 import { CameraProvider } from './lib/contexts/CameraContext'
+import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
 
 interface AppViewProps {
   passSummaries?: any[]
@@ -52,8 +53,6 @@ const AppInterface: React.FC<AppViewProps> = ({
   fetchingNotes,
   pagination,
 }) => {
-  const [videoStoreClient, setVideoStoreClient] =
-    useState<VIAM.GenericComponentClient | null>(null)
   const [beforeAfterModal, setBeforeAfterModal] = useState<{
     beforeImage: VIAM.dataApi.BinaryData | null
     afterImage: VIAM.dataApi.BinaryData | null
@@ -75,24 +74,25 @@ const AppInterface: React.FC<AppViewProps> = ({
       <main className="mainContent">
         <section>
           <CameraProvider>
-            <ResourceSelection setVideoStoreClient={setVideoStoreClient} />
+            <VideoStoreProvider>
+              <ResourceSelection />
 
-            <HistoryTable
-              videoStoreClient={videoStoreClient}
-              setBeforeAfterModal={setBeforeAfterModal}
-              partId={partId}
-              passSummaries={passSummaries}
-              fetchingNotes={fetchingNotes}
-              passNotes={passNotes}
-              passDiagnoses={passDiagnoses}
-              onNotesUpdate={onNotesUpdate}
-              onDiagnosesUpdate={onDiagnosesUpdate}
-              imageFiles={imageFiles}
-              videoFiles={videoFiles}
-              fetchTimestamp={fetchTimestamp}
-              fetchVideos={fetchVideos}
-              files={files}
-            />
+              <HistoryTable
+                setBeforeAfterModal={setBeforeAfterModal}
+                partId={partId}
+                passSummaries={passSummaries}
+                fetchingNotes={fetchingNotes}
+                passNotes={passNotes}
+                passDiagnoses={passDiagnoses}
+                onNotesUpdate={onNotesUpdate}
+                onDiagnosesUpdate={onDiagnosesUpdate}
+                imageFiles={imageFiles}
+                videoFiles={videoFiles}
+                fetchTimestamp={fetchTimestamp}
+                fetchVideos={fetchVideos}
+                files={files}
+              />
+            </VideoStoreProvider>
           </CameraProvider>
         </section>
       </main>
