@@ -1,7 +1,14 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
 import { Timestamp } from '@bufbuild/protobuf'
+import { usePass } from './PassContext'
 
 interface FilesContextType {
   fetchTimestamp: Date | null
@@ -15,6 +22,7 @@ const FilesContext = createContext<FilesContextType | undefined>(undefined)
 
 export function FilesProvider({ children }: { children: ReactNode }) {
   const { viamClient, machineId } = useViamClients()
+  const { passSummaries } = usePass()
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null)
   const [files, setFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(
     new Map()
@@ -26,7 +34,6 @@ export function FilesProvider({ children }: { children: ReactNode }) {
     Map<string, VIAM.dataApi.BinaryData>
   >(new Map())
 
-  // TODO: don't export this, just have it react to a pass context (to be made in future) change
   const fetchFiles = async (
     start: Date,
     shouldSetLoadingState: boolean = true
@@ -131,6 +138,13 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       setFetchTimestamp(null)
     }
   }
+
+  useEffect(() => {
+    if (passSummaries.length > 0 && viamClient) {
+      const earliestVideoTime = passSummaries[passSummaries.length - 1].start
+      fetchFiles(earliestVideoTime)
+    }
+  }, [passSummaries, viamClient])
 
   return (
     <FilesContext.Provider
