@@ -1,21 +1,9 @@
-import { Pass } from '../../lib/types'
+import { usePagination } from '../../lib/contexts/PaginationContext'
 
-interface PaginationProps {
-  pagination: {
-    currentPage: number
-    totalPages: number
-    itemsPerPage: number
-    totalItems: number
-    onPageChange: (page: number) => void
-  }
-  passSummaries: Pass[]
-}
-
-export const Pagination: React.FC<PaginationProps> = ({
-  pagination,
-  passSummaries,
-}: PaginationProps) => {
-  if (passSummaries.length === 0) {
+export const Pagination: React.FC = () => {
+  const { currentPage, totalPages, changePage, currentPassSummaries } =
+    usePagination()
+  if (currentPassSummaries.length === 0) {
     return null
   }
   return (
@@ -31,15 +19,15 @@ export const Pagination: React.FC<PaginationProps> = ({
       >
         <button
           className="pagination-button"
-          disabled={pagination.currentPage === 1}
-          onClick={() => pagination.onPageChange(1)}
+          disabled={currentPage === 1}
+          onClick={() => changePage(1)}
         >
           &laquo; First
         </button>
         <button
           className="pagination-button"
-          disabled={pagination.currentPage === 1}
-          onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+          disabled={currentPage === 1}
+          onClick={() => changePage(currentPage - 1)}
         >
           &lt; Prev
         </button>
@@ -48,14 +36,8 @@ export const Pagination: React.FC<PaginationProps> = ({
         {(() => {
           const pages = []
           const maxVisible = 5 // Max visible page numbers
-          let startPage = Math.max(
-            1,
-            pagination.currentPage - Math.floor(maxVisible / 2)
-          )
-          const endPage = Math.min(
-            pagination.totalPages,
-            startPage + maxVisible - 1
-          )
+          let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2))
+          const endPage = Math.min(totalPages, startPage + maxVisible - 1)
 
           if (endPage - startPage + 1 < maxVisible) {
             startPage = Math.max(1, endPage - maxVisible + 1)
@@ -65,8 +47,8 @@ export const Pagination: React.FC<PaginationProps> = ({
             pages.push(
               <button
                 key={i}
-                className={`pagination-button ${pagination.currentPage === i ? 'active' : ''}`}
-                onClick={() => pagination.onPageChange(i)}
+                className={`pagination-button ${currentPage === i ? 'active' : ''}`}
+                onClick={() => changePage(i)}
               >
                 {i}
               </button>
@@ -77,15 +59,15 @@ export const Pagination: React.FC<PaginationProps> = ({
 
         <button
           className="pagination-button"
-          disabled={pagination.currentPage === pagination.totalPages}
-          onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+          disabled={currentPage === totalPages}
+          onClick={() => changePage(currentPage + 1)}
         >
           Next &gt;
         </button>
         <button
           className="pagination-button"
-          disabled={pagination.currentPage === pagination.totalPages}
-          onClick={() => pagination.onPageChange(pagination.totalPages)}
+          disabled={currentPage === totalPages}
+          onClick={() => changePage(totalPages)}
         >
           Last &raquo;
         </button>

@@ -26,16 +26,6 @@ interface AppViewProps {
     React.SetStateAction<Map<string, PassDiagnosis>>
   >
   fetchingNotes: boolean
-  pagination?: {
-    currentPage: number
-    totalPages: number
-    itemsPerPage: number
-    totalItems: number
-    onPageChange: (page: number) => void
-    daysPerPage?: boolean
-    currentDaysDisplayed?: number
-    totalEntries?: number
-  }
 }
 
 const AppInterface: React.FC<AppViewProps> = ({
@@ -51,7 +41,6 @@ const AppInterface: React.FC<AppViewProps> = ({
   passDiagnoses,
   onDiagnosesUpdate,
   fetchingNotes,
-  pagination,
 }) => {
   const [beforeAfterModal, setBeforeAfterModal] = useState<{
     beforeImage: VIAM.dataApi.BinaryData | null
@@ -97,9 +86,7 @@ const AppInterface: React.FC<AppViewProps> = ({
         </section>
       </main>
 
-      {pagination && (
-        <Pagination pagination={pagination} passSummaries={passSummaries} />
-      )}
+      <Pagination />
       {/* Add the modal at the end */}
       {beforeAfterModal && (
         <BeforeAfterModal

@@ -73,16 +73,6 @@ function App() {
         passDiagnoses={passDiagnoses}
         onDiagnosesUpdate={setPassDiagnoses}
         fetchingNotes={fetchingNotes}
-        pagination={{
-          currentPage,
-          totalPages,
-          itemsPerPage: DAYS_PER_PAGE,
-          totalItems: sortedDays.length,
-          totalEntries: passSummaries.length,
-          onPageChange: changePage,
-          currentDaysDisplayed: currentNumDaysDisplayed,
-          daysPerPage: true,
-        }}
       />
     )
   }
