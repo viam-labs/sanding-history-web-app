@@ -3,34 +3,33 @@ import { Pass } from '../../lib/types'
 import { BinaryDataManager } from '../../lib/BinaryDataManager'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { usePass } from '../../lib/contexts/PassContext'
+import { useFiles } from '../../lib/contexts/FilesContext'
 
 interface PassFilesProps {
   pass: Pass
   binaryDataManager: BinaryDataManager
   viamClient: VIAM.ViamClient
-  fetchTimestamp: Date | null
   expandedFiles: Set<string>
   toggleFilesExpansion: (passId: string) => void
   fileSearchInputs: Record<string, string>
   handleFileSearchChange: (passId: string, value: string) => void
   debouncedFileSearchInputs: Record<string, string>
-  partId: string
 }
 
 export const PassFiles: React.FC<PassFilesProps> = ({
   pass,
   binaryDataManager,
-  fetchTimestamp,
   expandedFiles,
   toggleFilesExpansion,
   fileSearchInputs,
   handleFileSearchChange,
   debouncedFileSearchInputs,
-  partId,
 }) => {
   const { machineId, organizationId, viamClient } = useViamClients()
-
+  const { partId } = usePass()
   const passId = pass.pass_id
+  const { fetchTimestamp } = useFiles()
 
   const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
     try {

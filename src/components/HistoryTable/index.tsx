@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import {
   Pass,
   PassDiagnosis,
@@ -15,18 +15,15 @@ import * as VIAM from '@viamrobotics/sdk'
 import { getPassMetadataManager } from '../../lib/passMetadataManager'
 import { PassFiles } from './PassFiles'
 import RenderIf from '../RenderIf'
-import { BinaryDataManager } from '../../lib/BinaryDataManager'
-import { BinaryDataFile } from '../../lib/BinaryDataFile'
 import { DaySummaryHeader, DayAggregateData } from './DaySummaryHeader'
 import { CollapsedRow } from './CollapsedRow'
 import { PassInfo } from './PassInfo'
 import { Diagnosis } from './Diagnosis'
 import { StepsGrid } from './StepsGrid'
-import { useCamera } from '../../lib/contexts/CameraContext'
-import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
+import { usePass } from '../../lib/contexts/PassContext'
+import { useFiles } from '../../lib/contexts/FilesContext'
 
 interface HistoryTableProps {
-  partId: string //TODO: can thes just be grabbed from the viam context?
   passSummaries?: any[]
   fetchingNotes: boolean
   passNotes: Map<string, PassNote[]> // TODO: notes and diagnosis contexts?
@@ -39,15 +36,9 @@ interface HistoryTableProps {
     beforeImage: VIAM.dataApi.BinaryData | null
     afterImage: VIAM.dataApi.BinaryData | null
   }) => void // TODO: context for this
-  imageFiles: Map<string, VIAM.dataApi.BinaryData> //TODO: structure files using a binaryDataManger with functions instead of 3 maps
-  videoFiles: Map<string, VIAM.dataApi.BinaryData>
-  files: Map<string, VIAM.dataApi.BinaryData>
-  fetchTimestamp: Date | null
-  fetchVideos: (start: Date) => Promise<void>
 }
 
 const HistoryTable: React.FC<HistoryTableProps> = ({
-  partId,
   passSummaries = [],
   fetchingNotes,
   passNotes,
@@ -55,15 +46,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
   onNotesUpdate,
   onDiagnosesUpdate,
   setBeforeAfterModal,
-  imageFiles,
-  videoFiles,
-  fetchTimestamp,
-  fetchVideos,
-  files,
 }) => {
-  const { viamClient, organizationId, machineId } = useViamClients()
-  const { selectedCamera } = useCamera()
-  const { videoStoreClient } = useVideoStore()
+  const { viamClient, machineId } = useViamClients()
+  const { partId } = usePass()
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
   const [fileSearchInputs, setFileSearchInputs] = useState<
@@ -91,14 +76,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
   const [jiraValidationErrors, setJiraValidationErrors] = useState<
     Record<string, string>
   >({})
-  const binaryDataManager = useRef<BinaryDataManager>(new BinaryDataManager())
-
-  useEffect(() => {
-    binaryDataManager.current = new BinaryDataManager()
-    Array.from(files.values()).forEach((file) => {
-      binaryDataManager.current?.addBinaryDataFile(new BinaryDataFile(file))
-    })
-  }, [files])
+  const { binaryDataManager } = useFiles()
 
   // Debounce file search inputs
   useEffect(() => {
@@ -616,16 +594,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                               <div className="passes-container">
                                 <StepsGrid
                                   pass={pass}
-                                  imageFiles={imageFiles}
-                                  videoFiles={videoFiles}
-                                  selectedCamera={selectedCamera}
-                                  fetchTimestamp={fetchTimestamp}
-                                  videoStoreClient={videoStoreClient}
-                                  binaryDataManager={binaryDataManager.current}
-                                  fetchVideos={fetchVideos}
+                                  binaryDataManager={binaryDataManager}
                                   openBeforeAfterModal={openBeforeAfterModal}
-                                  machineId={machineId}
-                                  organizationId={organizationId}
                                 />
 
                                 {/* Diagnosis and Notes Section - shows for all passes, diagnosis fields only for failed */}
@@ -653,11 +623,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                                   <div style={{ flex: '2 1 0%', minWidth: 0 }}>
                                     <PassFiles
                                       pass={pass}
-                                      binaryDataManager={
-                                        binaryDataManager.current
-                                      }
+                                      binaryDataManager={binaryDataManager}
                                       viamClient={viamClient}
-                                      fetchTimestamp={fetchTimestamp}
                                       expandedFiles={expandedFiles}
                                       toggleFilesExpansion={
                                         toggleFilesExpansion
@@ -669,7 +636,6 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
                                       debouncedFileSearchInputs={
                                         debouncedFileSearchInputs
                                       }
-                                      partId={partId}
                                     />
                                   </div>
                                 </div>

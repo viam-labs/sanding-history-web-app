@@ -30,12 +30,6 @@ interface AppViewProps {
 
 const AppInterface: React.FC<AppViewProps> = ({
   passSummaries = [],
-  files,
-  videoFiles,
-  imageFiles,
-  fetchVideos,
-  fetchTimestamp,
-  partId,
   passNotes,
   onNotesUpdate,
   passDiagnoses,
@@ -68,18 +62,12 @@ const AppInterface: React.FC<AppViewProps> = ({
 
               <HistoryTable
                 setBeforeAfterModal={setBeforeAfterModal}
-                partId={partId}
                 passSummaries={passSummaries}
                 fetchingNotes={fetchingNotes}
                 passNotes={passNotes}
                 passDiagnoses={passDiagnoses}
                 onNotesUpdate={onNotesUpdate}
                 onDiagnosesUpdate={onDiagnosesUpdate}
-                imageFiles={imageFiles}
-                videoFiles={videoFiles}
-                fetchTimestamp={fetchTimestamp}
-                fetchVideos={fetchVideos}
-                files={files}
               />
             </VideoStoreProvider>
           </CameraProvider>
