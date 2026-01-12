@@ -99,11 +99,9 @@ export const StepsGrid = ({
         }
       >
         <StepsVizSnapshotCard
-          snapshotFile={
-            binaryDataManager.searchBinaryDataByFileName(
-              SNAPSHOT_FILE_NAME_PREFIX
-            )[0]
-          }
+          snapshotFiles={binaryDataManager.searchBinaryDataByFileName(
+            SNAPSHOT_FILE_NAME_PREFIX
+          )}
         />
       </RenderIf>
     </div>
