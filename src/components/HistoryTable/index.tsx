@@ -22,33 +22,27 @@ import { Diagnosis } from './Diagnosis'
 import { StepsGrid } from './StepsGrid'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useFiles } from '../../lib/contexts/FilesContext'
+import { usePagination } from '../../lib/contexts/PaginationContext'
 
 interface HistoryTableProps {
-  passSummaries?: any[]
-  fetchingNotes: boolean
-  passNotes: Map<string, PassNote[]> // TODO: notes and diagnosis contexts?
-  passDiagnoses: Map<string, PassDiagnosis>
-  onNotesUpdate: React.Dispatch<React.SetStateAction<Map<string, PassNote[]>>>
-  onDiagnosesUpdate: React.Dispatch<
-    React.SetStateAction<Map<string, PassDiagnosis>>
-  >
   setBeforeAfterModal: (modal: {
     beforeImage: VIAM.dataApi.BinaryData | null
     afterImage: VIAM.dataApi.BinaryData | null
   }) => void // TODO: context for this
 }
 
-const HistoryTable: React.FC<HistoryTableProps> = ({
-  passSummaries = [],
-  fetchingNotes,
-  passNotes,
-  passDiagnoses,
-  onNotesUpdate,
-  onDiagnosesUpdate,
-  setBeforeAfterModal,
-}) => {
+const HistoryTable: React.FC<HistoryTableProps> = ({ setBeforeAfterModal }) => {
   const { viamClient, machineId } = useViamClients()
-  const { partId } = usePass()
+  const {
+    partId,
+    passNotes,
+    passDiagnoses,
+    setPassNotes,
+    setPassDiagnoses,
+    fetchingNotes,
+  } = usePass()
+  const { currentPassSummaries } = usePagination()
+
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
   const [fileSearchInputs, setFileSearchInputs] = useState<
@@ -116,7 +110,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
   }, [passDiagnoses])
 
   const groupedPasses = useMemo(() => {
-    return passSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
+    return currentPassSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
       // Use a consistent date key (YYYY-MM-DD)
       const dateKey = pass.start.toISOString().split('T')[0]
       if (!acc[dateKey]) {
@@ -125,7 +119,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
       acc[dateKey].push(pass)
       return acc
     }, {})
-  }, [passSummaries])
+  }, [currentPassSummaries])
 
   // Memoize day aggregates calculation - calculate both execution percentage AND total time
   const dayAggregates = useMemo(() => {
@@ -415,7 +409,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
         created_at: new Date().toISOString(),
         created_by: 'summary-web-app',
       }
-      onNotesUpdate((prevNotes) => {
+      setPassNotes((prevNotes) => {
         const newNotesMap = new Map(prevNotes)
         newNotesMap.set(passId, [newNote])
         return newNotesMap
@@ -423,7 +417,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({
 
       // Update diagnoses in state (only for failed passes)
       if (isFailedPass) {
-        onDiagnosesUpdate((prevDiagnoses) => {
+        setPassDiagnoses((prevDiagnoses) => {
           const newDiagnosesMap = new Map(prevDiagnoses)
           if (symptom || cause || jiraTicketUrl) {
             newDiagnosesMap.set(passId, {
