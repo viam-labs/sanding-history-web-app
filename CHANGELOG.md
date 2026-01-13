@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.6.4
+
+### Patch Changes
+
+- 69df5a4: refactor history table
+
 ## 1.6.3
 
 ### Patch Changes
