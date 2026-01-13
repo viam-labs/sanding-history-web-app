@@ -8,15 +8,12 @@ import { PassFiles } from './PassFiles'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getRobotConfigAtTime } from '../../lib/configUtils'
 import {
   downloadRobotConfig,
   getPassConfigComparison,
 } from '../../lib/configUtils'
-import { getPassMetadataManager } from '../../lib/passMetadataManager'
-import { PassNote } from '../../lib/types'
-import { PassDiagnosis } from '../../lib/types'
 
 interface RowProps {
   globalIndex: string
@@ -25,18 +22,10 @@ interface RowProps {
 
 export const Row = ({ globalIndex, pass }: RowProps) => {
   const { viamClient, machineId } = useViamClients()
-  const {
-    partId,
-    passNotes,
-    passDiagnoses,
-    setPassNotes,
-    setPassDiagnoses,
-    fetchingNotes,
-  } = usePass()
+  const { partId } = usePass()
   const { currentPassSummaries } = usePagination()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
-  const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
   const [downloadingConfigs, setDownloadingConfigs] = useState<Set<string>>(
     new Set()
   )
@@ -46,41 +35,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
   const [loadingConfigMetadata, setLoadingConfigMetadata] = useState<
     Set<string>
   >(new Set())
-  const [diagnosisInputs, setDiagnosisInputs] = useState<
-    Record<string, { symptom?: string; cause?: string; jiraTicketUrl?: string }>
-  >({})
-  const [metadataSuccess, setMetadataSuccess] = useState<Set<string>>(new Set())
-  const [savingMetadata, setSavingMetadata] = useState<Set<string>>(new Set())
-
-  const [jiraValidationErrors, setJiraValidationErrors] = useState<
-    Record<string, string>
-  >({})
-
-  // Initialize note inputs from existing notes
-  useEffect(() => {
-    const initialInputs: Record<string, string> = {}
-    passNotes.forEach((notes, passId) => {
-      if (notes.length > 0) {
-        initialInputs[passId] = notes[0].note_text
-      }
-    })
-    setNoteInputs(initialInputs)
-  }, [passNotes])
-
-  // Initialize diagnosis inputs from existing diagnoses
-  useEffect(() => {
-    const initialDiagnoses: Record<
-      string,
-      { symptom?: string; cause?: string }
-    > = {}
-    passDiagnoses.forEach((diagnosis, passId) => {
-      initialDiagnoses[passId] = {
-        symptom: diagnosis.symptom,
-        cause: diagnosis.cause,
-      }
-    })
-    setDiagnosisInputs(initialDiagnoses)
-  }, [passDiagnoses])
 
   const groupedPasses = useMemo(() => {
     return currentPassSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
@@ -211,165 +165,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
     }
   }
 
-  const handleNoteChange = (passId: string, value: string) => {
-    setNoteInputs((prev) => ({
-      ...prev,
-      [passId]: value,
-    }))
-
-    // Clear success state when editing
-    if (metadataSuccess.has(passId)) {
-      const newSuccess = new Set(metadataSuccess)
-      newSuccess.delete(passId)
-      setMetadataSuccess(newSuccess)
-    }
-  }
-
-  const savePassMetadata = async (passId: string, isFailedPass: boolean) => {
-    if (!passId || !partId) return
-
-    const noteText = noteInputs[passId]?.trim() || ''
-    const diagnosisData = diagnosisInputs[passId] || {}
-    const { symptom, cause, jiraTicketUrl } = diagnosisData
-
-    // Show saving indicator
-    setSavingMetadata((prev) => new Set(prev).add(passId))
-
-    try {
-      const metadataManager = getPassMetadataManager(viamClient, machineId)
-
-      // Save note
-      await metadataManager.savePassNote(passId, noteText)
-
-      // Save diagnosis only for failed passes
-      if (isFailedPass) {
-        await metadataManager.savePassDiagnosis(
-          passId,
-          symptom,
-          cause,
-          jiraTicketUrl
-        )
-      }
-
-      // Update notes in state
-      const newNote: PassNote = {
-        pass_id: passId,
-        note_text: noteText,
-        created_at: new Date().toISOString(),
-        created_by: 'summary-web-app',
-      }
-      setPassNotes((prevNotes) => {
-        const newNotesMap = new Map(prevNotes)
-        newNotesMap.set(passId, [newNote])
-        return newNotesMap
-      })
-
-      // Update diagnoses in state (only for failed passes)
-      if (isFailedPass) {
-        setPassDiagnoses((prevDiagnoses) => {
-          const newDiagnosesMap = new Map(prevDiagnoses)
-          if (symptom || cause || jiraTicketUrl) {
-            newDiagnosesMap.set(passId, {
-              pass_id: passId,
-              symptom: symptom as PassDiagnosis['symptom'],
-              cause: cause as PassDiagnosis['cause'],
-              jira_ticket_url: jiraTicketUrl,
-              updated_at: new Date().toISOString(),
-              updated_by: 'summary-web-app',
-            })
-          } else {
-            newDiagnosesMap.delete(passId)
-          }
-          return newDiagnosesMap
-        })
-      }
-
-      // Show success state
-      setMetadataSuccess((prev) => new Set(prev).add(passId))
-
-      // Clear success state after a delay
-      setTimeout(() => {
-        setMetadataSuccess((prev) => {
-          const newSuccess = new Set(prev)
-          newSuccess.delete(passId)
-          return newSuccess
-        })
-      }, 2000)
-    } catch (error) {
-      console.error('Failed to save pass metadata:', error)
-    } finally {
-      setSavingMetadata((prev) => {
-        const newSaving = new Set(prev)
-        newSaving.delete(passId)
-        return newSaving
-      })
-    }
-  }
-
-  const handleDiagnosisChange = (
-    passId: string,
-    field: 'symptom' | 'cause' | 'jiraTicketUrl',
-    value: string
-  ) => {
-    setDiagnosisInputs((prev) => ({
-      ...prev,
-      [passId]: {
-        ...prev[passId],
-        [field]: value || undefined,
-      },
-    }))
-
-    // Validate JIRA URL format
-    if (field === 'jiraTicketUrl') {
-      const trimmedValue = value.trim()
-      if (trimmedValue === '') {
-        // Empty is valid (field is optional)
-        setJiraValidationErrors((prev) => {
-          const newErrors = { ...prev }
-          delete newErrors[passId]
-          return newErrors
-        })
-      } else {
-        // Validate URL format
-        try {
-          const url = new URL(trimmedValue)
-          // Check if it's a Viam JIRA URL
-          if (url.hostname !== 'viam.atlassian.net') {
-            setJiraValidationErrors((prev) => ({
-              ...prev,
-              [passId]: 'JIRA URL must be from viam.atlassian.net',
-            }))
-          } else if (!url.pathname.startsWith('/browse/')) {
-            setJiraValidationErrors((prev) => ({
-              ...prev,
-              [passId]:
-                'JIRA URL must follow format: https://viam.atlassian.net/browse/PROJECT-123',
-            }))
-          } else {
-            // Valid JIRA URL
-            setJiraValidationErrors((prev) => {
-              const newErrors = { ...prev }
-              delete newErrors[passId]
-              return newErrors
-            })
-          }
-        } catch {
-          setJiraValidationErrors((prev) => ({
-            ...prev,
-            [passId]: 'Please enter a valid URL',
-          }))
-        }
-      }
-    }
-
-    // Clear success state when editing
-    if (metadataSuccess.has(passId)) {
-      const newSuccess = new Set(metadataSuccess)
-      newSuccess.delete(passId)
-      setMetadataSuccess(newSuccess)
-    }
-  }
-
   return (
     <>
       <CollapsedRow
@@ -398,18 +193,7 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
                 <StepsGrid pass={pass} />
 
                 {/* Diagnosis and Notes Section - shows for all passes, diagnosis fields only for failed */}
-                <Diagnosis
-                  pass={pass}
-                  fetchingNotes={fetchingNotes}
-                  handleDiagnosisChange={handleDiagnosisChange}
-                  diagnosisInputs={diagnosisInputs}
-                  savingMetadata={savingMetadata}
-                  metadataSuccess={metadataSuccess}
-                  savePassMetadata={savePassMetadata}
-                  noteInputs={noteInputs}
-                  jiraValidationErrors={jiraValidationErrors}
-                  handleNoteChange={handleNoteChange}
-                />
+                <Diagnosis pass={pass} />
 
                 {/* Parent container for Files and Notes columns */}
                 <div style={{ display: 'flex', margin: '0 12px' }}>

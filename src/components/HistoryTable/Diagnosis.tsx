@@ -1,41 +1,167 @@
-import { Pass } from '../../lib/types'
+import { useState, useEffect } from 'react'
+import { Pass, PassNote, PassDiagnosis } from '../../lib/types'
 import { CAUSE_OPTIONS, SYMPTOM_OPTIONS } from '../../lib/types'
 import { usePass } from '../../lib/contexts/PassContext'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { getPassMetadataManager } from '../../lib/passMetadataManager'
 
 export interface DiagnosisProps {
   pass: Pass
-  jiraValidationErrors: Record<string, string>
-  fetchingNotes: boolean
-  diagnosisInputs: Record<
-    string,
-    { symptom?: string; cause?: string; jiraTicketUrl?: string }
-  >
-  savingMetadata: Set<string>
-  metadataSuccess: Set<string>
-  savePassMetadata: (passId: string, isFailedPass: boolean) => void
-  handleDiagnosisChange: (
-    passId: string,
-    field: 'symptom' | 'cause' | 'jiraTicketUrl',
-    value: string
-  ) => void
-  noteInputs: Record<string, string>
-  handleNoteChange: (passId: string, value: string) => void
 }
 export const Diagnosis: React.FC<DiagnosisProps> = ({
   pass,
-  savingMetadata,
-  metadataSuccess,
-  savePassMetadata,
-  fetchingNotes,
-  diagnosisInputs,
-  jiraValidationErrors,
-  handleDiagnosisChange,
-  noteInputs,
-  handleNoteChange,
 }: DiagnosisProps) => {
-  const { passNotes, passDiagnoses } = usePass()
+  const { fetchingNotes } = usePass()
+  const { passNotes, passDiagnoses, setPassNotes, setPassDiagnoses } = usePass()
   const passNotesData = passNotes.get(pass.pass_id) || []
   const passId = pass.pass_id
+  const { partId } = usePass()
+  const { viamClient, machineId } = useViamClients()
+  const [noteInput, setNoteInput] = useState<string>('')
+  const [diagnosisInput, setDiagnosisInput] = useState<{
+    symptom?: string
+    cause?: string
+    jiraTicketUrl?: string
+  }>({})
+  const [jiraValidationError, setJiraValidationError] = useState<string>('')
+  const [metadataSuccess, setMetadataSuccess] = useState<boolean>(false)
+  const [savingMetadata, setSavingMetadata] = useState<boolean>(false)
+
+  // Initialize note inputs from existing notes
+  useEffect(() => {
+    const existingNoteText =
+      passNotesData.length > 0 ? passNotesData[0].note_text : ''
+    setNoteInput(existingNoteText)
+  }, [passNotes])
+
+  // Initialize diagnosis inputs from existing diagnoses
+  useEffect(() => {
+    const existingDiagnosis = passDiagnoses.get(passId)
+    if (existingDiagnosis) {
+      const initialDiagnosis = {
+        symptom: existingDiagnosis.symptom,
+        cause: existingDiagnosis.cause,
+      }
+      setDiagnosisInput(initialDiagnosis)
+    }
+  }, [passDiagnoses])
+
+  const handleDiagnosisChange = (
+    field: 'symptom' | 'cause' | 'jiraTicketUrl',
+    value: string
+  ) => {
+    setDiagnosisInput((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+
+    // Validate JIRA URL format
+    if (field === 'jiraTicketUrl') {
+      const trimmedValue = value.trim()
+      if (trimmedValue === '') {
+        // Empty is valid (field is optional)
+        setJiraValidationError('')
+      } else {
+        // Validate URL format
+        try {
+          const url = new URL(trimmedValue)
+          // Check if it's a Viam JIRA URL
+          if (url.hostname !== 'viam.atlassian.net') {
+            setJiraValidationError('JIRA URL must be from viam.atlassian.net')
+          } else if (!url.pathname.startsWith('/browse/')) {
+            setJiraValidationError(
+              'JIRA URL must follow format: https://viam.atlassian.net/browse/PROJECT-123'
+            )
+          } else {
+            // Valid JIRA URL
+            setJiraValidationError('')
+          }
+        } catch {
+          setJiraValidationError('Please enter a valid URL')
+        }
+      }
+    }
+  }
+
+  const handleNoteChange = (value: string) => {
+    setNoteInput(value)
+
+    // Clear success state when editing
+    setMetadataSuccess(false)
+  }
+
+  const savePassMetadata = async (passId: string, isFailedPass: boolean) => {
+    if (!passId || !partId) return
+
+    const noteText = noteInput.trim() || ''
+    const diagnosisData = diagnosisInput || {}
+    const { symptom, cause, jiraTicketUrl } = diagnosisData
+
+    // Show saving indicator
+    setSavingMetadata(true)
+
+    try {
+      const metadataManager = getPassMetadataManager(viamClient, machineId)
+
+      // Save note
+      await metadataManager.savePassNote(passId, noteText)
+
+      // Save diagnosis only for failed passes
+      if (isFailedPass) {
+        await metadataManager.savePassDiagnosis(
+          passId,
+          symptom,
+          cause,
+          jiraTicketUrl
+        )
+      }
+
+      // Update notes in state
+      const newNote: PassNote = {
+        pass_id: passId,
+        note_text: noteText,
+        created_at: new Date().toISOString(),
+        created_by: 'summary-web-app',
+      }
+      setPassNotes((prevNotes) => {
+        const newNotesMap = new Map(prevNotes)
+        newNotesMap.set(passId, [newNote])
+        return newNotesMap
+      })
+
+      // Update diagnoses in state (only for failed passes)
+      if (isFailedPass) {
+        setPassDiagnoses((prevDiagnoses) => {
+          const newDiagnosesMap = new Map(prevDiagnoses)
+          if (symptom || cause || jiraTicketUrl) {
+            newDiagnosesMap.set(passId, {
+              pass_id: passId,
+              symptom: symptom as PassDiagnosis['symptom'],
+              cause: cause as PassDiagnosis['cause'],
+              jira_ticket_url: jiraTicketUrl,
+              updated_at: new Date().toISOString(),
+              updated_by: 'summary-web-app',
+            })
+          } else {
+            newDiagnosesMap.delete(passId)
+          }
+          return newDiagnosesMap
+        })
+      }
+
+      // Show success state
+      setMetadataSuccess(true)
+
+      // Clear success state after a delay
+      setTimeout(() => {
+        setMetadataSuccess(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Failed to save pass metadata:', error)
+    } finally {
+      setSavingMetadata(false)
+    }
+  }
 
   return (
     <div style={{ margin: '1rem 12px 24px 12px' }}>
@@ -111,9 +237,9 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   </label>
                   <select
                     id={`symptom-${passId}`}
-                    value={diagnosisInputs[passId]?.symptom || ''}
+                    value={diagnosisInput.symptom || ''}
                     onChange={(e) =>
-                      handleDiagnosisChange(passId, 'symptom', e.target.value)
+                      handleDiagnosisChange('symptom', e.target.value)
                     }
                     style={{
                       width: '100%',
@@ -150,9 +276,9 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   </label>
                   <select
                     id={`cause-${passId}`}
-                    value={diagnosisInputs[passId]?.cause || ''}
+                    value={diagnosisInput.cause || ''}
                     onChange={(e) =>
-                      handleDiagnosisChange(passId, 'cause', e.target.value)
+                      handleDiagnosisChange('cause', e.target.value)
                     }
                     style={{
                       width: '100%',
@@ -177,7 +303,7 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
             )}
 
             {/* JIRA Ticket URL - only for failed passes when cause is selected */}
-            {!pass.success && diagnosisInputs[passId]?.cause && (
+            {!pass.success && diagnosisInput.cause && (
               <div>
                 <label
                   htmlFor={`jira-${passId}`}
@@ -201,13 +327,9 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   <input
                     id={`jira-${passId}`}
                     type="url"
-                    value={diagnosisInputs[passId]?.jiraTicketUrl || ''}
+                    value={diagnosisInput.jiraTicketUrl || ''}
                     onChange={(e) =>
-                      handleDiagnosisChange(
-                        passId,
-                        'jiraTicketUrl',
-                        e.target.value
-                      )
+                      handleDiagnosisChange('jiraTicketUrl', e.target.value)
                     }
                     placeholder="https://viam.atlassian.net/browse/RSDK-..."
                     style={{
@@ -220,30 +342,29 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                       outline: 'none',
                     }}
                   />
-                  {diagnosisInputs[passId]?.jiraTicketUrl &&
-                    !jiraValidationErrors[passId] && (
-                      <a
-                        href={diagnosisInputs[passId].jiraTicketUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          padding: '10px 12px',
-                          fontSize: '14px',
-                          color: '#3b82f6',
-                          textDecoration: 'none',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          backgroundColor: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                        title="Open JIRA ticket"
-                      >
-                        🔗
-                      </a>
-                    )}
+                  {diagnosisInput.jiraTicketUrl && !jiraValidationError && (
+                    <a
+                      href={diagnosisInput.jiraTicketUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '10px 12px',
+                        fontSize: '14px',
+                        color: '#3b82f6',
+                        textDecoration: 'none',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title="Open JIRA ticket"
+                    >
+                      🔗
+                    </a>
+                  )}
                 </div>
-                {jiraValidationErrors[passId] && (
+                {jiraValidationError && (
                   <div
                     style={{
                       fontSize: '12px',
@@ -251,7 +372,7 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                       marginTop: '4px',
                     }}
                   >
-                    {jiraValidationErrors[passId]}
+                    {jiraValidationError}
                   </div>
                 )}
               </div>
@@ -276,8 +397,8 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
               )}
               <textarea
                 id={`pass-notes-${passId}`}
-                value={noteInputs[passId] || ''}
-                onChange={(e) => handleNoteChange(passId, e.target.value)}
+                value={noteInput || ''}
+                onChange={(e) => handleNoteChange(e.target.value)}
                 placeholder="Add a note for this pass..."
                 style={{
                   width: '100%',
@@ -308,11 +429,10 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                 type="button"
                 onClick={() => savePassMetadata(passId, !pass.success)}
                 disabled={(() => {
-                  if (savingMetadata.has(passId) || metadataSuccess.has(passId))
-                    return true
+                  if (savingMetadata || metadataSuccess) return true
                   // Disable if there are JIRA validation errors
-                  if (jiraValidationErrors[passId]) return true
-                  const noteText = noteInputs[passId] || ''
+                  if (jiraValidationError) return true
+                  const noteText = noteInput || ''
                   const existingNoteText =
                     passNotesData.length > 0 ? passNotesData[0].note_text : ''
                   const noteChanged =
@@ -320,11 +440,11 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   if (!pass.success) {
                     const diagnosisChanged =
                       (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInputs[passId]?.symptom || '') ||
+                        (diagnosisInput.symptom || '') ||
                       (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInputs[passId]?.cause || '') ||
+                        (diagnosisInput.cause || '') ||
                       (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInputs[passId]?.jiraTicketUrl || '')
+                        (diagnosisInput.jiraTicketUrl || '')
                     return !noteChanged && !diagnosisChanged
                   }
                   return !noteChanged
@@ -333,11 +453,11 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   padding: '6px 8px',
                   fontSize: '12px',
                   color: 'white',
-                  backgroundColor: metadataSuccess.has(passId)
+                  backgroundColor: metadataSuccess
                     ? '#10b981'
                     : (() => {
-                        if (savingMetadata.has(passId)) return '#9ca3af'
-                        const noteText = noteInputs[passId] || ''
+                        if (savingMetadata) return '#9ca3af'
+                        const noteText = noteInput || ''
                         const existingNoteText =
                           passNotesData.length > 0
                             ? passNotesData[0].note_text
@@ -347,12 +467,11 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                         if (!pass.success) {
                           const diagnosisChanged =
                             (passDiagnoses.get(passId)?.symptom || '') !==
-                              (diagnosisInputs[passId]?.symptom || '') ||
+                              (diagnosisInput.symptom || '') ||
                             (passDiagnoses.get(passId)?.cause || '') !==
-                              (diagnosisInputs[passId]?.cause || '') ||
+                              (diagnosisInput.cause || '') ||
                             (passDiagnoses.get(passId)?.jira_ticket_url ||
-                              '') !==
-                              (diagnosisInputs[passId]?.jiraTicketUrl || '')
+                              '') !== (diagnosisInput.jiraTicketUrl || '')
                           return noteChanged || diagnosisChanged
                             ? '#3b82f6'
                             : '#9ca3af'
@@ -362,12 +481,8 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   border: 'none',
                   borderRadius: '4px',
                   cursor: (() => {
-                    if (
-                      savingMetadata.has(passId) ||
-                      metadataSuccess.has(passId)
-                    )
-                      return 'not-allowed'
-                    const noteText = noteInputs[passId] || ''
+                    if (savingMetadata || metadataSuccess) return 'not-allowed'
+                    const noteText = noteInput || ''
                     const existingNoteText =
                       passNotesData.length > 0 ? passNotesData[0].note_text : ''
                     const noteChanged =
@@ -375,11 +490,11 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                     if (!pass.success) {
                       const diagnosisChanged =
                         (passDiagnoses.get(passId)?.symptom || '') !==
-                          (diagnosisInputs[passId]?.symptom || '') ||
+                          (diagnosisInput.symptom || '') ||
                         (passDiagnoses.get(passId)?.cause || '') !==
-                          (diagnosisInputs[passId]?.cause || '') ||
+                          (diagnosisInput.cause || '') ||
                         (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                          (diagnosisInputs[passId]?.jiraTicketUrl || '')
+                          (diagnosisInput.jiraTicketUrl || '')
                       return noteChanged || diagnosisChanged
                         ? 'pointer'
                         : 'not-allowed'
@@ -392,7 +507,7 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   gap: '6px',
                 }}
                 onMouseEnter={(e) => {
-                  const noteText = noteInputs[passId] || ''
+                  const noteText = noteInput || ''
                   const existingNoteText =
                     passNotesData.length > 0 ? passNotesData[0].note_text : ''
                   const noteChanged =
@@ -401,23 +516,19 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   if (!pass.success) {
                     const diagnosisChanged =
                       (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInputs[passId]?.symptom || '') ||
+                        (diagnosisInput.symptom || '') ||
                       (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInputs[passId]?.cause || '') ||
+                        (diagnosisInput.cause || '') ||
                       (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInputs[passId]?.jiraTicketUrl || '')
+                        (diagnosisInput.jiraTicketUrl || '')
                     hasChanges = noteChanged || diagnosisChanged
                   }
-                  if (
-                    hasChanges &&
-                    !savingMetadata.has(passId) &&
-                    !metadataSuccess.has(passId)
-                  ) {
+                  if (hasChanges && !savingMetadata && !metadataSuccess) {
                     e.currentTarget.style.backgroundColor = '#2563eb'
                   }
                 }}
                 onMouseLeave={(e) => {
-                  const noteText = noteInputs[passId] || ''
+                  const noteText = noteInput || ''
                   const existingNoteText =
                     passNotesData.length > 0 ? passNotesData[0].note_text : ''
                   const noteChanged =
@@ -426,23 +537,19 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                   if (!pass.success) {
                     const diagnosisChanged =
                       (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInputs[passId]?.symptom || '') ||
+                        (diagnosisInput.symptom || '') ||
                       (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInputs[passId]?.cause || '') ||
+                        (diagnosisInput.cause || '') ||
                       (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInputs[passId]?.jiraTicketUrl || '')
+                        (diagnosisInput.jiraTicketUrl || '')
                     hasChanges = noteChanged || diagnosisChanged
                   }
-                  if (
-                    hasChanges &&
-                    !savingMetadata.has(passId) &&
-                    !metadataSuccess.has(passId)
-                  ) {
+                  if (hasChanges && !savingMetadata && !metadataSuccess) {
                     e.currentTarget.style.backgroundColor = '#3b82f6'
                   }
                 }}
               >
-                {savingMetadata.has(passId) ? (
+                {savingMetadata ? (
                   <>
                     <div
                       style={{
@@ -456,7 +563,7 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
                     />
                     Saving...
                   </>
-                ) : metadataSuccess.has(passId) ? (
+                ) : metadataSuccess ? (
                   '✓ Saved'
                 ) : (
                   'Save'
