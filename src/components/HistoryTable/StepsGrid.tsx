@@ -12,6 +12,7 @@ import { useFiles } from '../../lib/contexts/FilesContext'
 import { useCamera } from '../../lib/contexts/CameraContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
+import { useMemo } from 'react'
 
 interface StepsGridProps {
   pass: Pass
@@ -30,6 +31,21 @@ export const StepsGrid = ({
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()
   const { videoStoreClient } = useVideoStore()
+
+  //TODO: context for this maybe?
+  const passFiles = useMemo(() => {
+    const passStart = new Date(pass.start)
+    const passEnd = new Date(pass.end)
+
+    return binaryDataManager.getPassFiles(pass.pass_id, passStart, passEnd)
+  }, [pass, binaryDataManager])
+
+  const snapshotFiles = useMemo(() => {
+    return passFiles.filter((file) =>
+      file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
+    )
+  }, [passFiles])
+
   return (
     <div className="steps-grid">
       {/* Camera Images */}
@@ -83,20 +99,8 @@ export const StepsGrid = ({
       })}
 
       {/* View snapshot card */}
-      <RenderIf
-        condition={
-          binaryDataManager.searchBinaryDataByFileName(
-            SNAPSHOT_FILE_NAME_PREFIX
-          ).length > 0
-        }
-      >
-        <StepsVizSnapshotCard
-          snapshotFile={
-            binaryDataManager.searchBinaryDataByFileName(
-              SNAPSHOT_FILE_NAME_PREFIX
-            )[0]
-          }
-        />
+      <RenderIf condition={snapshotFiles.length > 0}>
+        <StepsVizSnapshotCard snapshotFiles={snapshotFiles} />
       </RenderIf>
     </div>
   )
