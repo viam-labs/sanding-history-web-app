@@ -5,7 +5,7 @@ import {
   ReactNode,
   useEffect,
   useCallback,
-  useMemo,
+  useRef,
 } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
@@ -38,13 +38,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   const [imageFiles, setImageFiles] = useState<
     Map<string, VIAM.dataApi.BinaryData>
   >(new Map())
-  const binaryDataManager = useMemo(() => {
-    const manager = new BinaryDataManager()
-    Array.from(files.values()).forEach((file) => {
-      manager.addBinaryDataFile(new BinaryDataFile(file))
-    })
-    return manager
-  }, [files])
+  const binaryDataManager = useRef<BinaryDataManager>(new BinaryDataManager())
 
   const fetchFiles = useCallback(
     async (start: Date, shouldSetLoadingState: boolean = true) => {
@@ -92,6 +86,10 @@ export function FilesProvider({ children }: { children: ReactNode }) {
             const isCameraCapture =
               file.metadata.captureMetadata?.componentName &&
               file.metadata.captureMetadata?.methodName
+
+            binaryDataManager.current.addBinaryDataFile(
+              new BinaryDataFile(file)
+            )
 
             if (isVideo) {
               // Video files go to videoFiles
@@ -169,7 +167,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         videoFiles,
         imageFiles,
         fetchFiles,
-        binaryDataManager,
+        binaryDataManager: binaryDataManager.current,
       }}
     >
       {children}

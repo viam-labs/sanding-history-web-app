@@ -18,13 +18,13 @@ export function SinglePassProvider({
   pass: Pass
   children: ReactNode
 }) {
-  const { binaryDataManager } = useFiles()
+  const { files, binaryDataManager } = useFiles()
 
   const passFiles = useMemo(() => {
     const passStart = new Date(pass.start)
     const passEnd = new Date(pass.end)
     return binaryDataManager.getPassFiles(pass.pass_id, passStart, passEnd)
-  }, [pass.pass_id, pass.start, pass.end, binaryDataManager])
+  }, [pass.pass_id, pass.start, pass.end, files])
 
   return (
     <SinglePassContext.Provider value={{ pass, passFiles }}>
