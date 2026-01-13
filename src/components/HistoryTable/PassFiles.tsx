@@ -1,20 +1,15 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { Pass } from '../../lib/types'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useFiles } from '../../lib/contexts/FilesContext'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
-interface PassFilesProps {
-  pass: Pass
-}
-
-export const PassFiles: React.FC<PassFilesProps> = ({ pass }) => {
+export const PassFiles: React.FC = () => {
+  const { pass, passFiles } = useSinglePass()
   const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
-  const passId = pass.pass_id
   const { fetchTimestamp } = useFiles()
-  const { binaryDataManager } = useFiles()
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [fileSearchInput, setFileSearchInput] = useState<string>('')
   const [debouncedFileSearchInput, setDebouncedFileSearchInput] =
@@ -51,13 +46,6 @@ export const PassFiles: React.FC<PassFilesProps> = ({ pass }) => {
       alert('Failed to download file')
     }
   }
-
-  const passFiles = useMemo(() => {
-    const passStart = new Date(pass.start)
-    const passEnd = new Date(pass.end)
-
-    return binaryDataManager.getPassFiles(passId, passStart, passEnd)
-  }, [pass, binaryDataManager])
 
   const filteredPassFiles = useMemo(() => {
     const searchTerm = debouncedFileSearchInput.toLowerCase()

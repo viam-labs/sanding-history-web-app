@@ -7,12 +7,12 @@ import {
 } from '../../lib/configUtils'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { usePagination } from '../../lib/contexts/PaginationContext'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 export interface PassInfoProps {
-  pass: Pass
-  groupedPasses: Record<string, Pass[]>
   configMetadata: Map<string, RobotConfigMetadata>
-  loadingConfigMetadata: Set<string>
+  loadingConfigMetadata: boolean
   setConfigMetadata: React.Dispatch<
     React.SetStateAction<Map<string, RobotConfigMetadata>>
   >
@@ -20,13 +20,13 @@ export interface PassInfoProps {
 }
 
 export const PassInfo: React.FC<PassInfoProps> = ({
-  pass,
-  groupedPasses,
   configMetadata,
   setConfigMetadata,
   loadingConfigMetadata,
   fetchConfigMetadata,
 }: PassInfoProps) => {
+  const { pass } = useSinglePass()
+  const { groupedPasses } = usePagination()
   const {
     build_info: buildInfo,
     blue_point_count: bluePointCount,
@@ -90,7 +90,7 @@ export const PassInfo: React.FC<PassInfoProps> = ({
     if (
       prevPass &&
       !configMetadata.has(prevPass.pass_id) &&
-      !loadingConfigMetadata.has(prevPass.pass_id)
+      !loadingConfigMetadata
     ) {
       fetchConfigMetadata(pass, prevPass)
     }
@@ -224,7 +224,7 @@ export const PassInfo: React.FC<PassInfoProps> = ({
           )}
         </div>
 
-        {loadingConfigMetadata.has(pass.pass_id) ? (
+        {loadingConfigMetadata ? (
           <div
             style={{
               display: 'flex',

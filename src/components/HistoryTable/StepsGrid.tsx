@@ -1,4 +1,4 @@
-import { Pass, Step } from '../../lib/types'
+import { Step } from '../../lib/types'
 import RenderIf from '../RenderIf'
 import { StepImagesGrid } from './StepImagesGrid'
 import StepVideosGrid from '../StepVideosGrid'
@@ -11,11 +11,10 @@ import { useCamera } from '../../lib/contexts/CameraContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 import { useMemo } from 'react'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
-interface StepsGridProps {
-  pass: Pass
-}
-export const StepsGrid = ({ pass }: StepsGridProps) => {
+export const StepsGrid = () => {
+  const { pass } = useSinglePass()
   const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()

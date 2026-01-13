@@ -7,20 +7,21 @@ import { Diagnosis } from './Diagnosis'
 import { PassFiles } from './PassFiles'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { getRobotConfigAtTime } from '../../lib/configUtils'
 import { getPassConfigComparison } from '../../lib/configUtils'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 interface RowProps {
   globalIndex: string
-  pass: Pass
 }
 
-export const Row = ({ globalIndex, pass }: RowProps) => {
+export const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
-  const { currentPassSummaries } = usePagination()
+  const { groupedPasses } = usePagination()
+  const { pass } = useSinglePass()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [configMetadata, setConfigMetadata] = useState<
@@ -29,18 +30,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
   const [loadingConfigMetadata, setLoadingConfigMetadata] = useState<
     Set<string>
   >(new Set())
-
-  const groupedPasses = useMemo(() => {
-    return currentPassSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
-      // Use a consistent date key (YYYY-MM-DD)
-      const dateKey = pass.start.toISOString().split('T')[0]
-      if (!acc[dateKey]) {
-        acc[dateKey] = []
-      }
-      acc[dateKey].push(pass)
-      return acc
-    }, {})
-  }, [currentPassSummaries])
 
   const toggleRowExpansion = () => {
     if (!isExpanded) {
@@ -119,7 +108,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
       <CollapsedRow
         isExpanded={isExpanded}
         toggleRowExpansion={toggleRowExpansion}
-        pass={pass}
       />
       {isExpanded && (
         <tr className="expanded-content">
@@ -128,26 +116,26 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
               {/* Build information section moved inside expanded row */}
               <RenderIf condition={pass.build_info !== undefined}>
                 <PassInfo
-                  pass={pass}
-                  groupedPasses={groupedPasses}
                   configMetadata={configMetadata}
-                  loadingConfigMetadata={loadingConfigMetadata}
+                  loadingConfigMetadata={loadingConfigMetadata.has(
+                    pass.pass_id
+                  )}
                   setConfigMetadata={setConfigMetadata}
                   fetchConfigMetadata={fetchConfigMetadata}
                 />
               </RenderIf>
 
               <div className="passes-container">
-                <StepsGrid pass={pass} />
+                <StepsGrid />
 
                 {/* Diagnosis and Notes Section - shows for all passes, diagnosis fields only for failed */}
-                <Diagnosis pass={pass} />
+                <Diagnosis />
 
                 {/* Parent container for Files and Notes columns */}
                 <div style={{ display: 'flex', margin: '0 12px' }}>
                   {/* Column 1: Files captured during this pass */}
                   <div style={{ flex: '2 1 0%', minWidth: 0 }}>
-                    <PassFiles pass={pass} />
+                    <PassFiles />
                   </div>
                 </div>
               </div>

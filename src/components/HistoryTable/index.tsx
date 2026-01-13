@@ -4,6 +4,7 @@ import { DaySummaryHeader, DayAggregateData } from './DaySummaryHeader.tsx'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { Row } from './Row.tsx'
+import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
 
 const HistoryTable: React.FC = () => {
   const { passDiagnoses } = usePass()
@@ -138,7 +139,9 @@ const HistoryTable: React.FC = () => {
 
                   return (
                     <React.Fragment key={globalIndex}>
-                      <Row globalIndex={globalIndex} pass={pass} />
+                      <SinglePassProvider pass={pass}>
+                        <Row globalIndex={globalIndex} />
+                      </SinglePassProvider>
                     </React.Fragment>
                   )
                 })}

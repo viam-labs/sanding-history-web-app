@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Pass, PassNote, PassDiagnosis } from '../../lib/types'
+import { PassNote, PassDiagnosis } from '../../lib/types'
 import { CAUSE_OPTIONS, SYMPTOM_OPTIONS } from '../../lib/types'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { getPassMetadataManager } from '../../lib/passMetadataManager'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
-export interface DiagnosisProps {
-  pass: Pass
-}
-export const Diagnosis: React.FC<DiagnosisProps> = ({
-  pass,
-}: DiagnosisProps) => {
+export const Diagnosis: React.FC = () => {
   const { fetchingNotes } = usePass()
   const { passNotes, passDiagnoses, setPassNotes, setPassDiagnoses } = usePass()
+  const { pass } = useSinglePass()
   const passNotesData = passNotes.get(pass.pass_id) || []
   const passId = pass.pass_id
   const { partId } = usePass()

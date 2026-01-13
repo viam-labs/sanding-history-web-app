@@ -1,23 +1,21 @@
-import { Pass } from '../../lib/types'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { getExecutionTimeMs } from '../../lib/passUtils'
 import { StatusBadge } from '../StatusBadge'
 import { useMemo, useState } from 'react'
 import { usePass } from '../../lib/contexts/PassContext'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 interface CollapsedRowProps {
-  pass: Pass
   isExpanded: boolean
   toggleRowExpansion: () => void
 }
 
 export const CollapsedRow = ({
-  pass,
   isExpanded,
   toggleRowExpansion,
 }: CollapsedRowProps) => {
   const { passNotes, passDiagnoses } = usePass()
-
+  const { pass } = useSinglePass()
   const [errorsExpanded, setErrorsExpanded] = useState<boolean>(false)
   const passNotesData = passNotes.get(pass.pass_id) || []
   const execMs = useMemo(() => {
