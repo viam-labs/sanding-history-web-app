@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import VideoModal from './VideoModal'
 import { Step } from '../lib/types'
-import { generateVideo } from '../lib/videoUtils'
+import { generateVideo, getVideoStoreName } from '../lib/videoUtils'
 import { VideoPollingManager } from '../lib/videoPollingManager'
 import { constructStepLogUrl } from '../lib/uiUtils'
 import { useToast } from '../lib/contexts/ToastContext'
 import { useMemo } from 'react'
 import { useVideoStore } from '../lib/contexts/VideoStoreContext'
-import { VIDEO_UPLOAD_PATH } from '../lib/constants'
 
 interface StepVideosGridProps {
   stepVideos: VIAM.dataApi.BinaryData[]
@@ -60,12 +59,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     pollingManager.setFetchData(() => fetchVideos(step.start, false))
   }
 
-  const getVideoStoreName = (video: VIAM.dataApi.BinaryData): string => {
-    const fileName = video.metadata?.fileName
-    if (!fileName) return 'Unknown'
-    return fileName.replace(VIDEO_UPLOAD_PATH, '').split('/')[0]
-  }
-
   // Update polling manager whenever videoFiles changes
   useEffect(() => {
     pollingManager.updateCurrentVideos(videoFiles)
@@ -77,10 +70,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       (video) => getVideoStoreName(video) === videoStoreClient?.name
     )
   }, [stepVideos, videoStoreClient])
-
-  useEffect(() => {
-    console.log('stepVideos', stepVideos)
-  }, [stepVideos])
 
   // Stop polling if videos are now available (handles the case where video appears)
   useEffect(() => {

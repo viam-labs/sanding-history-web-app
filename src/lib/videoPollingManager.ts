@@ -1,6 +1,6 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
-import { VIDEO_UPLOAD_PATH } from './constants'
+import { getVideoStoreName } from './videoUtils'
 
 // Global polling state to handle multiple concurrent requests
 interface PollingRequest {
@@ -31,12 +31,6 @@ export class VideoPollingManager {
     this.fetchDataFn = fn
   }
 
-  getVideoStoreName(video: VIAM.dataApi.BinaryData): string {
-    const fileName = video.metadata?.fileName
-    if (!fileName) return 'Unknown'
-    return fileName.replace(VIDEO_UPLOAD_PATH, '').split('/')[0]
-  }
-
   // Method to check if videos are available for a specific step
   checkVideoAvailability(step: Step, videoStoreName: string): boolean {
     return Array.from(this.currentVideos.values()).some((file) => {
@@ -44,8 +38,7 @@ export class VideoPollingManager {
       const isMatchingStep =
         file.metadata.fileName.includes(step.pass_id) &&
         file.metadata.fileName.includes(step.name)
-      const isMatchingVideoStore =
-        this.getVideoStoreName(file) === videoStoreName
+      const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
       return isMatchingStep && isMatchingVideoStore
     })
   }
