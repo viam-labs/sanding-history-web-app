@@ -8,19 +8,15 @@ import { PassFiles } from './PassFiles'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
-import { useModal } from '../../lib/contexts/ModalContext'
 import { useEffect, useMemo, useState } from 'react'
 import { getRobotConfigAtTime } from '../../lib/configUtils'
 import {
   downloadRobotConfig,
   getPassConfigComparison,
 } from '../../lib/configUtils'
-import { ModalType } from '../../lib/contexts/ModalContext'
-import * as VIAM from '@viamrobotics/sdk'
 import { getPassMetadataManager } from '../../lib/passMetadataManager'
 import { PassNote } from '../../lib/types'
 import { PassDiagnosis } from '../../lib/types'
-import { useFiles } from '../../lib/contexts/FilesContext'
 
 interface RowProps {
   globalIndex: string
@@ -38,7 +34,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
     fetchingNotes,
   } = usePass()
   const { currentPassSummaries } = usePagination()
-  const { openModal } = useModal()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
@@ -60,7 +55,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
   const [jiraValidationErrors, setJiraValidationErrors] = useState<
     Record<string, string>
   >({})
-  const { binaryDataManager } = useFiles()
 
   // Initialize note inputs from existing notes
   useEffect(() => {
@@ -215,13 +209,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
         return newSet
       })
     }
-  }
-
-  const openBeforeAfterModal = (
-    beforeImage: VIAM.dataApi.BinaryData | null,
-    afterImage: VIAM.dataApi.BinaryData | null
-  ) => {
-    openModal({ type: ModalType.BEFORE_AFTER, beforeImage, afterImage })
   }
 
   const handleNoteChange = (passId: string, value: string) => {
@@ -408,11 +395,7 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
               </RenderIf>
 
               <div className="passes-container">
-                <StepsGrid
-                  pass={pass}
-                  binaryDataManager={binaryDataManager}
-                  openBeforeAfterModal={openBeforeAfterModal}
-                />
+                <StepsGrid pass={pass} />
 
                 {/* Diagnosis and Notes Section - shows for all passes, diagnosis fields only for failed */}
                 <Diagnosis

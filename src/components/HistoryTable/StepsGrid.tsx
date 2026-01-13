@@ -1,11 +1,9 @@
 import { Pass, Step } from '../../lib/types'
 import RenderIf from '../RenderIf'
-import * as VIAM from '@viamrobotics/sdk'
 import { StepImagesGrid } from './StepImagesGrid'
 import StepVideosGrid from '../StepVideosGrid'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { getStepVideos } from '../../lib/passUtils'
-import { BinaryDataManager } from '../../lib/BinaryDataManager'
 import { StepsVizSnapshotCard } from './StepsVizSnapshotCard'
 import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
 import { useFiles } from '../../lib/contexts/FilesContext'
@@ -16,22 +14,13 @@ import { useMemo } from 'react'
 
 interface StepsGridProps {
   pass: Pass
-  binaryDataManager: BinaryDataManager
-  openBeforeAfterModal: (
-    beforeImage: VIAM.dataApi.BinaryData | null,
-    afterImage: VIAM.dataApi.BinaryData | null
-  ) => void
 }
-export const StepsGrid = ({
-  pass,
-  binaryDataManager,
-  openBeforeAfterModal,
-}: StepsGridProps) => {
-  const { imageFiles, videoFiles, fetchTimestamp, fetchFiles } = useFiles()
+export const StepsGrid = ({ pass }: StepsGridProps) => {
+  const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()
   const { videoStoreClient } = useVideoStore()
-
+  const { binaryDataManager } = useFiles()
   //TODO: context for this maybe?
   const passFiles = useMemo(() => {
     const passStart = new Date(pass.start)
@@ -50,12 +39,7 @@ export const StepsGrid = ({
     <div className="steps-grid">
       {/* Camera Images */}
       <RenderIf condition={selectedCamera !== ''}>
-        <StepImagesGrid
-          pass={pass}
-          imageFiles={imageFiles}
-          selectedCamera={selectedCamera}
-          openBeforeAfterModal={openBeforeAfterModal}
-        />
+        <StepImagesGrid pass={pass} />
       </RenderIf>
 
       {/* Regular step cards */}
