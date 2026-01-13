@@ -1,12 +1,11 @@
-import { Pass, PassDiagnosis, PassNote } from '../../lib/types'
+import { Pass } from '../../lib/types'
 import { CAUSE_OPTIONS, SYMPTOM_OPTIONS } from '../../lib/types'
+import { usePass } from '../../lib/contexts/PassContext'
 
 export interface DiagnosisProps {
   pass: Pass
   jiraValidationErrors: Record<string, string>
-  passId: string
   fetchingNotes: boolean
-  passNotesData: PassNote[]
   diagnosisInputs: Record<
     string,
     { symptom?: string; cause?: string; jiraTicketUrl?: string }
@@ -14,7 +13,6 @@ export interface DiagnosisProps {
   savingMetadata: Set<string>
   metadataSuccess: Set<string>
   savePassMetadata: (passId: string, isFailedPass: boolean) => void
-  passDiagnoses: Map<string, PassDiagnosis>
   handleDiagnosisChange: (
     passId: string,
     field: 'symptom' | 'cause' | 'jiraTicketUrl',
@@ -25,12 +23,9 @@ export interface DiagnosisProps {
 }
 export const Diagnosis: React.FC<DiagnosisProps> = ({
   pass,
-  passId,
   savingMetadata,
   metadataSuccess,
-  passNotesData,
   savePassMetadata,
-  passDiagnoses,
   fetchingNotes,
   diagnosisInputs,
   jiraValidationErrors,
@@ -38,6 +33,10 @@ export const Diagnosis: React.FC<DiagnosisProps> = ({
   noteInputs,
   handleNoteChange,
 }: DiagnosisProps) => {
+  const { passNotes, passDiagnoses } = usePass()
+  const passNotesData = passNotes.get(pass.pass_id) || []
+  const passId = pass.pass_id
+
   return (
     <div style={{ margin: '1rem 12px 24px 12px' }}>
       <div

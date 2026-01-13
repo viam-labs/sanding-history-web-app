@@ -1,54 +1,49 @@
-import { Pass, PassDiagnosis, PassNote } from '../../lib/types'
+import { Pass } from '../../lib/types'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
+import { getExecutionTimeMs } from '../../lib/passUtils'
 import { StatusBadge } from '../StatusBadge'
+import { useMemo, useState } from 'react'
+import { usePass } from '../../lib/contexts/PassContext'
 
 interface CollapsedRowProps {
-  passId: string
-  globalIndex: string
-  execMs: number
-  toggleRowExpansion: (index: string) => void
-  expandedRows: Set<string>
-  passNotesData: PassNote[]
-  passDiagnoses: Map<string, PassDiagnosis>
   pass: Pass
-  expandedErrors: Set<string>
-  setExpandedErrors: React.Dispatch<React.SetStateAction<Set<string>>>
+  isExpanded: boolean
+  toggleRowExpansion: () => void
 }
 
 export const CollapsedRow = ({
-  passId,
-  globalIndex,
-  execMs,
-  toggleRowExpansion,
-  expandedRows,
-  passNotesData,
-  passDiagnoses,
   pass,
-  expandedErrors,
-  setExpandedErrors,
+  isExpanded,
+  toggleRowExpansion,
 }: CollapsedRowProps) => {
+  const { passNotes, passDiagnoses } = usePass()
+
+  const [errorsExpanded, setErrorsExpanded] = useState<boolean>(false)
+  const passNotesData = passNotes.get(pass.pass_id) || []
+  const execMs = useMemo(() => {
+    return getExecutionTimeMs(pass)
+  }, [pass])
+
   return (
     <tr
       className="expandable-row"
-      onClick={() => toggleRowExpansion(globalIndex)}
+      onClick={() => toggleRowExpansion()}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          toggleRowExpansion(globalIndex)
+          toggleRowExpansion()
         }
       }}
-      aria-expanded={expandedRows.has(globalIndex)}
+      aria-expanded={isExpanded}
       aria-label={`${
-        expandedRows.has(globalIndex) ? 'Collapse' : 'Expand'
+        isExpanded ? 'Collapse' : 'Expand'
       } details for pass from ${pass.start.toLocaleTimeString()}`}
     >
       <td>
         <span
-          className={`expand-icon ${
-            expandedRows.has(globalIndex) ? 'expanded' : ''
-          }`}
+          className={`expand-icon ${isExpanded ? 'expanded' : ''}`}
           aria-hidden="true"
         >
           ▶
@@ -150,7 +145,7 @@ export const CollapsedRow = ({
             {(() => {
               const hasNotes =
                 passNotesData.length > 0 && passNotesData[0].note_text.trim()
-              const diagnosisData = passDiagnoses.get(passId)
+              const diagnosisData = passDiagnoses.get(pass.pass_id)
               const hasDiagnosis =
                 diagnosisData && (diagnosisData.symptom || diagnosisData.cause)
 
@@ -247,7 +242,7 @@ export const CollapsedRow = ({
                 whiteSpace: 'pre-wrap',
               }}
             >
-              {expandedErrors.has(pass.pass_id)
+              {errorsExpanded
                 ? pass.err_string
                 : pass.err_string.length > 200
                   ? `${pass.err_string.substring(0, 200)}...`
@@ -257,15 +252,7 @@ export const CollapsedRow = ({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  setExpandedErrors((prev: Set<string>) => {
-                    const newSet = new Set(prev)
-                    if (newSet.has(pass.pass_id)) {
-                      newSet.delete(pass.pass_id)
-                    } else {
-                      newSet.add(pass.pass_id)
-                    }
-                    return newSet
-                  })
+                  setErrorsExpanded(!errorsExpanded)
                 }}
                 style={{
                   padding: '2px 8px',
@@ -287,7 +274,7 @@ export const CollapsedRow = ({
                   e.currentTarget.style.color = '#db5353ff'
                 }}
               >
-                {expandedErrors.has(pass.pass_id) ? 'Show less' : 'Show more'}
+                {errorsExpanded ? 'Show less' : 'Show more'}
               </button>
             )}
           </div>
