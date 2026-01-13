@@ -24,7 +24,7 @@ export function SinglePassProvider({
     const passStart = new Date(pass.start)
     const passEnd = new Date(pass.end)
     return binaryDataManager.getPassFiles(pass.pass_id, passStart, passEnd)
-  }, [pass, binaryDataManager])
+  }, [pass.pass_id, pass.start, pass.end, binaryDataManager])
 
   return (
     <SinglePassContext.Provider value={{ pass, passFiles }}>
