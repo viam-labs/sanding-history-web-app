@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.6.2
+
+### Patch Changes
+
+- bbda7dd: remove prop drills from App.tsx (until HistoryTable)
+
 ## 1.6.1
 
 ### Patch Changes

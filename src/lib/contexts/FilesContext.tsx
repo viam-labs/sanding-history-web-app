@@ -5,11 +5,14 @@ import {
   ReactNode,
   useEffect,
   useCallback,
+  useRef,
 } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
 import { Timestamp } from '@bufbuild/protobuf'
 import { usePass } from './PassContext'
+import { BinaryDataManager } from '../BinaryDataManager'
+import { BinaryDataFile } from '../BinaryDataFile'
 
 interface FilesContextType {
   fetchTimestamp: Date | null
@@ -17,6 +20,7 @@ interface FilesContextType {
   videoFiles: Map<string, VIAM.dataApi.BinaryData>
   imageFiles: Map<string, VIAM.dataApi.BinaryData>
   fetchFiles: (start: Date, shouldSetLoadingState?: boolean) => Promise<void>
+  binaryDataManager: BinaryDataManager
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
@@ -34,6 +38,14 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   const [imageFiles, setImageFiles] = useState<
     Map<string, VIAM.dataApi.BinaryData>
   >(new Map())
+  const binaryDataManager = useRef<BinaryDataManager>(new BinaryDataManager())
+
+  useEffect(() => {
+    binaryDataManager.current = new BinaryDataManager()
+    Array.from(files.values()).forEach((file) => {
+      binaryDataManager.current?.addBinaryDataFile(new BinaryDataFile(file))
+    })
+  }, [files])
 
   const fetchFiles = useCallback(
     async (start: Date, shouldSetLoadingState: boolean = true) => {
@@ -152,7 +164,14 @@ export function FilesProvider({ children }: { children: ReactNode }) {
 
   return (
     <FilesContext.Provider
-      value={{ fetchTimestamp, files, videoFiles, imageFiles, fetchFiles }}
+      value={{
+        fetchTimestamp,
+        files,
+        videoFiles,
+        imageFiles,
+        fetchFiles,
+        binaryDataManager: binaryDataManager.current,
+      }}
     >
       {children}
     </FilesContext.Provider>

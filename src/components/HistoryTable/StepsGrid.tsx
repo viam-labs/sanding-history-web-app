@@ -8,18 +8,14 @@ import { getStepVideos } from '../../lib/passUtils'
 import { BinaryDataManager } from '../../lib/BinaryDataManager'
 import { StepsVizSnapshotCard } from './StepsVizSnapshotCard'
 import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
+import { useFiles } from '../../lib/contexts/FilesContext'
+import { useCamera } from '../../lib/contexts/CameraContext'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 
 interface StepsGridProps {
   pass: Pass
-  imageFiles: Map<string, VIAM.dataApi.BinaryData>
-  videoFiles: Map<string, VIAM.dataApi.BinaryData>
-  selectedCamera: string
-  machineId: string
-  organizationId: string
-  fetchTimestamp: Date | null
-  videoStoreClient: VIAM.GenericComponentClient | null
   binaryDataManager: BinaryDataManager
-  fetchVideos: (start: Date) => Promise<void>
   openBeforeAfterModal: (
     beforeImage: VIAM.dataApi.BinaryData | null,
     afterImage: VIAM.dataApi.BinaryData | null
@@ -27,17 +23,13 @@ interface StepsGridProps {
 }
 export const StepsGrid = ({
   pass,
-  imageFiles,
-  videoFiles,
-  selectedCamera,
-  machineId,
-  organizationId,
-  fetchTimestamp,
-  videoStoreClient,
   binaryDataManager,
-  fetchVideos,
   openBeforeAfterModal,
 }: StepsGridProps) => {
+  const { imageFiles, videoFiles, fetchTimestamp, fetchFiles } = useFiles()
+  const { selectedCamera } = useCamera()
+  const { machineId, organizationId } = useViamClients()
+  const { videoStoreClient } = useVideoStore()
   return (
     <div className="steps-grid">
       {/* Camera Images */}
@@ -82,7 +74,7 @@ export const StepsGrid = ({
               videoFiles={videoFiles}
               fetchTimestamp={fetchTimestamp}
               videoStoreClient={videoStoreClient}
-              fetchVideos={fetchVideos}
+              fetchVideos={fetchFiles}
               machineId={machineId}
               organizationId={organizationId}
             />
