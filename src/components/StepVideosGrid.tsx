@@ -296,7 +296,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
                     letterSpacing: '0.5px',
                     display: 'flex',
                     alignItems: 'center',
-                    maxWidth: '100%',
+                    width: '100%',
                     boxSizing: 'border-box',
                   }}
                   title={`Video from: ${videoStoreName}`}
