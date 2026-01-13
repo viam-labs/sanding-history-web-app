@@ -2,24 +2,18 @@ import { getBeforeAfterImages } from '../../lib/passUtils'
 import { Pass } from '../../lib/types'
 import { formatTimeDifference } from '../../lib/videoUtils'
 import ImageDisplay from '../ImageDisplay'
-import * as VIAM from '@viamrobotics/sdk'
+import { useFiles } from '../../lib/contexts/FilesContext'
+import { useCamera } from '../../lib/contexts/CameraContext'
+import { useModal, ModalType } from '../../lib/contexts/ModalContext'
 
 interface StepImagesGridProps {
   pass: Pass
-  imageFiles: Map<string, VIAM.dataApi.BinaryData>
-  selectedCamera: string
-  openBeforeAfterModal: (
-    beforeImage: VIAM.dataApi.BinaryData | null,
-    afterImage: VIAM.dataApi.BinaryData | null
-  ) => void
 }
 
-export const StepImagesGrid = ({
-  pass,
-  imageFiles,
-  selectedCamera,
-  openBeforeAfterModal,
-}: StepImagesGridProps) => {
+export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
+  const { imageFiles } = useFiles()
+  const { selectedCamera } = useCamera()
+  const { openModal } = useModal()
   const { beforeImage, afterImage } = getBeforeAfterImages(
     pass,
     imageFiles,
@@ -75,7 +69,13 @@ export const StepImagesGrid = ({
           <div
             className="step-image-container clickable-image"
             style={{ marginTop: '12px', width: '100%', overflow: 'hidden' }}
-            onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
+            onClick={() =>
+              openModal({
+                type: ModalType.BEFORE_AFTER,
+                beforeImage: beforeImage,
+                afterImage: afterImage,
+              })
+            }
           >
             <ImageDisplay binaryData={beforeImage} />
           </div>
@@ -104,7 +104,13 @@ export const StepImagesGrid = ({
           <div
             className="step-image-container clickable-image"
             style={{ marginTop: '12px', width: '100%', overflow: 'hidden' }}
-            onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
+            onClick={() =>
+              openModal({
+                type: ModalType.BEFORE_AFTER,
+                beforeImage: beforeImage,
+                afterImage: afterImage,
+              })
+            }
           >
             <ImageDisplay binaryData={afterImage} />
           </div>

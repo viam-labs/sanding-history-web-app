@@ -40,13 +40,6 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   >(new Map())
   const binaryDataManager = useRef<BinaryDataManager>(new BinaryDataManager())
 
-  useEffect(() => {
-    binaryDataManager.current = new BinaryDataManager()
-    Array.from(files.values()).forEach((file) => {
-      binaryDataManager.current?.addBinaryDataFile(new BinaryDataFile(file))
-    })
-  }, [files])
-
   const fetchFiles = useCallback(
     async (start: Date, shouldSetLoadingState: boolean = true) => {
       const end = new Date()
@@ -93,6 +86,10 @@ export function FilesProvider({ children }: { children: ReactNode }) {
             const isCameraCapture =
               file.metadata.captureMetadata?.componentName &&
               file.metadata.captureMetadata?.methodName
+
+            binaryDataManager.current.addBinaryDataFile(
+              new BinaryDataFile(file)
+            )
 
             if (isVideo) {
               // Video files go to videoFiles

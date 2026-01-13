@@ -78,3 +78,13 @@ export const getStepVideos = (
 
   return stepVideos
 }
+
+// Compute total execution time (ms) for a pass by summing 'executing' steps
+export const getExecutionTimeMs = (pass: Pass): number => {
+  if (!pass.steps || pass.steps.length === 0) return 0
+  return pass.steps.reduce((sum, step) => {
+    return step.name.toLowerCase() === 'executing'
+      ? sum + (step.end.getTime() - step.start.getTime())
+      : sum
+  }, 0)
+}

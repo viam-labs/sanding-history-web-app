@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useMemo,
 } from 'react'
 import { usePass } from './PassContext'
 import { Pass } from '../types'
@@ -15,6 +16,7 @@ interface PaginationContextType {
   totalEntries: number
   currentNumDaysDisplayed: number
   currentPassSummaries: Pass[]
+  groupedPasses: Record<string, Pass[]>
   changePage: (page: number) => void
   sortedDays: string[]
 }
@@ -33,6 +35,18 @@ export function PaginationProvider({ children }: { children: ReactNode }) {
   const [sortedDays, setSortedDays] = useState<string[]>([])
   const [currentNumDaysDisplayed, setCurrentNumDaysDisplayed] =
     useState<number>(1)
+
+  const groupedPasses = useMemo(() => {
+    return currentPassSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
+      // Use a consistent date key (YYYY-MM-DD)
+      const dateKey = pass.start.toISOString().split('T')[0]
+      if (!acc[dateKey]) {
+        acc[dateKey] = []
+      }
+      acc[dateKey].push(pass)
+      return acc
+    }, {})
+  }, [currentPassSummaries])
 
   useEffect(() => {
     // Get sorted day keys (dates)
@@ -74,6 +88,7 @@ export function PaginationProvider({ children }: { children: ReactNode }) {
         totalEntries,
         currentNumDaysDisplayed,
         currentPassSummaries,
+        groupedPasses,
         changePage: setCurrentPage,
         sortedDays,
       }}
