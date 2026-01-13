@@ -14,19 +14,11 @@ import { useMemo } from 'react'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 export const StepsGrid = () => {
-  const { pass } = useSinglePass()
+  const { pass, passFiles } = useSinglePass()
   const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()
   const { videoStoreClient } = useVideoStore()
-  const { binaryDataManager } = useFiles()
-  //TODO: context for this maybe?
-  const passFiles = useMemo(() => {
-    const passStart = new Date(pass.start)
-    const passEnd = new Date(pass.end)
-
-    return binaryDataManager.getPassFiles(pass.pass_id, passStart, passEnd)
-  }, [pass, binaryDataManager])
 
   const snapshotFiles = useMemo(() => {
     return passFiles.filter((file) =>
