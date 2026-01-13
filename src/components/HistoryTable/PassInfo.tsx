@@ -1,25 +1,31 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pass, RobotConfigMetadata } from '../../lib/types'
-import { getPassConfigComparison } from '../../lib/configUtils'
+import {
+  downloadRobotConfig,
+  getPassConfigComparison,
+  getRobotConfigAtTime,
+} from '../../lib/configUtils'
+import { usePass } from '../../lib/contexts/PassContext'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
 
 export interface PassInfoProps {
   pass: Pass
   groupedPasses: Record<string, Pass[]>
   configMetadata: Map<string, RobotConfigMetadata>
   loadingConfigMetadata: Set<string>
+  setConfigMetadata: React.Dispatch<
+    React.SetStateAction<Map<string, RobotConfigMetadata>>
+  >
   fetchConfigMetadata: (pass: Pass, prevPass: Pass) => void
-  downloadingConfigs: Set<string>
-  handleDownloadConfig: (pass: Pass) => void
 }
 
 export const PassInfo: React.FC<PassInfoProps> = ({
   pass,
   groupedPasses,
-  loadingConfigMetadata,
   configMetadata,
+  setConfigMetadata,
+  loadingConfigMetadata,
   fetchConfigMetadata,
-  downloadingConfigs,
-  handleDownloadConfig,
 }: PassInfoProps) => {
   const {
     build_info: buildInfo,
@@ -27,12 +33,57 @@ export const PassInfo: React.FC<PassInfoProps> = ({
     blue_point_diff_percent: bluePointDiffPercent,
     sanding_distance_mm: sandingDistanceMm,
   } = pass
+  const { partId } = usePass()
+  const { viamClient, machineId } = useViamClients()
 
   // Compute config comparison outside of render
   const { prevPass, configChanged } = useMemo(() => {
     const flatPasses = Object.values(groupedPasses).flat()
     return getPassConfigComparison(pass, flatPasses, configMetadata)
   }, [pass, groupedPasses, configMetadata])
+
+  const [downloadingConfig, setDownloadingConfig] = useState<boolean>(false)
+
+  const handleDownloadConfig = async (pass: Pass) => {
+    if (!partId) {
+      alert('Unable to download config: missing required information')
+      return
+    }
+
+    const passId = pass.pass_id
+
+    // Add to downloading state
+    setDownloadingConfig(true)
+
+    try {
+      // Fetch the config that was active at the pass start time
+      const result = await getRobotConfigAtTime(viamClient, partId, pass.start)
+
+      if (!result) {
+        alert('No configuration found for this time period')
+        return
+      }
+
+      // Store metadata for display (if not already stored)
+      if (!configMetadata.has(passId)) {
+        setConfigMetadata((prev) => new Map(prev).set(passId, result.metadata))
+      }
+
+      // Download the config
+      downloadRobotConfig(
+        result.config,
+        passId,
+        result.metadata.configTimestamp,
+        machineId
+      )
+    } catch (error) {
+      console.error('Error downloading config:', error)
+      alert('Failed to download configuration. Please try again.')
+    } finally {
+      // Remove from downloading state
+      setDownloadingConfig(false)
+    }
+  }
 
   // Trigger fetch in useEffect instead of during render
   useEffect(() => {
@@ -211,36 +262,34 @@ export const PassInfo: React.FC<PassInfoProps> = ({
                   <div className="info-item">
                     <button
                       onClick={() => handleDownloadConfig(pass)}
-                      disabled={downloadingConfigs.has(pass.pass_id)}
+                      disabled={downloadingConfig}
                       style={{
                         padding: '6px 12px',
                         fontSize: '12px',
-                        backgroundColor: downloadingConfigs.has(pass.pass_id)
+                        backgroundColor: downloadingConfig
                           ? '#9ca3af'
                           : '#3b82f6',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: downloadingConfigs.has(pass.pass_id)
-                          ? 'not-allowed'
-                          : 'pointer',
+                        cursor: downloadingConfig ? 'not-allowed' : 'pointer',
                         transition: 'background-color 0.2s',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                       }}
                       onMouseEnter={(e) => {
-                        if (!downloadingConfigs.has(pass.pass_id)) {
+                        if (!downloadingConfig) {
                           e.currentTarget.style.backgroundColor = '#2563eb'
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!downloadingConfigs.has(pass.pass_id)) {
+                        if (!downloadingConfig) {
                           e.currentTarget.style.backgroundColor = '#3b82f6'
                         }
                       }}
                     >
-                      {downloadingConfigs.has(pass.pass_id) ? (
+                      {downloadingConfig ? (
                         <>
                           <div
                             style={{

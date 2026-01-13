@@ -5,15 +5,12 @@ import { PassInfo } from './PassInfo'
 import { StepsGrid } from './StepsGrid'
 import { Diagnosis } from './Diagnosis'
 import { PassFiles } from './PassFiles'
-import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { useMemo, useState } from 'react'
 import { getRobotConfigAtTime } from '../../lib/configUtils'
-import {
-  downloadRobotConfig,
-  getPassConfigComparison,
-} from '../../lib/configUtils'
+import { getPassConfigComparison } from '../../lib/configUtils'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
 
 interface RowProps {
   globalIndex: string
@@ -21,14 +18,11 @@ interface RowProps {
 }
 
 export const Row = ({ globalIndex, pass }: RowProps) => {
-  const { viamClient, machineId } = useViamClients()
   const { partId } = usePass()
+  const { viamClient } = useViamClients()
   const { currentPassSummaries } = usePagination()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
-  const [downloadingConfigs, setDownloadingConfigs] = useState<Set<string>>(
-    new Set()
-  )
   const [configMetadata, setConfigMetadata] = useState<
     Map<string, RobotConfigMetadata>
   >(new Map())
@@ -47,51 +41,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
       return acc
     }, {})
   }, [currentPassSummaries])
-
-  const handleDownloadConfig = async (pass: Pass) => {
-    if (!partId) {
-      alert('Unable to download config: missing required information')
-      return
-    }
-
-    const passId = pass.pass_id
-
-    // Add to downloading state
-    setDownloadingConfigs((prev) => new Set(prev).add(passId))
-
-    try {
-      // Fetch the config that was active at the pass start time
-      const result = await getRobotConfigAtTime(viamClient, partId, pass.start)
-
-      if (!result) {
-        alert('No configuration found for this time period')
-        return
-      }
-
-      // Store metadata for display (if not already stored)
-      if (!configMetadata.has(passId)) {
-        setConfigMetadata((prev) => new Map(prev).set(passId, result.metadata))
-      }
-
-      // Download the config
-      downloadRobotConfig(
-        result.config,
-        passId,
-        result.metadata.configTimestamp,
-        machineId
-      )
-    } catch (error) {
-      console.error('Error downloading config:', error)
-      alert('Failed to download configuration. Please try again.')
-    } finally {
-      // Remove from downloading state
-      setDownloadingConfigs((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(passId)
-        return newSet
-      })
-    }
-  }
 
   const toggleRowExpansion = () => {
     if (!isExpanded) {
@@ -181,11 +130,10 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
                 <PassInfo
                   pass={pass}
                   groupedPasses={groupedPasses}
-                  loadingConfigMetadata={loadingConfigMetadata}
                   configMetadata={configMetadata}
+                  loadingConfigMetadata={loadingConfigMetadata}
+                  setConfigMetadata={setConfigMetadata}
                   fetchConfigMetadata={fetchConfigMetadata}
-                  downloadingConfigs={downloadingConfigs}
-                  handleDownloadConfig={handleDownloadConfig}
                 />
               </RenderIf>
 
