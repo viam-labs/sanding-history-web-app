@@ -11,7 +11,6 @@ import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
 import { useFiles } from '../../lib/contexts/FilesContext'
 import { useCamera } from '../../lib/contexts/CameraContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
-import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 import { useMemo } from 'react'
 
 interface StepsGridProps {
@@ -30,7 +29,6 @@ export const StepsGrid = ({
   const { imageFiles, videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()
-  const { videoStoreClient } = useVideoStore()
 
   //TODO: context for this maybe?
   const passFiles = useMemo(() => {
@@ -89,7 +87,6 @@ export const StepsGrid = ({
               stepVideos={stepVideos}
               videoFiles={videoFiles}
               fetchTimestamp={fetchTimestamp}
-              videoStoreClient={videoStoreClient}
               fetchVideos={fetchFiles}
               machineId={machineId}
               organizationId={organizationId}
