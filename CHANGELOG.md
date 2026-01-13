@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.6.3
+
+### Patch Changes
+
+- f8923fa: allow viewing multiple snapshots per pass
+
 ## 1.6.2
 
 ### Patch Changes
