@@ -6,11 +6,13 @@ import { generateVideo } from '../lib/videoUtils'
 import { VideoPollingManager } from '../lib/videoPollingManager'
 import { constructStepLogUrl } from '../lib/uiUtils'
 import { useToast } from '../lib/contexts/ToastContext'
+import { useMemo } from 'react'
+import { useVideoStore } from '../lib/contexts/VideoStoreContext'
+import { VIDEO_UPLOAD_PATH } from '../lib/constants'
 
 interface StepVideosGridProps {
   stepVideos: VIAM.dataApi.BinaryData[]
   videoFiles: Map<string, VIAM.dataApi.BinaryData>
-  videoStoreClient?: VIAM.GenericComponentClient | null
   step: Step
   fetchVideos: (start: Date, shouldSetLoadingState: boolean) => Promise<void>
   fetchTimestamp: Date | null
@@ -21,7 +23,6 @@ interface StepVideosGridProps {
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   stepVideos,
   videoFiles,
-  videoStoreClient,
   step,
   fetchVideos,
   fetchTimestamp,
@@ -35,6 +36,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   const [isPolling, setIsPolling] = useState<boolean>(false)
   const requestIdRef = useRef<string | null>(null)
   const pollingManager = VideoPollingManager.getInstance()
+  const { videoStoreClient } = useVideoStore()
 
   // Add CSS keyframes for spinner animation
   useEffect(() => {
@@ -58,22 +60,38 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     pollingManager.setFetchData(() => fetchVideos(step.start, false))
   }
 
+  const getVideoStoreName = (video: VIAM.dataApi.BinaryData): string => {
+    const fileName = video.metadata?.fileName
+    if (!fileName) return 'Unknown'
+    return fileName.replace(VIDEO_UPLOAD_PATH, '').split('/')[0]
+  }
+
   // Update polling manager whenever videoFiles changes
   useEffect(() => {
     pollingManager.updateCurrentVideos(videoFiles)
     pollingManager.forceVideoCheck()
   }, [videoFiles])
 
+  const hasVideosForVideoStore = useMemo(() => {
+    return stepVideos.some(
+      (video) => getVideoStoreName(video) === videoStoreClient?.name
+    )
+  }, [stepVideos, videoStoreClient])
+
+  useEffect(() => {
+    console.log('stepVideos', stepVideos)
+  }, [stepVideos])
+
   // Stop polling if videos are now available (handles the case where video appears)
   useEffect(() => {
-    if (stepVideos.length > 0 && isPolling) {
+    if (hasVideosForVideoStore && isPolling) {
       setIsPolling(false)
       if (requestIdRef.current) {
         pollingManager.removeRequest(requestIdRef.current)
         requestIdRef.current = null
       }
     }
-  }, [stepVideos, isPolling])
+  }, [hasVideosForVideoStore, isPolling])
 
   // Clean up on unmount
   useEffect(() => {
@@ -112,10 +130,21 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       // Start video generation
       await generateVideo(videoStoreClient, step)
 
+      if (!videoStoreClient.name) {
+        const errorMessage = 'No video store name available'
+        console.error(errorMessage)
+        addMessage({ message: errorMessage, type: 'error' })
+        throw new Error(errorMessage)
+      }
+
       // Add to polling manager
-      requestIdRef.current = pollingManager.addRequest(step, () => {
-        setIsPolling(false)
-      })
+      requestIdRef.current = pollingManager.addRequest(
+        step,
+        videoStoreClient.name,
+        () => {
+          setIsPolling(false)
+        }
+      )
     } catch (error) {
       console.error('Error generating video:', error)
       addMessage({ message: `Error generating video: ${error}`, type: 'error' })
@@ -123,13 +152,17 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     }
   }
 
-  if (
-    stepVideos.length === 0 &&
-    fetchTimestamp &&
-    fetchTimestamp > step.start
-  ) {
-    return (
-      <>
+  const isLoading =
+    stepVideos.length === 0 && fetchTimestamp && fetchTimestamp > step.start
+  const showLogsLink =
+    machineId &&
+    organizationId &&
+    step.end.getTime() - step.start.getTime() >= 1000
+
+  return (
+    <>
+      {/* Loading state */}
+      {isLoading && (
         <div
           className="loading-state"
           style={{
@@ -154,37 +187,10 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           />
           <div style={{ fontSize: '14px' }}>Loading videos...</div>
         </div>
-        {machineId &&
-          organizationId &&
-          step.end.getTime() - step.start.getTime() >= 1000 && (
-            <a
-              href={constructStepLogUrl(
-                step.start,
-                step.end,
-                machineId,
-                organizationId
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'block',
-                marginTop: '8px',
-                color: '#3b82f6',
-                fontSize: '12px',
-                textDecoration: 'underline',
-                textAlign: 'center',
-              }}
-            >
-              View logs for this step
-            </a>
-          )}
-      </>
-    )
-  }
+      )}
 
-  if (stepVideos.length === 0) {
-    return (
-      <>
+      {/* Generate video button */}
+      {!hasVideosForVideoStore && !isLoading && (
         <div
           className="generate-video"
           style={{
@@ -196,6 +202,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           }}
         >
           <button
+            type="button"
             className="generate-video-button"
             onClick={() => handleGenerateVideo()}
             disabled={videoStoreClient == null || isPolling}
@@ -258,108 +265,155 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
             </div>
           )}
         </div>
-        {machineId &&
-          organizationId &&
-          step.end.getTime() - step.start.getTime() >= 1000 && (
-            <a
-              href={constructStepLogUrl(
-                step.start,
-                step.end,
-                machineId,
-                organizationId
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'block',
-                marginTop: '8px',
-                color: '#3b82f6',
-                fontSize: '12px',
-                textDecoration: 'underline',
-                textAlign: 'center',
-              }}
-            >
-              View logs for this step
-            </a>
-          )}
-      </>
-    )
-  }
+      )}
 
-  return (
-    <>
-      <div className="step-videos-grid">
-        {stepVideos.map((video, videoIndex) => (
-          <div
-            key={videoIndex}
-            style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
-          >
-            <div
-              className="step-video-item"
-              onClick={() => handleVideoClick(video)}
-            >
-              <div className="video-thumbnail-container">
-                <div className="video-thumbnail">
-                  <span className="video-icon">🎬</span>
-                </div>
-              </div>
-            </div>
-            {video.metadata?.uri && (
-              <a
-                href={video.metadata.uri}
-                download={
-                  video.metadata?.fileName?.split('/').pop() || 'video.mp4'
-                }
-                onClick={(e) => e.stopPropagation()}
+      {/* Videos grid */}
+      {stepVideos.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
+            padding: '8px 0',
+          }}
+        >
+          {stepVideos.map((video) => {
+            const videoStoreName = getVideoStoreName(video)
+            return (
+              <div
+                key={video.metadata?.fileName}
                 style={{
-                  padding: '4px 8px',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  borderRadius: '4px',
-                  textDecoration: 'none',
-                  fontSize: '11px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                  border: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2563eb'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#3b82f6'
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  minWidth: '200px',
+                  maxWidth: '320px',
                 }}
               >
-                Download
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
-      {machineId &&
-        organizationId &&
-        step.end.getTime() - step.start.getTime() >= 1000 && (
-          <a
-            href={constructStepLogUrl(
-              step.start,
-              step.end,
-              machineId,
-              organizationId
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'block',
-              marginTop: '8px',
-              color: '#3b82f6',
-              fontSize: '12px',
-              textDecoration: 'underline',
-              textAlign: 'center',
-            }}
-          >
-            View logs for this step
-          </a>
-        )}
+                {/* Video store badge */}
+                <div
+                  style={{
+                    fontSize: '8px',
+                    fontWeight: 600,
+                    color: '#64748b',
+                    backgroundColor: '#e2e8f0',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    maxWidth: '100%',
+                    boxSizing: 'border-box',
+                  }}
+                  title={`Video from: ${videoStoreName}`}
+                >
+                  <span style={{ fontSize: '16px', flexShrink: 0 }}>🎬</span>
+                  <span
+                    style={{
+                      marginLeft: '6px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {videoStoreName}
+                  </span>
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleVideoClick(video)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s',
+                      border: 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#2563eb'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#3b82f6'
+                    }}
+                  >
+                    Play
+                  </button>
+                  {video.metadata?.uri && (
+                    <a
+                      href={video.metadata.uri}
+                      download={
+                        video.metadata?.fileName?.split('/').pop() ||
+                        'video.mp4'
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        flex: 1,
+                        padding: '6px 8px',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        border: 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#059669'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#10b981'
+                      }}
+                    >
+                      Download
+                    </a>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Logs link - shared across all states */}
+      {showLogsLink && (
+        <a
+          href={constructStepLogUrl(
+            step.start,
+            step.end,
+            machineId,
+            organizationId
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'block',
+            marginTop: '8px',
+            color: '#3b82f6',
+            fontSize: '12px',
+            textDecoration: 'underline',
+            textAlign: 'center',
+          }}
+        >
+          View logs for this step
+        </a>
+      )}
+
       <VideoModal selectedVideo={selectedVideo} onClose={closeVideoModal} />
     </>
   )
