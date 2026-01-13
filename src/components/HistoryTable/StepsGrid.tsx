@@ -9,7 +9,6 @@ import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
 import { useFiles } from '../../lib/contexts/FilesContext'
 import { useCamera } from '../../lib/contexts/CameraContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
-import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 import { useMemo } from 'react'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
@@ -18,7 +17,6 @@ export const StepsGrid = () => {
   const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
   const { machineId, organizationId } = useViamClients()
-  const { videoStoreClient } = useVideoStore()
 
   const snapshotFiles = useMemo(() => {
     return passFiles.filter((file) =>
@@ -64,7 +62,6 @@ export const StepsGrid = () => {
               stepVideos={stepVideos}
               videoFiles={videoFiles}
               fetchTimestamp={fetchTimestamp}
-              videoStoreClient={videoStoreClient}
               fetchVideos={fetchFiles}
               machineId={machineId}
               organizationId={organizationId}

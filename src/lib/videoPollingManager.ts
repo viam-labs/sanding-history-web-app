@@ -1,8 +1,10 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
+import { getVideoStoreName } from './videoUtils'
 
 // Global polling state to handle multiple concurrent requests
 interface PollingRequest {
+  videoStoreName: string
   requestId: string
   passId: string
   stepName: string
@@ -30,13 +32,14 @@ export class VideoPollingManager {
   }
 
   // Method to check if videos are available for a specific step
-  checkVideoAvailability(step: Step): boolean {
+  checkVideoAvailability(step: Step, videoStoreName: string): boolean {
     return Array.from(this.currentVideos.values()).some((file) => {
       if (!file.metadata || !file.metadata.fileName) return false
       const isMatchingStep =
         file.metadata.fileName.includes(step.pass_id) &&
         file.metadata.fileName.includes(step.name)
-      return isMatchingStep
+      const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
+      return isMatchingStep && isMatchingVideoStore
     })
   }
 
@@ -45,7 +48,11 @@ export class VideoPollingManager {
     this.currentVideos = videos
   }
 
-  addRequest(step: Step, onComplete: () => void): string {
+  addRequest(
+    step: Step,
+    videoStoreName: string,
+    onComplete: () => void
+  ): string {
     const requestId = `${step.pass_id}-${step.name}`
 
     if (this.activeRequests.has(requestId)) {
@@ -60,6 +67,7 @@ export class VideoPollingManager {
       passId: step.pass_id,
       stepName: step.name,
       startTime: Date.now(),
+      videoStoreName: videoStoreName,
       onComplete,
     }
 
@@ -121,7 +129,7 @@ export class VideoPollingManager {
             end: new Date(),
           }
 
-          if (this.checkVideoAvailability(step)) {
+          if (this.checkVideoAvailability(step, request.videoStoreName)) {
             console.log(
               `Videos found for ${requestId}, stopping polling for this request`
             )
@@ -174,7 +182,7 @@ export class VideoPollingManager {
         `Checking request ${requestId} for step ${request.stepName} with pass_id ${request.passId}`
       )
 
-      if (this.checkVideoAvailability(step)) {
+      if (this.checkVideoAvailability(step, request.videoStoreName)) {
         console.log(
           `Videos found for ${requestId}, marking request as complete`
         )
