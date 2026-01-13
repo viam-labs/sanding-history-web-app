@@ -1,6 +1,5 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Pass } from '../../lib/types'
-import { BinaryDataManager } from '../../lib/BinaryDataManager'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -8,28 +7,28 @@ import { useFiles } from '../../lib/contexts/FilesContext'
 
 interface PassFilesProps {
   pass: Pass
-  binaryDataManager: BinaryDataManager
-  viamClient: VIAM.ViamClient
-  expandedFiles: Set<string>
-  toggleFilesExpansion: (passId: string) => void
-  fileSearchInputs: Record<string, string>
-  handleFileSearchChange: (passId: string, value: string) => void
-  debouncedFileSearchInputs: Record<string, string>
 }
 
-export const PassFiles: React.FC<PassFilesProps> = ({
-  pass,
-  binaryDataManager,
-  expandedFiles,
-  toggleFilesExpansion,
-  fileSearchInputs,
-  handleFileSearchChange,
-  debouncedFileSearchInputs,
-}) => {
+export const PassFiles: React.FC<PassFilesProps> = ({ pass }) => {
   const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
   const passId = pass.pass_id
   const { fetchTimestamp } = useFiles()
+  const { binaryDataManager } = useFiles()
+  const [isExpanded, setIsExpanded] = useState<boolean>(false)
+  const [fileSearchInput, setFileSearchInput] = useState<string>('')
+  const [debouncedFileSearchInput, setDebouncedFileSearchInput] =
+    useState<string>('')
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFileSearchInput(fileSearchInput)
+    }, 300) // 300ms delay
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [fileSearchInput])
 
   const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
     try {
@@ -61,7 +60,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
   }, [pass, binaryDataManager])
 
   const filteredPassFiles = useMemo(() => {
-    const searchTerm = (debouncedFileSearchInputs[passId] || '').toLowerCase()
+    const searchTerm = debouncedFileSearchInput.toLowerCase()
     if (!searchTerm) return passFiles
 
     return passFiles.filter((file) => {
@@ -69,20 +68,15 @@ export const PassFiles: React.FC<PassFilesProps> = ({
       const fullPath = file.fileName.toLowerCase() || ''
       return fileName.includes(searchTerm) || fullPath.includes(searchTerm)
     })
-  }, [passFiles, debouncedFileSearchInputs, passId])
+  }, [passFiles, debouncedFileSearchInput])
 
   const filesCountDisplay = useMemo(() => {
-    const searchTerm = (debouncedFileSearchInputs[passId] || '').toLowerCase()
+    const searchTerm = debouncedFileSearchInput.toLowerCase()
     if (searchTerm) {
       return `(showing ${filteredPassFiles.length} of ${passFiles.length})`
     }
     return `(${passFiles.length})`
-  }, [
-    passFiles.length,
-    filteredPassFiles.length,
-    debouncedFileSearchInputs,
-    passId,
-  ])
+  }, [passFiles.length, filteredPassFiles.length, debouncedFileSearchInput])
 
   const isLoading = fetchTimestamp && fetchTimestamp > pass.start
 
@@ -110,7 +104,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
   return (
     <div className="pass-files-section">
       <h4
-        onClick={() => toggleFilesExpansion(passId)}
+        onClick={() => setIsExpanded(!isExpanded)}
         style={{
           cursor: 'pointer',
           display: 'flex',
@@ -124,9 +118,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
           style={{
             display: 'inline-block',
             transition: 'transform 0.2s',
-            transform: expandedFiles.has(passId)
-              ? 'rotate(90deg)'
-              : 'rotate(0deg)',
+            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
             fontSize: '10px',
           }}
         >
@@ -135,7 +127,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
         Files captured during this pass {filesCountDisplay}
       </h4>
 
-      {expandedFiles.has(passId) && passFiles.length > 0 && (
+      {isExpanded && passFiles.length > 0 && (
         <>
           <div
             style={{
@@ -147,8 +139,8 @@ export const PassFiles: React.FC<PassFilesProps> = ({
             <input
               type="text"
               placeholder="Search files by filename..."
-              value={fileSearchInputs[passId] || ''}
-              onChange={(e) => handleFileSearchChange(passId, e.target.value)}
+              value={fileSearchInput}
+              onChange={(e) => setFileSearchInput(e.target.value)}
               onClick={(e) => e.stopPropagation()}
               style={{
                 width: 'fit-content',
@@ -285,7 +277,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
                 </div>
               )
             })}
-            {filteredPassFiles.length === 0 && fileSearchInputs[passId] && (
+            {filteredPassFiles.length === 0 && fileSearchInput && (
               <div
                 style={{
                   padding: '12px',
@@ -293,7 +285,7 @@ export const PassFiles: React.FC<PassFilesProps> = ({
                   fontSize: '13px',
                 }}
               >
-                No files match &ldquo;{fileSearchInputs[passId]}&rdquo;
+                No files match &ldquo;{fileSearchInput}&rdquo;
               </div>
             )}
           </div>

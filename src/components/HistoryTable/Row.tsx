@@ -42,13 +42,9 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
-  const [fileSearchInputs, setFileSearchInputs] = useState<
-    Record<string, string>
-  >({})
   const [downloadingConfigs, setDownloadingConfigs] = useState<Set<string>>(
     new Set()
   )
-  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set())
   const [configMetadata, setConfigMetadata] = useState<
     Map<string, RobotConfigMetadata>
   >(new Map())
@@ -60,24 +56,11 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
   >({})
   const [metadataSuccess, setMetadataSuccess] = useState<Set<string>>(new Set())
   const [savingMetadata, setSavingMetadata] = useState<Set<string>>(new Set())
-  const [debouncedFileSearchInputs, setDebouncedFileSearchInputs] = useState<
-    Record<string, string>
-  >({})
+
   const [jiraValidationErrors, setJiraValidationErrors] = useState<
     Record<string, string>
   >({})
   const { binaryDataManager } = useFiles()
-
-  // Debounce file search inputs
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedFileSearchInputs(fileSearchInputs)
-    }, 300) // 300ms delay
-
-    return () => {
-      clearTimeout(handler)
-    }
-  }, [fileSearchInputs])
 
   // Initialize note inputs from existing notes
   useEffect(() => {
@@ -116,23 +99,6 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
       return acc
     }, {})
   }, [currentPassSummaries])
-
-  const handleFileSearchChange = (passId: string, value: string) => {
-    setFileSearchInputs((prev) => ({
-      ...prev,
-      [passId]: value,
-    }))
-  }
-
-  const toggleFilesExpansion = (passId: string) => {
-    const newExpandedFiles = new Set(expandedFiles)
-    if (newExpandedFiles.has(passId)) {
-      newExpandedFiles.delete(passId)
-    } else {
-      newExpandedFiles.add(passId)
-    }
-    setExpandedFiles(newExpandedFiles)
-  }
 
   const handleDownloadConfig = async (pass: Pass) => {
     if (!partId) {
@@ -466,16 +432,7 @@ export const Row = ({ globalIndex, pass }: RowProps) => {
                 <div style={{ display: 'flex', margin: '0 12px' }}>
                   {/* Column 1: Files captured during this pass */}
                   <div style={{ flex: '2 1 0%', minWidth: 0 }}>
-                    <PassFiles
-                      pass={pass}
-                      binaryDataManager={binaryDataManager}
-                      viamClient={viamClient}
-                      expandedFiles={expandedFiles}
-                      toggleFilesExpansion={toggleFilesExpansion}
-                      fileSearchInputs={fileSearchInputs}
-                      handleFileSearchChange={handleFileSearchChange}
-                      debouncedFileSearchInputs={debouncedFileSearchInputs}
-                    />
+                    <PassFiles pass={pass} />
                   </div>
                 </div>
               </div>
