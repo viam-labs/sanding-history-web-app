@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.0
+
+### Minor Changes
+
+- ed2d583: enable downloading videos from multiple videostores
+
 ## 1.6.4
 
 ### Patch Changes
