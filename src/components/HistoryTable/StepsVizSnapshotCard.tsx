@@ -2,6 +2,7 @@ import { ModalType, useModal } from '../../lib/contexts/ModalContext'
 import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
 import { BinaryDataFile } from '../../lib/BinaryDataFile'
 import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
 
 interface StepsVizSnapshotCardProps {
   snapshotFiles: BinaryDataFile[]
@@ -11,6 +12,7 @@ export const StepsVizSnapshotCard = ({
   snapshotFiles,
 }: StepsVizSnapshotCardProps) => {
   const { openModal } = useModal()
+  const { viamClient } = useViamClients()
 
   const cleanSnapshotFileName = (fileName: string) => {
     const base = fileName.split('/').pop() || ''
@@ -30,13 +32,39 @@ export const StepsVizSnapshotCard = ({
           >
             <a
               href="#"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.preventDefault()
+                console.log(snapshotFile.binaryData.toBinary())
+                console.log(snapshotFile.binaryData.toJsonString())
+                const data = await viamClient.dataClient.binaryDataByIds([
+                  snapshotFile.binaryData.metadata!.binaryDataId,
+                ])
+                console.log(data[0].toBinary())
+                console.log(data[0].toJsonString())
+                const json = data[0].toJson() as any
+                // json.binary is a base64-encoded string; decode it to a Uint8Array buffer
+                const binaryStr = json.binary
+                const binary = Uint8Array.from(atob(binaryStr), (c) =>
+                  c.charCodeAt(0)
+                )
+                console.log(binary)
+                const decompressor = new DecompressionStream('gzip')
+                console.log(decompressor)
+                const blob = new Blob([binary])
+                console.log(blob)
+                const stream = blob.stream().pipeThrough(decompressor)
+                console.log(stream)
+                const response = await new Response(stream).blob()
+                console.log(response)
+                const buffer = await response.arrayBuffer()
+                console.log(buffer)
+                const snapshot = SnapshotProto.fromBinary(
+                  new Uint8Array(buffer)
+                )
+                console.log(snapshot)
                 openModal({
                   type: ModalType.SNAPSHOT,
-                  snapshot: SnapshotProto.fromBinary(
-                    snapshotFile.binaryData.binary
-                  ),
+                  snapshot: snapshot,
                 })
               }}
               className="underline text-blue-600 cursor-pointer hover:text-blue-800 truncate max-w-full text-center block"
