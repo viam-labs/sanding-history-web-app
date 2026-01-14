@@ -170,9 +170,7 @@ export const Diagnosis: React.FC = () => {
         {fetchingNotes ? (
           <div className="flex items-center justify-center min-h-[80px]">
             <span className="inline-block w-5 h-5 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></span>
-            <span className="ml-2.5 text-gray-500 text-sm">
-              Loading...
-            </span>
+            <span className="ml-2.5 text-gray-500 text-sm">Loading...</span>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -297,13 +295,20 @@ export const Diagnosis: React.FC = () => {
                 const existingNoteText =
                   passNotesData.length > 0 ? passNotesData[0].note_text : ''
                 const noteChanged = noteText.trim() !== existingNoteText.trim()
-                const diagnosisChanged = !pass.success && (
-                  (passDiagnoses.get(passId)?.symptom || '') !== (diagnosisInput.symptom || '') ||
-                  (passDiagnoses.get(passId)?.cause || '') !== (diagnosisInput.cause || '') ||
-                  (passDiagnoses.get(passId)?.jira_ticket_url || '') !== (diagnosisInput.jiraTicketUrl || '')
-                )
+                const diagnosisChanged =
+                  !pass.success &&
+                  ((passDiagnoses.get(passId)?.symptom || '') !==
+                    (diagnosisInput.symptom || '') ||
+                    (passDiagnoses.get(passId)?.cause || '') !==
+                      (diagnosisInput.cause || '') ||
+                    (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
+                      (diagnosisInput.jiraTicketUrl || ''))
                 const hasChanges = noteChanged || diagnosisChanged
-                const isDisabled = savingMetadata || metadataSuccess || jiraValidationError || !hasChanges
+                const isDisabled =
+                  savingMetadata ||
+                  metadataSuccess ||
+                  jiraValidationError !== '' ||
+                  !hasChanges
 
                 return (
                   <button
