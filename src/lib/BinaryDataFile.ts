@@ -35,6 +35,18 @@ export class BinaryDataFile {
     return this._binaryData.metadata?.uri || ''
   }
 
+  public async getFileBinaryData(
+    viamClient: VIAM.ViamClient
+  ): Promise<VIAM.dataApi.BinaryData | undefined> {
+    const data = await viamClient.dataClient.binaryDataByIds([
+      this.binaryDataId,
+    ])
+    if (data.length === 0) {
+      return undefined
+    }
+    return data[0]
+  }
+
   public isInTimeRange(start: Date, end: Date): boolean {
     const timeRequested = this.timeRequested
     if (!timeRequested) return false
