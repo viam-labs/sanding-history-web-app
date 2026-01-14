@@ -279,8 +279,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
                   backgroundColor: '#f8fafc',
                   borderRadius: '8px',
                   border: '1px solid #e2e8f0',
-                  minWidth: '200px',
-                  maxWidth: '320px',
+                  width: '100%',
                 }}
               >
                 {/* Video store badge */}
