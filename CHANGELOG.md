@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.1
+
+### Patch Changes
+
+- e1ebd63: fix: properly load snapshot file
+
 ## 1.7.0
 
 ### Minor Changes
