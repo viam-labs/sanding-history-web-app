@@ -103,11 +103,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
                 controls
                 autoPlay
                 src={modalVideoUrl}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: '8px',
-                }}
+                className="w-full h-full rounded-lg"
                 onError={(e) => {
                   console.error('Video playback error:', e)
                   alert('Error playing video')
@@ -125,7 +121,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
             <VideoShareButtons baseUrl={videoPageURL} videoRef={videoRef}>
               <a
                 href={videoPageURL}
-                style={{ color: '#3b82f6' }}
+                className="text-blue-500"
                 target="_blank"
                 title="Go to the video's detail page"
                 rel="noreferrer"
@@ -143,17 +139,7 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
                     selectedVideo.metadata?.fileName?.split('/').pop() ||
                     'video.mp4'
                   }
-                  style={{
-                    color: '#3b82f6',
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#2563eb'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#3b82f6'
-                  }}
+                  className="text-blue-500 underline cursor-pointer hover:text-blue-600"
                 >
                   {selectedVideo.metadata?.fileName || 'Unknown'}
                 </a>

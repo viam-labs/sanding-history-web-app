@@ -132,9 +132,9 @@ export const Row = ({ globalIndex }: RowProps) => {
                 <Diagnosis />
 
                 {/* Parent container for Files and Notes columns */}
-                <div style={{ display: 'flex', margin: '0 12px' }}>
+                <div className="flex mx-3">
                   {/* Column 1: Files captured during this pass */}
-                  <div style={{ flex: '2 1 0%', minWidth: 0 }}>
+                  <div className="flex-[2_1_0%] min-w-0">
                     <PassFiles />
                   </div>
                 </div>

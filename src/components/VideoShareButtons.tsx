@@ -52,20 +52,14 @@ const VideoShareButtons: React.FC<VideoShareButtonsProps> = ({
 
       <button
         title="Share a link to the video's detail page"
-        className="video-modal-button primary"
-        style={{
-          width: '90px',
-        }}
+        className="video-modal-button primary w-[90px]"
         onClick={handleShare}
       >
         {videoShared ? 'Link copied!' : 'Share link'}
       </button>
       <button
         title="Share link to the video's detail page from the current location within the video"
-        className="video-modal-button secondary"
-        style={{
-          width: '190px',
-        }}
+        className="video-modal-button secondary w-[190px]"
         onClick={handleShareFromCurrentLocation}
       >
         {videoSharedFromCurrentLocation

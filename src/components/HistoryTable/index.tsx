@@ -114,7 +114,7 @@ const HistoryTable: React.FC = () => {
       <table className="viam-table">
         <thead>
           <tr>
-            <th style={{ width: '20px' }}></th>
+            <th className="w-5"></th>
             <th>Day</th>
             <th>Pass ID</th>
             <th>Status</th>

@@ -161,74 +161,28 @@ export const Diagnosis: React.FC = () => {
   }
 
   return (
-    <div style={{ margin: '1rem 12px 24px 12px' }}>
-      <div
-        className="step-card"
-        style={{
-          minWidth: '50%',
-          backgroundColor: 'transparent',
-        }}
-      >
-        <div className="step-name" style={{ textAlign: 'left' }}>
+    <div className="m-4 mx-3 mb-6">
+      <div className="step-card min-w-[50%] bg-transparent">
+        <div className="step-name text-left">
           {!pass.success ? 'Diagnosis' : 'Notes'}
         </div>
 
         {fetchingNotes ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '80px',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-block',
-                width: '20px',
-                height: '20px',
-                border: '2px solid rgba(59, 130, 246, 0.2)',
-                borderTopColor: '#3b82f6',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-              }}
-            ></span>
-            <span
-              style={{
-                marginLeft: '10px',
-                color: '#6b7280',
-                fontSize: '14px',
-              }}
-            >
+          <div className="flex items-center justify-center min-h-[80px]">
+            <span className="inline-block w-5 h-5 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></span>
+            <span className="ml-2.5 text-gray-500 text-sm">
               Loading...
             </span>
           </div>
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px',
-            }}
-          >
+          <div className="flex flex-col gap-3">
             {/* Diagnosis dropdowns - only for failed passes, displayed in a row */}
             {!pass.success && (
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '16px',
-                }}
-              >
-                <div style={{ flex: 1 }}>
+              <div className="flex gap-4">
+                <div className="flex-1">
                   <label
                     htmlFor={`symptom-${passId}`}
-                    style={{
-                      display: 'block',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
+                    className="block text-[13px] font-medium text-gray-700 mb-1.5"
                   >
                     Symptom
                   </label>
@@ -238,16 +192,7 @@ export const Diagnosis: React.FC = () => {
                     onChange={(e) =>
                       handleDiagnosisChange('symptom', e.target.value)
                     }
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '14px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#ffffff',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md bg-white cursor-pointer outline-none"
                   >
                     <option value="">Select symptom...</option>
                     {SYMPTOM_OPTIONS.map((option: string) => (
@@ -258,16 +203,10 @@ export const Diagnosis: React.FC = () => {
                   </select>
                 </div>
 
-                <div style={{ flex: 1 }}>
+                <div className="flex-1">
                   <label
                     htmlFor={`cause-${passId}`}
-                    style={{
-                      display: 'block',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                      color: '#374151',
-                      marginBottom: '6px',
-                    }}
+                    className="block text-[13px] font-medium text-gray-700 mb-1.5"
                   >
                     Cause
                   </label>
@@ -277,16 +216,7 @@ export const Diagnosis: React.FC = () => {
                     onChange={(e) =>
                       handleDiagnosisChange('cause', e.target.value)
                     }
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '14px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#ffffff',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-md bg-white cursor-pointer outline-none"
                   >
                     <option value="">Select cause...</option>
                     {CAUSE_OPTIONS.map((option: string) => (
@@ -304,23 +234,11 @@ export const Diagnosis: React.FC = () => {
               <div>
                 <label
                   htmlFor={`jira-${passId}`}
-                  style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    color: '#374151',
-                    marginBottom: '6px',
-                  }}
+                  className="block text-[13px] font-medium text-gray-700 mb-1.5"
                 >
                   JIRA Ticket (e.g. https://viam.atlassian.net/browse/RSDK-1234)
                 </label>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
+                <div className="flex items-center gap-2">
                   <input
                     id={`jira-${passId}`}
                     type="url"
@@ -329,32 +247,14 @@ export const Diagnosis: React.FC = () => {
                       handleDiagnosisChange('jiraTicketUrl', e.target.value)
                     }
                     placeholder="https://viam.atlassian.net/browse/RSDK-..."
-                    style={{
-                      flex: 1,
-                      padding: '10px 12px',
-                      fontSize: '14px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      backgroundColor: '#ffffff',
-                      outline: 'none',
-                    }}
+                    className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-md bg-white outline-none"
                   />
                   {diagnosisInput.jiraTicketUrl && !jiraValidationError && (
                     <a
                       href={diagnosisInput.jiraTicketUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{
-                        padding: '10px 12px',
-                        fontSize: '14px',
-                        color: '#3b82f6',
-                        textDecoration: 'none',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        backgroundColor: '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
+                      className="px-3 py-2.5 text-sm text-blue-500 no-underline border border-gray-300 rounded-md bg-white flex items-center"
                       title="Open JIRA ticket"
                     >
                       🔗
@@ -362,13 +262,7 @@ export const Diagnosis: React.FC = () => {
                   )}
                 </div>
                 {jiraValidationError && (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#dc2626',
-                      marginTop: '4px',
-                    }}
-                  >
+                  <div className="text-xs text-red-600 mt-1">
                     {jiraValidationError}
                   </div>
                 )}
@@ -381,13 +275,7 @@ export const Diagnosis: React.FC = () => {
               {!pass.success && (
                 <label
                   htmlFor={`pass-notes-${passId}`}
-                  style={{
-                    display: 'block',
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    color: '#374151',
-                    marginBottom: '6px',
-                  }}
+                  className="block text-[13px] font-medium text-gray-700 mb-1.5"
                 >
                   Notes
                 </label>
@@ -397,175 +285,52 @@ export const Diagnosis: React.FC = () => {
                 value={noteInput || ''}
                 onChange={(e) => handleNoteChange(e.target.value)}
                 placeholder="Add a note for this pass..."
-                style={{
-                  width: '100%',
-                  minHeight: '72px',
-                  padding: '10px 12px',
-                  fontSize: '14px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  resize: 'vertical',
-                  fontFamily: 'inherit',
-                  backgroundColor: '#ffffff',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  lineHeight: '1.5',
-                }}
+                className="w-full min-h-[72px] px-3 py-2.5 text-sm border border-gray-300 rounded-md resize-y font-inherit bg-white box-border outline-none leading-normal"
                 aria-label={`Notes for pass ${passId}`}
               />
             </div>
 
             {/* Save button - full width at bottom */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => savePassMetadata(passId, !pass.success)}
-                disabled={(() => {
-                  if (savingMetadata || metadataSuccess) return true
-                  // Disable if there are JIRA validation errors
-                  if (jiraValidationError) return true
-                  const noteText = noteInput || ''
-                  const existingNoteText =
-                    passNotesData.length > 0 ? passNotesData[0].note_text : ''
-                  const noteChanged =
-                    noteText.trim() !== existingNoteText.trim()
-                  if (!pass.success) {
-                    const diagnosisChanged =
-                      (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInput.symptom || '') ||
-                      (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInput.cause || '') ||
-                      (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInput.jiraTicketUrl || '')
-                    return !noteChanged && !diagnosisChanged
-                  }
-                  return !noteChanged
-                })()}
-                style={{
-                  padding: '6px 8px',
-                  fontSize: '12px',
-                  color: 'white',
-                  backgroundColor: metadataSuccess
-                    ? '#10b981'
-                    : (() => {
-                        if (savingMetadata) return '#9ca3af'
-                        const noteText = noteInput || ''
-                        const existingNoteText =
-                          passNotesData.length > 0
-                            ? passNotesData[0].note_text
-                            : ''
-                        const noteChanged =
-                          noteText.trim() !== existingNoteText.trim()
-                        if (!pass.success) {
-                          const diagnosisChanged =
-                            (passDiagnoses.get(passId)?.symptom || '') !==
-                              (diagnosisInput.symptom || '') ||
-                            (passDiagnoses.get(passId)?.cause || '') !==
-                              (diagnosisInput.cause || '') ||
-                            (passDiagnoses.get(passId)?.jira_ticket_url ||
-                              '') !== (diagnosisInput.jiraTicketUrl || '')
-                          return noteChanged || diagnosisChanged
-                            ? '#3b82f6'
-                            : '#9ca3af'
-                        }
-                        return noteChanged ? '#3b82f6' : '#9ca3af'
-                      })(),
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: (() => {
-                    if (savingMetadata || metadataSuccess) return 'not-allowed'
-                    const noteText = noteInput || ''
-                    const existingNoteText =
-                      passNotesData.length > 0 ? passNotesData[0].note_text : ''
-                    const noteChanged =
-                      noteText.trim() !== existingNoteText.trim()
-                    if (!pass.success) {
-                      const diagnosisChanged =
-                        (passDiagnoses.get(passId)?.symptom || '') !==
-                          (diagnosisInput.symptom || '') ||
-                        (passDiagnoses.get(passId)?.cause || '') !==
-                          (diagnosisInput.cause || '') ||
-                        (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                          (diagnosisInput.jiraTicketUrl || '')
-                      return noteChanged || diagnosisChanged
-                        ? 'pointer'
-                        : 'not-allowed'
-                    }
-                    return noteChanged ? 'pointer' : 'not-allowed'
-                  })(),
-                  transition: 'background-color 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-                onMouseEnter={(e) => {
-                  const noteText = noteInput || ''
-                  const existingNoteText =
-                    passNotesData.length > 0 ? passNotesData[0].note_text : ''
-                  const noteChanged =
-                    noteText.trim() !== existingNoteText.trim()
-                  let hasChanges = noteChanged
-                  if (!pass.success) {
-                    const diagnosisChanged =
-                      (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInput.symptom || '') ||
-                      (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInput.cause || '') ||
-                      (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInput.jiraTicketUrl || '')
-                    hasChanges = noteChanged || diagnosisChanged
-                  }
-                  if (hasChanges && !savingMetadata && !metadataSuccess) {
-                    e.currentTarget.style.backgroundColor = '#2563eb'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const noteText = noteInput || ''
-                  const existingNoteText =
-                    passNotesData.length > 0 ? passNotesData[0].note_text : ''
-                  const noteChanged =
-                    noteText.trim() !== existingNoteText.trim()
-                  let hasChanges = noteChanged
-                  if (!pass.success) {
-                    const diagnosisChanged =
-                      (passDiagnoses.get(passId)?.symptom || '') !==
-                        (diagnosisInput.symptom || '') ||
-                      (passDiagnoses.get(passId)?.cause || '') !==
-                        (diagnosisInput.cause || '') ||
-                      (passDiagnoses.get(passId)?.jira_ticket_url || '') !==
-                        (diagnosisInput.jiraTicketUrl || '')
-                    hasChanges = noteChanged || diagnosisChanged
-                  }
-                  if (hasChanges && !savingMetadata && !metadataSuccess) {
-                    e.currentTarget.style.backgroundColor = '#3b82f6'
-                  }
-                }}
-              >
-                {savingMetadata ? (
-                  <>
-                    <div
-                      style={{
-                        width: '12px',
-                        height: '12px',
-                        border: '2px solid #ffffff',
-                        borderTop: '2px solid transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite',
-                      }}
-                    />
-                    Saving...
-                  </>
-                ) : metadataSuccess ? (
-                  '✓ Saved'
-                ) : (
-                  'Save'
-                )}
-              </button>
+            <div className="flex justify-end">
+              {(() => {
+                const noteText = noteInput || ''
+                const existingNoteText =
+                  passNotesData.length > 0 ? passNotesData[0].note_text : ''
+                const noteChanged = noteText.trim() !== existingNoteText.trim()
+                const diagnosisChanged = !pass.success && (
+                  (passDiagnoses.get(passId)?.symptom || '') !== (diagnosisInput.symptom || '') ||
+                  (passDiagnoses.get(passId)?.cause || '') !== (diagnosisInput.cause || '') ||
+                  (passDiagnoses.get(passId)?.jira_ticket_url || '') !== (diagnosisInput.jiraTicketUrl || '')
+                )
+                const hasChanges = noteChanged || diagnosisChanged
+                const isDisabled = savingMetadata || metadataSuccess || jiraValidationError || !hasChanges
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => savePassMetadata(passId, !pass.success)}
+                    disabled={isDisabled}
+                    className={`px-2 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center gap-1.5 ${
+                      metadataSuccess
+                        ? 'bg-emerald-500 cursor-not-allowed'
+                        : isDisabled
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+                    }`}
+                  >
+                    {savingMetadata ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : metadataSuccess ? (
+                      '✓ Saved'
+                    ) : (
+                      'Save'
+                    )}
+                  </button>
+                )
+              })()}
             </div>
           </div>
         )}

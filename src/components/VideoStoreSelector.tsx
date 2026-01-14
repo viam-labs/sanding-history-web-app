@@ -150,7 +150,7 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
         Select video store resource
       </label>
 
-      <div style={{ position: 'relative' }}>
+      <div className="relative">
         <select
           id="video-store-select"
           value={selectedResource}

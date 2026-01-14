@@ -12,24 +12,11 @@ export const ResourceSelection: React.FC = () => {
     <div className="flex gap-8">
       {machineName && (
         <div className="video-store-selector">
-          <div
-            className="video-store-selector-label"
-            style={{ marginBottom: '0.6rem' }}
-          >
+          <div className="video-store-selector-label mb-2.5">
             Machine name
           </div>
           <div>
-            <span
-              style={{
-                display: 'inline-block',
-                backgroundColor: '#f3f3f3',
-                color: 'rgb(37 37 37)',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '0.375rem',
-                fontSize: '14px',
-                fontWeight: '600',
-              }}
-            >
+            <span className="inline-block bg-gray-100 text-zinc-800 px-3 py-2 rounded-md text-sm font-semibold">
               {machineName}
             </span>
           </div>
