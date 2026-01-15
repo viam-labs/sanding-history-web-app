@@ -8,15 +8,7 @@ export const Pagination: React.FC = () => {
   }
   return (
     <div className="pagination-container">
-      <div
-        className="pagination-controls"
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          width: '100%',
-          gap: '4px',
-        }}
-      >
+      <div className="pagination-controls flex justify-center w-full gap-1">
         <button
           className="pagination-button"
           disabled={currentPage === 1}

@@ -70,19 +70,9 @@ export const PassFiles: React.FC = () => {
 
   if (isLoading && passFiles.length === 0) {
     return (
-      <div className="pass-files-section" style={{}}>
-        <span
-          style={{
-            display: 'inline-block',
-            width: '28px',
-            height: '28px',
-            border: '3px solid rgba(59, 130, 246, 0.2)',
-            borderTopColor: '#3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}
-        ></span>
-        <p style={{ marginTop: '12px', color: '#6b7280', fontSize: '14px' }}>
+      <div className="pass-files-section">
+        <span className="inline-block w-7 h-7 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></span>
+        <p className="mt-3 text-gray-500 text-sm">
           Loading files...
         </p>
       </div>
@@ -93,22 +83,10 @@ export const PassFiles: React.FC = () => {
     <div className="pass-files-section">
       <h4
         onClick={() => setIsExpanded(!isExpanded)}
-        style={{
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          userSelect: 'none',
-          paddingLeft: '2px',
-        }}
+        className="cursor-pointer flex items-center gap-1.5 select-none pl-0.5"
       >
         <span
-          style={{
-            display: 'inline-block',
-            transition: 'transform 0.2s',
-            transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            fontSize: '10px',
-          }}
+          className={`inline-block transition-transform duration-200 text-[10px] ${isExpanded ? 'rotate-90' : 'rotate-0'}`}
         >
           ▶
         </span>
@@ -117,102 +95,35 @@ export const PassFiles: React.FC = () => {
 
       {isExpanded && passFiles.length > 0 && (
         <>
-          <div
-            style={{
-              marginTop: '8px',
-              marginLeft: '12px',
-              marginBottom: '8px',
-            }}
-          >
+          <div className="mt-2 ml-3 mb-2">
             <input
               type="text"
               placeholder="Search files by filename..."
               value={fileSearchInput}
               onChange={(e) => setFileSearchInput(e.target.value)}
               onClick={(e) => e.stopPropagation()}
-              style={{
-                width: 'fit-content',
-                minWidth: '250px',
-                maxWidth: '400px',
-                padding: '6px 10px',
-                fontSize: '13px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '4px',
-                boxSizing: 'border-box',
-                backgroundColor: '#ffffff',
-              }}
+              className="w-fit min-w-[250px] max-w-[400px] px-2.5 py-1.5 text-[13px] border border-gray-200 rounded box-border bg-white"
             />
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0',
-              overflowY: 'auto',
-              maxHeight: '33dvh',
-              overflow: 'auto',
-              borderTop: '1px solid #e5e7eb',
-              margin: '0 0 0 0.5rem',
-            }}
-          >
+          <div className="flex flex-col gap-0 overflow-y-auto max-h-[33dvh] overflow-auto border-t border-gray-200 ml-2">
             {filteredPassFiles.map((file, fileIndex, filteredFiles) => {
               const fileName = file.fileName.split('/').pop() || 'Unknown file'
 
               return (
                 <div
                   key={fileIndex}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '4px 6px',
-                    backgroundColor: '#f9fafb',
-                    borderBottom:
-                      fileIndex < filteredFiles.length - 1
-                        ? '1px solid #e5e7eb'
-                        : 'none',
-                    fontSize: '13px',
-                    minWidth: '280px',
-                    boxSizing: 'border-box',
-                    transition: 'background-color 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb'
-                  }}
+                  className={`flex items-center justify-between px-1.5 py-1 bg-gray-50 hover:bg-gray-100 text-[13px] min-w-[280px] box-border transition-colors duration-200 ${
+                    fileIndex < filteredFiles.length - 1 ? 'border-b border-gray-200' : ''
+                  }`}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
                     <span
-                      style={{
-                        color: '#374151',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                      }}
+                      className="text-gray-700 text-ellipsis overflow-hidden whitespace-nowrap flex-1"
                       title={file.fileName || fileName}
                     >
                       {fileName}
                     </span>
-                    <span
-                      style={{
-                        color: '#9ca3af',
-                        fontSize: '12px',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
+                    <span className="text-gray-400 text-xs whitespace-nowrap shrink-0">
                       {file.timeRequested?.toLocaleTimeString() || ''}
                     </span>
                   </div>
@@ -223,20 +134,7 @@ export const PassFiles: React.FC = () => {
                       e.stopPropagation()
                       handleDownload(file.binaryData)
                     }}
-                    style={{
-                      marginLeft: '12px',
-                      padding: '6px 8px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      borderRadius: '4px',
-                      textDecoration: 'none',
-                      fontSize: '12px',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                      display: 'inline-block',
-                      border: 'none',
-                    }}
+                    className="ml-3 px-2 py-1.5 bg-blue-500 text-white rounded no-underline text-xs whitespace-nowrap shrink-0 cursor-pointer inline-block border-none hover:bg-blue-600"
                   >
                     Download
                   </a>
@@ -249,16 +147,7 @@ export const PassFiles: React.FC = () => {
                     }
                     rel="noreferrer"
                     target="_blank"
-                    style={{
-                      marginLeft: '12px',
-                      padding: '6px 8px',
-                      backgroundColor: '#1d4ed8',
-                      color: 'white',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      border: 'none',
-                      textDecoration: 'none',
-                    }}
+                    className="ml-3 px-2 py-1.5 bg-blue-700 text-white rounded text-xs border-none no-underline hover:bg-blue-800"
                   >
                     Download from GCS
                   </a>
@@ -266,13 +155,7 @@ export const PassFiles: React.FC = () => {
               )
             })}
             {filteredPassFiles.length === 0 && fileSearchInput && (
-              <div
-                style={{
-                  padding: '12px',
-                  color: '#6b7280',
-                  fontSize: '13px',
-                }}
-              >
+              <div className="p-3 text-gray-500 text-[13px]">
                 No files match &ldquo;{fileSearchInput}&rdquo;
               </div>
             )}
@@ -281,14 +164,7 @@ export const PassFiles: React.FC = () => {
       )}
 
       {passFiles.length === 0 && !isLoading && (
-        <p
-          style={{
-            fontSize: '13px',
-            color: '#6b7280',
-            marginTop: '8px',
-            paddingLeft: '30px',
-          }}
-        >
+        <p className="text-[13px] text-gray-500 mt-2 pl-8">
           No files found for this pass.
         </p>
       )}
