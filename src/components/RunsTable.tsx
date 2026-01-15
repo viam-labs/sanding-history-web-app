@@ -68,70 +68,36 @@ const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
       </div>
 
       {/* Steps Table */}
-      <div
-        className="table-container"
-        style={{ marginTop: '20px', overflowX: 'auto' }}
-      >
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="table-container mt-5 overflow-x-auto">
+        <table className="w-full border-collapse">
           <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th
-                style={{
-                  padding: '12px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #ddd',
-                }}
-              >
+            <tr className="bg-gray-100">
+              <th className="p-3 text-left border-b-2 border-gray-300">
                 Step Name
               </th>
-              <th
-                style={{
-                  padding: '12px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #ddd',
-                }}
-              >
+              <th className="p-3 text-left border-b-2 border-gray-300">
                 Start Time
               </th>
-              <th
-                style={{
-                  padding: '12px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #ddd',
-                }}
-              >
+              <th className="p-3 text-left border-b-2 border-gray-300">
                 End Time
               </th>
-              <th
-                style={{
-                  padding: '12px',
-                  textAlign: 'left',
-                  borderBottom: '2px solid #ddd',
-                }}
-              >
+              <th className="p-3 text-left border-b-2 border-gray-300">
                 Duration
               </th>
             </tr>
           </thead>
           <tbody>
             {tableData.map((row) => (
-              <tr key={row.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '10px' }}>{row.name}</td>
-                <td style={{ padding: '10px' }}>{row.start}</td>
-                <td style={{ padding: '10px' }}>{row.end}</td>
-                <td style={{ padding: '10px' }}>{row.duration}</td>
+              <tr key={row.id} className="border-b border-gray-200">
+                <td className="p-2.5">{row.name}</td>
+                <td className="p-2.5">{row.start}</td>
+                <td className="p-2.5">{row.end}</td>
+                <td className="p-2.5">{row.duration}</td>
               </tr>
             ))}
             {tableData.length === 0 && (
               <tr>
-                <td
-                  colSpan={4}
-                  style={{
-                    padding: '20px',
-                    textAlign: 'center',
-                    color: '#888',
-                  }}
-                >
+                <td colSpan={4} className="p-5 text-center text-gray-500">
                   No data available
                 </td>
               </tr>

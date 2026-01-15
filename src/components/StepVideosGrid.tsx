@@ -152,89 +152,28 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     <>
       {/* Loading state */}
       {isLoading && (
-        <div
-          className="loading-state"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            color: '#6b7280',
-          }}
-        >
-          <div
-            style={{
-              width: '24px',
-              height: '24px',
-              border: '3px solid #e5e7eb',
-              borderTop: '3px solid #3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              marginBottom: '8px',
-            }}
-          />
-          <div style={{ fontSize: '14px' }}>Loading videos...</div>
+        <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
+          <div className="w-6 h-6 border-3 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-2" />
+          <div className="text-sm">Loading videos...</div>
         </div>
       )}
 
       {/* Generate video button */}
       {!hasVideosForVideoStore && !isLoading && (
-        <div
-          className="generate-video"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: '18px',
-          }}
-        >
+        <div className="generate-video flex flex-col items-center justify-center mt-4">
           <button
             type="button"
-            className="generate-video-button"
+            className={`generate-video-button px-2 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center gap-1.5 ${
+              videoStoreClient == null || isPolling
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+            }`}
             onClick={() => handleGenerateVideo()}
             disabled={videoStoreClient == null || isPolling}
-            style={{
-              padding: '6px 8px',
-              fontSize: '12px',
-              backgroundColor:
-                videoStoreClient == null || isPolling ? '#9ca3af' : '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor:
-                videoStoreClient == null || isPolling
-                  ? 'not-allowed'
-                  : 'pointer',
-              transition: 'background-color 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-            onMouseEnter={(e) => {
-              if (videoStoreClient && !isPolling) {
-                e.currentTarget.style.backgroundColor = '#2563eb'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (videoStoreClient && !isPolling) {
-                e.currentTarget.style.backgroundColor = '#3b82f6'
-              }
-            }}
           >
             {isPolling ? (
               <>
-                <div
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    border: '2px solid #ffffff',
-                    borderTop: '2px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                  }}
-                />
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Generating...
               </>
             ) : (
@@ -242,14 +181,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
             )}
           </button>
           {isPolling && (
-            <div
-              style={{
-                marginTop: '8px',
-                fontSize: '12px',
-                color: '#6b7280',
-                textAlign: 'center',
-              }}
-            >
+            <div className="mt-2 text-xs text-gray-500 text-center">
               This can take up to a minute.
             </div>
           )}
@@ -258,84 +190,31 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
 
       {/* Videos grid */}
       {stepVideos.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '12px',
-            padding: '8px 0',
-          }}
-        >
+        <div className="flex flex-wrap gap-3 py-2">
           {stepVideos.map((video) => {
             const videoStoreName = getVideoStoreName(video)
             return (
               <div
                 key={video.metadata?.fileName}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  padding: '12px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  width: '100%',
-                }}
+                className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 w-full"
               >
                 {/* Video store badge */}
                 <div
-                  style={{
-                    fontSize: '8px',
-                    fontWeight: 600,
-                    color: '#64748b',
-                    backgroundColor: '#e2e8f0',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                  }}
+                  className="text-[8px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded uppercase tracking-wide flex items-center w-full box-border"
                   title={`Video from: ${videoStoreName}`}
                 >
-                  <span style={{ fontSize: '16px', flexShrink: 0 }}>🎬</span>
-                  <span
-                    style={{
-                      marginLeft: '6px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="text-base shrink-0">🎬</span>
+                  <span className="ml-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
                     {videoStoreName}
                   </span>
                 </div>
 
                 {/* Action buttons */}
-                <div style={{ display: 'flex', gap: '6px' }}>
+                <div className="flex gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleVideoClick(video)}
-                    style={{
-                      flex: 1,
-                      padding: '6px 8px',
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s',
-                      border: 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#2563eb'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#3b82f6'
-                    }}
+                    className="flex-1 px-2 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
                   >
                     Play
                   </button>
@@ -347,26 +226,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
                         'video.mp4'
                       }
                       onClick={(e) => e.stopPropagation()}
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        backgroundColor: '#10b981',
-                        color: 'white',
-                        borderRadius: '4px',
-                        textDecoration: 'none',
-                        fontSize: '11px',
-                        fontWeight: 500,
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s',
-                        border: 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#059669'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#10b981'
-                      }}
+                      className="flex-1 px-2 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
                     >
                       Download
                     </a>
@@ -389,14 +249,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           )}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: 'block',
-            marginTop: '8px',
-            color: '#3b82f6',
-            fontSize: '12px',
-            textDecoration: 'underline',
-            textAlign: 'center',
-          }}
+          className="block mt-2 text-blue-500 text-xs underline text-center"
         >
           View logs for this step
         </a>

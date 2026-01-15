@@ -5,7 +5,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loadingText?: string
   disabled?: boolean
   children?: React.ReactNode
-  style?: React.CSSProperties
+  className?: string
   // For mouse enter/leave styling
   onMouseEnter?: React.MouseEventHandler<HTMLButtonElement>
   onMouseLeave?: React.MouseEventHandler<HTMLButtonElement>
@@ -21,50 +21,26 @@ const Button: React.FC<ButtonProps> = ({
   loadingText = 'Loading...',
   disabled = false,
   children,
-  style = {},
+  className = '',
   onMouseEnter,
   onMouseLeave,
   ...rest
 }) => {
-  // Styles for the loading spinner
-  const spinnerStyle: React.CSSProperties = {
-    width: '12px',
-    height: '12px',
-    border: '2px solid #ffffff',
-    borderTop: '2px solid transparent',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginRight: '6px',
-  }
-
-  // Default styles, can be overridden via "style" prop
-  const defaultStyle: React.CSSProperties = {
-    padding: '6px 8px',
-    fontSize: '12px',
-    backgroundColor: disabled ? '#9ca3af' : '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    transition: 'background-color 0.2s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    ...style,
-  }
+  const isDisabled = disabled || loading
 
   return (
     <button
-      className="generate-video-button"
-      disabled={disabled || loading}
-      style={defaultStyle}
+      className={`generate-video-button px-2 py-1.5 text-xs text-white border-none rounded cursor-pointer transition-colors duration-200 flex items-center gap-1.5 ${
+        isDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+      } ${className}`}
+      disabled={isDisabled}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       {...rest}
     >
       {loading ? (
         <>
-          <div style={spinnerStyle} />
+          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
           {loadingText}
         </>
       ) : (

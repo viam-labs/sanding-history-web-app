@@ -25,20 +25,8 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
   // If no images at all, show a message
   if (!beforeImage && !afterImage) {
     return (
-      <div className="step-card" style={{ order: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            height: '100%',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '4px',
-            padding: '12px',
-            color: '#9ca3af',
-            fontSize: '14px',
-          }}
-        >
+      <div className="step-card order-none">
+        <div className="flex h-full items-center justify-center bg-gray-100 rounded p-3 text-gray-400 text-sm">
           No images captured during this pass
         </div>
       </div>
@@ -49,13 +37,11 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
     <>
       {/* Start Image */}
       {beforeImage && (
-        <div className="step-card" style={{ order: -1 }}>
+        <div className="step-card -order-1">
           <div className="step-name">Start Image</div>
           <div className="step-duration">
             {beforeImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
-            <span
-              style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}
-            >
+            <span className="text-xs text-gray-500 ml-2">
               (
               {formatTimeDifference(
                 beforeImage.metadata?.timeRequested?.toDate()?.getTime() ||
@@ -67,8 +53,7 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
           </div>
 
           <div
-            className="step-image-container clickable-image"
-            style={{ marginTop: '12px', width: '100%', overflow: 'hidden' }}
+            className="step-image-container clickable-image mt-3 w-full overflow-hidden"
             onClick={() =>
               openModal({
                 type: ModalType.BEFORE_AFTER,
@@ -84,13 +69,11 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
 
       {/* End Image */}
       {afterImage && afterImage !== beforeImage && (
-        <div className="step-card" style={{ order: 999 }}>
+        <div className="step-card order-[999]">
           <div className="step-name">End Image</div>
           <div className="step-duration">
             {afterImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
-            <span
-              style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}
-            >
+            <span className="text-xs text-gray-500 ml-2">
               (
               {formatTimeDifference(
                 passEnd.getTime(),
@@ -102,8 +85,7 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
           </div>
 
           <div
-            className="step-image-container clickable-image"
-            style={{ marginTop: '12px', width: '100%', overflow: 'hidden' }}
+            className="step-image-container clickable-image mt-3 w-full overflow-hidden"
             onClick={() =>
               openModal({
                 type: ModalType.BEFORE_AFTER,

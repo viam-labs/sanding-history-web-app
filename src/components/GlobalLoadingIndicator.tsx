@@ -9,51 +9,17 @@ const GlobalLoadingIndicator: React.FC = () => {
   const fileCount = files.size + videoFiles.size + imageFiles.size
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        right: '24px',
-        backgroundColor: 'rgba(0, 0, 0, 0.88)',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        zIndex: 9999,
-        animation: 'toastSlideIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1)',
-        minWidth: '280px',
-      }}
-    >
-      <div style={{ flexShrink: 0 }}>
+    <div className="fixed bottom-6 right-6 bg-black/90 px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-[9999] animate-slide-in-up min-w-[280px]">
+      <div className="shrink-0">
         <Spinner size="16px" borderWidth="2px" color="#46beffff" />
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2px',
-          flex: 1,
-        }}
-      >
-        <span
-          style={{
-            fontSize: '14px',
-            color: '#fafafa',
-            fontWeight: 500,
-          }}
-        >
+      <div className="flex flex-col gap-0.5 flex-1">
+        <span className="text-sm text-zinc-50 font-medium">
           Fetching binary data...
         </span>
 
-        <span
-          style={{
-            fontSize: '12px',
-            color: '#a1a1aa',
-          }}
-        >
+        <span className="text-xs text-zinc-400">
           {fetchTimestamp && (
             <>
               {fetchTimestamp.toLocaleDateString('en-US', {
@@ -75,7 +41,7 @@ const GlobalLoadingIndicator: React.FC = () => {
       </div>
 
       <style>{`
-        @keyframes toastSlideIn {
+        @keyframes slide-in-up {
           from { 
             transform: translateY(100%);
             opacity: 0;
@@ -84,6 +50,9 @@ const GlobalLoadingIndicator: React.FC = () => {
             transform: translateY(0);
             opacity: 1;
           }
+        }
+        .animate-slide-in-up {
+          animation: slide-in-up 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
         }
       `}</style>
     </div>

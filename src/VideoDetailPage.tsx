@@ -56,8 +56,8 @@ function VideoDetailPage() {
   useEffect(setVideoStartingLocation, [videoStartingLocation])
 
   return (
-    <div style={{ padding: '20px', width: '100%', height: '100%' }}>
-      <Link to="/" style={{ color: '#3b82f6' }}>
+    <div className="p-5 w-full h-full">
+      <Link to="/" className="text-blue-500">
         Go to sanding history
       </Link>
 
@@ -83,7 +83,7 @@ function VideoDetailPage() {
       )}
 
       {loading && <p>Loading video...</p>}
-      {error && <p style={{ color: '#dc2626' }}>Error: {error}</p>}
+      {error && <p className="text-red-600">Error: {error}</p>}
 
       {signedUrl && !loading && !error && (
         <React.Fragment>
@@ -91,12 +91,7 @@ function VideoDetailPage() {
             ref={videoRef}
             src={signedUrl}
             controls
-            style={{
-              width: '100%',
-              maxWidth: '1000px',
-              aspectRatio: '16/9',
-              borderRadius: '8px',
-            }}
+            className="w-full max-w-[1000px] aspect-video rounded-lg"
             onLoadedMetadata={setVideoStartingLocation}
           />
 

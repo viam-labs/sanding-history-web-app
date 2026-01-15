@@ -6,14 +6,12 @@ import { useViamClients } from '../lib/contexts/ViamClientContext'
 interface ImageDisplayProps {
   binaryData: VIAM.dataApi.BinaryData
   className?: string
-  style?: React.CSSProperties
   alt?: string
 }
 
 const ImageDisplay: React.FC<ImageDisplayProps> = ({
   binaryData,
   className,
-  style,
   alt = 'Pass capture',
 }) => {
   const { viamClient } = useViamClients()
@@ -109,30 +107,10 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     }
   }, [binaryData, viamClient])
 
-  const defaultStyle = {
-    width: '100%',
-    maxWidth: '100%',
-    maxHeight: '225px',
-    borderRadius: '4px',
-    objectFit: 'contain' as const,
-    display: 'block' as const,
-  }
-
   if (isLoading) {
     return (
       <div
-        style={{
-          width: '300px',
-          height: '100%',
-          backgroundColor: '#f0f0f0',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#6b7280',
-          ...style,
-        }}
-        className={className}
+        className={`w-[300px] h-full bg-gray-100 rounded flex items-center justify-center text-gray-500 ${className || ''}`}
       >
         Loading...
       </div>
@@ -142,40 +120,16 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
   if (hasError || !imageUrl) {
     return (
       <div
-        style={{
-          width: '300px',
-          height: '225px',
-          backgroundColor: '#f0f0f0',
-          borderRadius: '4px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#ef4444',
-          fontSize: '14px',
-          textAlign: 'center',
-          padding: '20px',
-          ...style,
-        }}
-        className={className}
+        className={`w-[300px] h-[225px] bg-gray-100 rounded flex flex-col items-center justify-center text-red-500 text-sm text-center p-5 ${className || ''}`}
       >
         <div>Failed to load image</div>
         {errorMessage && (
-          <div
-            style={{
-              fontSize: '12px',
-              marginTop: '8px',
-              color: '#9ca3af',
-              maxWidth: '260px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
+          <div className="text-xs mt-2 text-gray-400 max-w-[260px] overflow-hidden text-ellipsis">
             {errorMessage}
           </div>
         )}
         {binaryData.metadata?.fileName && (
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#9ca3af' }}>
+          <div className="text-xs mt-2 text-gray-400">
             {binaryData.metadata.fileName.split('/').pop()}
           </div>
         )}
@@ -187,8 +141,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     <img
       src={imageUrl}
       alt={alt}
-      style={{ ...defaultStyle, ...style }}
-      className={className}
+      className={`w-full max-w-full max-h-[225px] rounded object-contain block ${className || ''}`}
       onError={() => {
         setHasError(true)
         setErrorMessage('Image failed to render after loading')

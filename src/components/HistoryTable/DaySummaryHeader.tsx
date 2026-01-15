@@ -69,10 +69,7 @@ export const DaySummaryHeader: React.FC<DaySummaryHeaderProps> = ({
             </div>
             <div className="day-summary-item diagnosis-item">
               <span className="day-summary-label">Symptoms</span>
-              <span
-                className="day-summary-value diagnosis-list"
-                style={{ fontSize: '11px', lineHeight: '1.4' }}
-              >
+              <span className="day-summary-value diagnosis-list text-[11px] leading-snug">
                 {symptomCounts.size > 0 ? (
                   Array.from(symptomCounts.entries())
                     .sort((a, b) => b[1] - a[1])
@@ -88,10 +85,7 @@ export const DaySummaryHeader: React.FC<DaySummaryHeaderProps> = ({
             </div>
             <div className="day-summary-item diagnosis-item">
               <span className="day-summary-label">Causes</span>
-              <span
-                className="day-summary-value diagnosis-list"
-                style={{ fontSize: '11px', lineHeight: '1.4' }}
-              >
+              <span className="day-summary-value diagnosis-list text-[11px] leading-snug">
                 {causeCounts.size > 0 ? (
                   Array.from(causeCounts.entries())
                     .sort((a, b) => b[1] - a[1])

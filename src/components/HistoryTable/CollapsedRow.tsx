@@ -50,7 +50,7 @@ export const CollapsedRow = ({
       <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
       <td className="text-zinc-700 text-xs">
         {pass.pass_id ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <div className="flex items-center gap-1">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -60,82 +60,43 @@ export const CollapsedRow = ({
                 const svg = btn.querySelector('svg')
                 const textSpan = btn.querySelector('span')
                 // Change to green success state
-                btn.style.backgroundColor = '#dcfce7'
-                btn.style.color = '#166534'
+                btn.classList.remove('bg-gray-100', 'hover:bg-blue-100')
+                btn.classList.add('bg-green-100')
                 if (svg) {
                   svg.innerHTML =
                     '<path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />'
-                  svg.style.fill = '#166534'
+                  svg.classList.remove('fill-gray-400')
+                  svg.classList.add('fill-green-700')
                 }
                 if (textSpan) {
-                  textSpan.style.color = '#166534'
+                  textSpan.classList.remove('text-zinc-600')
+                  textSpan.classList.add('text-green-700')
                 }
                 setTimeout(() => {
-                  btn.style.backgroundColor = '#f3f4f6'
-                  btn.style.color = ''
+                  btn.classList.remove('bg-green-100')
+                  btn.classList.add('bg-gray-100', 'hover:bg-blue-100')
                   if (svg) {
                     svg.innerHTML =
                       '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />'
-                    svg.style.fill = '#9ca3af'
+                    svg.classList.remove('fill-green-700')
+                    svg.classList.add('fill-gray-400')
                   }
                   if (textSpan) {
-                    textSpan.style.color = '#52525b'
+                    textSpan.classList.remove('text-green-700')
+                    textSpan.classList.add('text-zinc-600')
                   }
                 }, 1500)
               }}
-              className="inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer"
+              className="inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer bg-gray-100 hover:bg-blue-100 border-none gap-1.5 px-2.5 transition-colors duration-150 group"
               title={`Copy pass ID: ${pass.pass_id}`}
-              style={{
-                backgroundColor: '#f3f4f6',
-                border: 'none',
-                gap: '6px',
-                paddingLeft: '10px',
-                paddingRight: '10px',
-                transition: 'background-color 0.15s ease',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                const btn = e.currentTarget
-                const svg = btn.querySelector('svg')
-                const textSpan = btn.querySelector('span')
-                if (btn.style.backgroundColor !== 'rgb(220, 252, 231)') {
-                  // not in success state
-                  btn.style.backgroundColor = '#dbeafe'
-                  if (svg) svg.style.fill = '#2563eb'
-                  if (textSpan) textSpan.style.color = '#2563eb'
-                }
-              }}
-              onMouseLeave={(e) => {
-                const btn = e.currentTarget
-                const svg = btn.querySelector('svg')
-                const textSpan = btn.querySelector('span')
-                if (btn.style.backgroundColor !== 'rgb(220, 252, 231)') {
-                  // not in success state
-                  btn.style.backgroundColor = '#f3f4f6'
-                  if (svg) svg.style.fill = '#9ca3af'
-                  if (textSpan) textSpan.style.color = '#52525b'
-                }
-              }}
             >
-              <span
-                style={{
-                  fontFamily:
-                    'ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace',
-                  color: '#52525b',
-                  fontSize: '11px',
-                }}
-              >
+              <span className="font-mono text-zinc-600 text-[11px] group-hover:text-blue-600">
                 {pass.pass_id.substring(0, 8)}
               </span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  fill: '#9ca3af',
-                  transition: 'fill 0.15s ease',
-                }}
+                className="w-3 h-3 fill-gray-400 transition-colors duration-150 group-hover:fill-blue-600"
               >
                 <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
               </svg>
@@ -150,11 +111,7 @@ export const CollapsedRow = ({
               if (hasNotes || hasDiagnosis) {
                 return (
                   <span
-                    style={{
-                      fontSize: '18px',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
+                    className="text-lg flex items-center"
                     title={
                       hasNotes && hasDiagnosis
                         ? 'This pass has notes and diagnosis'
@@ -222,23 +179,10 @@ export const CollapsedRow = ({
       </td>
       <td className="text-zinc-700">
         {pass.err_string ? (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: '4px',
-            }}
-          >
+          <div className="flex flex-col items-start gap-1">
             <span
-              className="text-red-600 text-xxs font-mono error-text"
+              className="text-red-600 text-xxs font-mono error-text block max-w-full break-words whitespace-pre-wrap"
               title={pass.err_string}
-              style={{
-                display: 'block',
-                maxWidth: '100%',
-                wordBreak: 'break-word',
-                whiteSpace: 'pre-wrap',
-              }}
             >
               {errorsExpanded
                 ? pass.err_string
@@ -252,25 +196,7 @@ export const CollapsedRow = ({
                   e.stopPropagation()
                   setErrorsExpanded(!errorsExpanded)
                 }}
-                style={{
-                  padding: '2px 8px',
-                  fontSize: '11px',
-                  backgroundColor: '#eee',
-                  color: '#db5353ff',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                  fontWeight: 'bold',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#db5353ff'
-                  e.currentTarget.style.color = '#fff'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#eee'
-                  e.currentTarget.style.color = '#db5353ff'
-                }}
+                className="px-2 py-0.5 text-[11px] bg-gray-200 text-red-500 border-none rounded cursor-pointer transition-colors duration-200 font-bold hover:bg-red-500 hover:text-white"
               >
                 {errorsExpanded ? 'Show less' : 'Show more'}
               </button>
