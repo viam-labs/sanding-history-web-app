@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.2
+
+### Patch Changes
+
+- f6720b1: use tailwind styles
+
 ## 1.7.1
 
 ### Patch Changes
