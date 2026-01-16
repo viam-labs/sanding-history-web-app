@@ -94,7 +94,7 @@ export class VideoPollingManager {
     if (this.isPolling || !this.fetchDataFn) return
 
     this.isPolling = true
-    const pollInterval = 5000 // Poll every 5 seconds
+    const maxPollingTime = 60000 // 60 seconds
 
     const poll = async () => {
       if (this.activeRequests.size === 0) {
@@ -108,19 +108,7 @@ export class VideoPollingManager {
           await this.fetchDataFn()
         }
 
-        // Check each request to see if videos are available
-        const currentTime = Date.now()
-        const maxPollingTime = 60000 // 60 seconds
-
         for (const [requestId, request] of this.activeRequests.entries()) {
-          // Check timeout
-          if (currentTime - request.startTime > maxPollingTime) {
-            console.log(`Polling timeout reached for ${requestId}`)
-            request.onComplete()
-            this.activeRequests.delete(requestId)
-            continue
-          }
-
           // Check if videos are available for this step
           const step: Step = {
             name: request.stepName,
@@ -137,6 +125,14 @@ export class VideoPollingManager {
             this.activeRequests.delete(requestId)
             continue
           }
+
+          // Check timeout
+          if (Date.now() - request.startTime > maxPollingTime) {
+            console.log(`Polling timeout reached for ${requestId}`)
+            request.onComplete()
+            this.activeRequests.delete(requestId)
+            continue
+          }
         }
 
         // Stop polling if no more active requests
@@ -144,7 +140,7 @@ export class VideoPollingManager {
           this.stopPolling()
           return
         } else {
-          this.pollTimeout = window.setTimeout(poll, pollInterval)
+          this.pollTimeout = window.setTimeout(poll)
         }
       } catch (error) {
         console.error('Error during polling:', error)
@@ -152,7 +148,7 @@ export class VideoPollingManager {
       }
     }
 
-    this.pollTimeout = window.setTimeout(poll, 0)
+    this.pollTimeout = window.setTimeout(poll)
   }
 
   private stopPolling() {
