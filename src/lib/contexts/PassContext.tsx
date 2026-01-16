@@ -12,7 +12,7 @@ import { getPassMetadataManager } from '../passMetadataManager'
 
 const sandingSummaryName = 'sanding-summary'
 const sandingSummaryComponentType = 'rdk:component:sensor'
-const BATCH_SIZE = 100
+const BATCH_SIZE = 1000
 
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
 interface PassContextType {
