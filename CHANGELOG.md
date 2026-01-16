@@ -1,5 +1,12 @@
 # sanding-monitoring-web-app
 
+## 1.7.3
+
+### Patch Changes
+
+- 11ebab8: increase pass batch size
+- dfcf85b: only send one video poll at a time
+
 ## 1.7.2
 
 ### Patch Changes
