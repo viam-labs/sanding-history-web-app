@@ -16,7 +16,7 @@ export class VideoPollingManager {
   private static instance: VideoPollingManager
   private activeRequests: Map<string, PollingRequest> = new Map()
   private isPolling: boolean = false
-  private pollInterval: number | null = null
+  private pollTimeout: number | null = null
   private fetchDataFn: (() => Promise<void>) | null = null
   private currentVideos: Map<string, VIAM.dataApi.BinaryData> = new Map()
 
@@ -94,9 +94,9 @@ export class VideoPollingManager {
     if (this.isPolling || !this.fetchDataFn) return
 
     this.isPolling = true
-    const pollInterval = 5000 // Poll every 5 seconds
+    const maxPollingTime = 60000 // 60 seconds
 
-    this.pollInterval = window.setInterval(async () => {
+    const poll = async () => {
       if (this.activeRequests.size === 0) {
         this.stopPolling()
         return
@@ -108,19 +108,7 @@ export class VideoPollingManager {
           await this.fetchDataFn()
         }
 
-        // Check each request to see if videos are available
-        const currentTime = Date.now()
-        const maxPollingTime = 60000 // 60 seconds
-
         for (const [requestId, request] of this.activeRequests.entries()) {
-          // Check timeout
-          if (currentTime - request.startTime > maxPollingTime) {
-            console.log(`Polling timeout reached for ${requestId}`)
-            request.onComplete()
-            this.activeRequests.delete(requestId)
-            continue
-          }
-
           // Check if videos are available for this step
           const step: Step = {
             name: request.stepName,
@@ -137,23 +125,36 @@ export class VideoPollingManager {
             this.activeRequests.delete(requestId)
             continue
           }
+
+          // Check timeout
+          if (Date.now() - request.startTime > maxPollingTime) {
+            console.log(`Polling timeout reached for ${requestId}`)
+            request.onComplete()
+            this.activeRequests.delete(requestId)
+            continue
+          }
         }
 
         // Stop polling if no more active requests
         if (this.activeRequests.size === 0) {
           this.stopPolling()
+          return
+        } else {
+          this.pollTimeout = window.setTimeout(poll)
         }
       } catch (error) {
         console.error('Error during polling:', error)
         // Continue polling on error
       }
-    }, pollInterval)
+    }
+
+    this.pollTimeout = window.setTimeout(poll)
   }
 
   private stopPolling() {
-    if (this.pollInterval) {
-      window.clearInterval(this.pollInterval)
-      this.pollInterval = null
+    if (this.pollTimeout) {
+      window.clearTimeout(this.pollTimeout)
+      this.pollTimeout = null
     }
     this.isPolling = false
   }
@@ -221,10 +222,10 @@ export class VideoPollingManager {
 
   // Add cleanup method
   cleanupAll(): void {
-    // Stop the main polling interval
-    if (this.pollInterval) {
-      window.clearInterval(this.pollInterval)
-      this.pollInterval = null
+    // Stop the main polling timeout
+    if (this.pollTimeout) {
+      window.clearTimeout(this.pollTimeout)
+      this.pollTimeout = null
     }
 
     // Clear all active requests
