@@ -6,12 +6,7 @@ import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 import Spinner from '../Spinner.tsx'
 
 export const PassFiles: React.FC = () => {
-  const {
-    isFetching,
-    isLoaded,
-    fileCount,
-    passFiles: allFiles,
-  } = useSinglePass()
+  const { isFetching, isLoaded, fileCount, passFiles } = useSinglePass()
   const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
 
@@ -54,14 +49,14 @@ export const PassFiles: React.FC = () => {
 
   const filteredPassFiles = useMemo(() => {
     const searchTerm = debouncedFileSearchInput.toLowerCase()
-    if (!searchTerm) return allFiles
+    if (!searchTerm) return passFiles
 
-    return allFiles.filter((file) => {
+    return passFiles.filter((file) => {
       const fileName = file.fileName.split('/').pop()?.toLowerCase() || ''
       const fullPath = file.fileName.toLowerCase() || ''
       return fileName.includes(searchTerm) || fullPath.includes(searchTerm)
     })
-  }, [allFiles, debouncedFileSearchInput])
+  }, [passFiles, debouncedFileSearchInput])
 
   const filesCountDisplay = useMemo(() => {
     const searchTerm = debouncedFileSearchInput.toLowerCase()
