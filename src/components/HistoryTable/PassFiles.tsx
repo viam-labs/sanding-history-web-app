@@ -7,7 +7,7 @@ import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 export const PassFiles: React.FC = () => {
   const { pass, passFiles } = useSinglePass()
-  const { machineId, organizationId } = useViamClients()
+  const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
   const { fetchTimestamp } = useFiles()
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
@@ -25,11 +25,15 @@ export const PassFiles: React.FC = () => {
     }
   }, [fileSearchInput])
 
-  const handleDownload = (file: VIAM.dataApi.BinaryData) => {
+  const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
     try {
-      if (file.metadata?.uri) {
+      if (file.metadata?.binaryDataId) {
+        const signedUrl = await viamClient.dataClient.createBinaryDataSignedURL(
+            file.metadata.binaryDataId,
+            1
+        );
         const a = document.createElement('a')
-        a.href = file.metadata.uri
+        a.href = signedUrl
         a.download = file.metadata?.fileName?.split('/').pop() || 'download'
         document.body.appendChild(a)
         a.click()
