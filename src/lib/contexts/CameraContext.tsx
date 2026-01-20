@@ -24,24 +24,28 @@ export function CameraProvider({ children }: { children: ReactNode }) {
   const [hasAutoSelectedCamera, setHasAutoSelectedCamera] = useState(false)
   const [cameraComponentNames, setCameraComponentNames] = useState<string[]>([])
 
-  const registerCameraNames = (imageFiles: BinaryDataFile[]) => {
-    const names = Array.from(
-      new Set(
-        imageFiles
-          .filter(
-            (file) =>
-              file.binaryData.metadata?.captureMetadata?.componentType ===
-              'rdk:component:camera'
-          )
-          .map(
-            (file) => file.binaryData.metadata?.captureMetadata?.componentName
-          )
-          .filter((name): name is string => !!name)
+  const registerCameraNames = useCallback(
+    (imageFiles: BinaryDataFile[]) => {
+      const names = Array.from(
+        new Set(
+          ...cameraComponentNames,
+          ...imageFiles
+            .filter(
+              (file) =>
+                file.binaryData.metadata?.captureMetadata?.componentType ===
+                'rdk:component:camera'
+            )
+            .map(
+              (file) => file.binaryData.metadata?.captureMetadata?.componentName
+            )
+            .filter((name): name is string => !!name)
+        )
       )
-    )
 
-    setCameraComponentNames(names)
-  }
+      setCameraComponentNames(names)
+    },
+    [cameraComponentNames]
+  )
 
   useEffect(() => {
     if (cameraComponentNames.length === 0 || hasAutoSelectedCamera) return
