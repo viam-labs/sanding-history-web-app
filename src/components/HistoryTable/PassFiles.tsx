@@ -27,18 +27,16 @@ export const PassFiles: React.FC = () => {
 
   const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
     try {
-      const data = await viamClient.dataClient.binaryDataByIds([
-        file.metadata!.binaryDataId,
-      ])
-      if (data.length > 0) {
-        const blob = new Blob([new Uint8Array(data[0].binary)])
-        const url = window.URL.createObjectURL(blob)
+      if (file.metadata?.binaryDataId) {
+        const signedUrl = await viamClient.dataClient.createBinaryDataSignedURL(
+            file.metadata.binaryDataId,
+            1
+        );
         const a = document.createElement('a')
-        a.href = url
+        a.href = signedUrl
         a.download = file.metadata?.fileName?.split('/').pop() || 'download'
         document.body.appendChild(a)
         a.click()
-        window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       }
     } catch (error) {
