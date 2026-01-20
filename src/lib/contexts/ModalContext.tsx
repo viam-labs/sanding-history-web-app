@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
 import SnapshotModal from '../../components/SnapshotModal'
-import * as VIAM from '@viamrobotics/sdk'
 import BeforeAfterModal from '../../components/BeforeAfterModal'
+import { BinaryDataFile } from '../BinaryDataFile'
 
 // Define modal types
 export enum ModalType {
@@ -18,8 +18,8 @@ interface SnapshotModalData {
 
 interface BeforeAfterModalData {
   type: ModalType.BEFORE_AFTER
-  beforeImage: VIAM.dataApi.BinaryData | null
-  afterImage: VIAM.dataApi.BinaryData | null
+  beforeImage: BinaryDataFile | null
+  afterImage: BinaryDataFile | null
 }
 
 // Discriminated union of all modal configs

@@ -4,7 +4,6 @@ import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
 import { ResourceSelection } from './components/ResouceSelection'
 import HistoryTable from './components/HistoryTable'
 import { Pagination } from './components/HistoryTable/Pagination'
-import GlobalLoadingIndicator from './components/GlobalLoadingIndicator'
 
 function App() {
   return (
@@ -28,7 +27,6 @@ function App() {
       </main>
 
       <Pagination />
-      <GlobalLoadingIndicator />
     </div>
   )
 }

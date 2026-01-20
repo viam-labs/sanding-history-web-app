@@ -1,173 +1,185 @@
 import {
   createContext,
   useContext,
-  useState,
   ReactNode,
-  useEffect,
   useCallback,
   useRef,
+  useState,
 } from 'react'
-import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
-import { Timestamp } from '@bufbuild/protobuf'
-import { usePass } from './PassContext'
-import { BinaryDataManager } from '../BinaryDataManager'
+import { Pass } from '../types'
+import { FileQueryManager } from '../FileQueryManager'
 import { BinaryDataFile } from '../BinaryDataFile'
 
 interface FilesContextType {
-  fetchTimestamp: Date | null
-  files: Map<string, VIAM.dataApi.BinaryData>
-  videoFiles: Map<string, VIAM.dataApi.BinaryData>
-  imageFiles: Map<string, VIAM.dataApi.BinaryData>
-  fetchFiles: (start: Date, shouldSetLoadingState?: boolean) => Promise<void>
-  binaryDataManager: BinaryDataManager
+  getIsFetching: (passId: string) => boolean
+  getIsLoaded: (passId: string) => boolean
+  getFileCount: (passId: string) => number
+  getDataFiles: (passId: string) => BinaryDataFile[]
+  getVideoFiles: (passId: string) => BinaryDataFile[]
+  getImageFiles: (passId: string) => BinaryDataFile[]
+  fetchPassFiles: (pass: Pass) => Promise<void>
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
 
 export function FilesProvider({ children }: { children: ReactNode }) {
   const { viamClient, machineId } = useViamClients()
-  const { passSummaries } = usePass()
-  const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null)
-  const [files, setFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(
+
+  const queryManager = useRef<FileQueryManager>(new FileQueryManager())
+
+  const [fetchingPasses, setFetchingPasses] = useState<Set<string>>(new Set())
+  const [loadedPasses, setLoadedPasses] = useState<Set<string>>(new Set())
+  const [fileCounts, setFileCounts] = useState<Map<string, number>>(new Map())
+
+  const [dataFiles, setDataFiles] = useState<Map<string, BinaryDataFile[]>>(
     new Map()
   )
-  const [videoFiles, setVideoFiles] = useState<
-    Map<string, VIAM.dataApi.BinaryData>
-  >(new Map())
-  const [imageFiles, setImageFiles] = useState<
-    Map<string, VIAM.dataApi.BinaryData>
-  >(new Map())
-  const binaryDataManager = useRef<BinaryDataManager>(new BinaryDataManager())
-
-  const fetchFiles = useCallback(
-    async (start: Date, shouldSetLoadingState: boolean = true) => {
-      const end = new Date()
-
-      console.log('Fetching for time range:', start, end)
-      if (shouldSetLoadingState) {
-        setFetchTimestamp(start)
-      }
-
-      const filter = {
-        robotId: machineId,
-        interval: {
-          start: Timestamp.fromDate(start),
-          end: Timestamp.fromDate(end),
-        } as VIAM.dataApi.CaptureInterval,
-      } as VIAM.dataApi.Filter
-
-      let paginationToken: string | undefined = undefined
-
-      // Process files in batches
-      while (true) {
-        const binaryData = await viamClient.dataClient.binaryDataByFilter(
-          filter,
-          1000,
-          VIAM.dataApi.Order.DESCENDING,
-          paginationToken,
-          false,
-          false,
-          false
-        )
-
-        const newFiles = new Map<string, VIAM.dataApi.BinaryData>()
-        const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>()
-        const newImages = new Map<string, VIAM.dataApi.BinaryData>()
-
-        binaryData.data.forEach((file) => {
-          if (file.metadata?.binaryDataId) {
-            const isVideo = file.metadata.fileName
-              ?.toLowerCase()
-              .includes('.mp4')
-            const isImageFile = file.metadata.fileName
-              ?.toLowerCase()
-              .match(/\.(png|jpg|jpeg)$/)
-            const isCameraCapture =
-              file.metadata.captureMetadata?.componentName &&
-              file.metadata.captureMetadata?.methodName
-
-            binaryDataManager.current.addBinaryDataFile(
-              new BinaryDataFile(file)
-            )
-
-            if (isVideo) {
-              // Video files go to videoFiles
-              newVideoFiles.set(file.metadata.binaryDataId, file)
-            } else if (isImageFile || isCameraCapture) {
-              // Image files go to images
-              newImages.set(file.metadata.binaryDataId, file)
-            } else {
-              // Other files go to files
-              newFiles.set(file.metadata.binaryDataId, file)
-            }
-          }
-        })
-
-        paginationToken = binaryData.last
-
-        if (binaryData.data.length > 0 && shouldSetLoadingState) {
-          setFetchTimestamp(
-            binaryData.data[
-              binaryData.data.length - 1
-            ].metadata!.timeRequested!.toDate()
-          )
-        }
-
-        setFiles((prevFiles) => {
-          const updatedFiles = new Map(prevFiles)
-          newFiles.forEach((file, id) => {
-            updatedFiles.set(id, file)
-          })
-          return updatedFiles
-        })
-
-        setVideoFiles((prevVideoFiles) => {
-          const updatedVideoFiles = new Map(prevVideoFiles)
-          newVideoFiles.forEach((file, id) => {
-            updatedVideoFiles.set(id, file)
-          })
-          return updatedVideoFiles
-        })
-
-        setImageFiles((prevImageFiles) => {
-          const updatedImageFiles = new Map(prevImageFiles)
-          newImages.forEach((file, id) => {
-            updatedImageFiles.set(id, file)
-          })
-          return updatedImageFiles
-        })
-
-        // Break if no more data to fetch
-        if (!binaryData.last) break
-      }
-      console.log('total files count:', files.size)
-      console.log('total video files count:', videoFiles.size)
-      console.log('total image files count:', imageFiles.size)
-
-      if (shouldSetLoadingState) {
-        setFetchTimestamp(null)
-      }
-    },
-    [machineId, viamClient]
+  const [videoFiles, setVideoFiles] = useState<Map<string, BinaryDataFile[]>>(
+    new Map()
+  )
+  const [imageFiles, setImageFiles] = useState<Map<string, BinaryDataFile[]>>(
+    new Map()
   )
 
-  useEffect(() => {
-    if (passSummaries.length > 0 && viamClient) {
-      const earliestVideoTime = passSummaries[passSummaries.length - 1].start
-      fetchFiles(earliestVideoTime)
-    }
-  }, [passSummaries, viamClient, fetchFiles])
+  const getIsFetching = useCallback(
+    (passId: string) => {
+      return fetchingPasses.has(passId)
+    },
+    [fetchingPasses]
+  )
+
+  const getIsLoaded = useCallback(
+    (passId: string) => {
+      return loadedPasses.has(passId)
+    },
+    [loadedPasses]
+  )
+
+  const getFileCount = useCallback(
+    (passId: string) => {
+      return fileCounts.get(passId) ?? 0
+    },
+    [fileCounts]
+  )
+
+  const getDataFiles = useCallback(
+    (passId: string) => {
+      return dataFiles.get(passId) ?? []
+    },
+    [dataFiles]
+  )
+
+  const getVideoFiles = useCallback(
+    (passId: string) => {
+      return videoFiles.get(passId) ?? []
+    },
+    [videoFiles]
+  )
+
+  const getImageFiles = useCallback(
+    (passId: string) => {
+      return imageFiles.get(passId) ?? []
+    },
+    [imageFiles]
+  )
+
+  const fetchPassFiles = useCallback(
+    async (pass: Pass) => {
+      const passId = pass.pass_id
+      if (loadedPasses.has(passId) || fetchingPasses.has(passId)) {
+        return
+      }
+
+      setFetchingPasses((prev) => new Set([...prev, passId]))
+      let dataCount = 0
+      let videoCount = 0
+      let imageCount = 0
+      let totalFiles = 0
+
+      try {
+        console.log(`Fetching files for pass ${passId}`)
+
+        await queryManager.current.queryFiles({
+          machineId,
+          viamClient,
+          passId,
+          start: pass.start,
+          end: pass.end,
+          onQuery: (
+            passId: string,
+            nextData: BinaryDataFile[],
+            nextVideos: BinaryDataFile[],
+            nextImages: BinaryDataFile[]
+          ) => {
+            if (nextData.length > 0) {
+              dataCount += nextData.length
+              setDataFiles((prev) => {
+                const existing = prev.get(passId) ?? []
+                return new Map([...prev, [passId, [...existing, ...nextData]]])
+              })
+            }
+            if (nextVideos.length > 0) {
+              videoCount += nextVideos.length
+              setVideoFiles((prev) => {
+                const existing = prev.get(passId) ?? []
+                return new Map([
+                  ...prev,
+                  [passId, [...existing, ...nextVideos]],
+                ])
+              })
+            }
+            if (nextImages.length > 0) {
+              imageCount += nextImages.length
+              setImageFiles((prev) => {
+                const existing = prev.get(passId) ?? []
+                return new Map([
+                  ...prev,
+                  [passId, [...existing, ...nextImages]],
+                ])
+              })
+            }
+
+            const nextTotalFiles =
+              nextData.length + nextVideos.length + nextImages.length
+
+            if (nextTotalFiles > 0) {
+              totalFiles += nextTotalFiles
+              setFileCounts((prev) => new Map([...prev, [passId, totalFiles]]))
+            }
+          },
+        })
+
+        console.log(
+          `Files fetched for pass ${passId}`,
+          `\n\tData: ${dataCount}`,
+          `\n\tVideos: ${videoCount}`,
+          `\n\tImages: ${imageCount}`,
+          `\n\t - Total files: ${totalFiles}`
+        )
+
+        setLoadedPasses((prev) => new Set([...prev, passId]))
+      } finally {
+        setFetchingPasses((prev) => {
+          const next = new Set(prev)
+          next.delete(passId)
+          return next
+        })
+      }
+    },
+    [machineId, viamClient, loadedPasses, fetchingPasses]
+  )
 
   return (
     <FilesContext.Provider
       value={{
-        fetchTimestamp,
-        files,
-        videoFiles,
-        imageFiles,
-        fetchFiles,
-        binaryDataManager: binaryDataManager.current,
+        getIsFetching,
+        getIsLoaded,
+        getFileCount,
+        getDataFiles,
+        getVideoFiles,
+        getImageFiles,
+        fetchPassFiles,
       }}
     >
       {children}

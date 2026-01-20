@@ -15,6 +15,10 @@ export class BinaryDataFile {
     return this._binaryData
   }
 
+  get captureMetadata(): VIAM.dataApi.CaptureMetadata | undefined {
+    return this._binaryData.metadata?.captureMetadata
+  }
+
   get datasetIds(): string[] {
     return this._binaryData.metadata?.datasetIds || []
   }

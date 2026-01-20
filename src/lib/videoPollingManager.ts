@@ -1,6 +1,6 @@
-import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
 import { getVideoStoreName } from './videoUtils'
+import { BinaryDataFile } from './BinaryDataFile'
 
 // Global polling state to handle multiple concurrent requests
 interface PollingRequest {
@@ -18,7 +18,7 @@ export class VideoPollingManager {
   private isPolling: boolean = false
   private pollTimeout: number | null = null
   private fetchDataFn: (() => Promise<void>) | null = null
-  private currentVideos: Map<string, VIAM.dataApi.BinaryData> = new Map()
+  private currentVideos: BinaryDataFile[] = []
 
   static getInstance(): VideoPollingManager {
     if (!VideoPollingManager.instance) {
@@ -33,18 +33,18 @@ export class VideoPollingManager {
 
   // Method to check if videos are available for a specific step
   checkVideoAvailability(step: Step, videoStoreName: string): boolean {
-    return Array.from(this.currentVideos.values()).some((file) => {
-      if (!file.metadata || !file.metadata.fileName) return false
+    return this.currentVideos.some((file) => {
+      if (!file.fileName) return false
       const isMatchingStep =
-        file.metadata.fileName.includes(step.pass_id) &&
-        file.metadata.fileName.includes(step.name)
+        file.fileName.includes(step.pass_id) &&
+        file.fileName.includes(step.name)
       const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
       return isMatchingStep && isMatchingVideoStore
     })
   }
 
   // Method to update current videos for availability checking
-  updateCurrentVideos(videos: Map<string, VIAM.dataApi.BinaryData>) {
+  updateCurrentVideos(videos: BinaryDataFile[]) {
     this.currentVideos = videos
   }
 
@@ -169,7 +169,7 @@ export class VideoPollingManager {
     console.log(
       `Checking ${this.activeRequests.size} active requests for video availability`
     )
-    console.log(`Current videos count: ${this.currentVideos.size}`)
+    console.log(`Current videos count: ${this.currentVideos.length}`)
 
     for (const [requestId, request] of this.activeRequests.entries()) {
       const step: Step = {

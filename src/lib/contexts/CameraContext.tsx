@@ -4,40 +4,44 @@ import {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from 'react'
-import { useFiles } from './FilesContext'
+import { BinaryDataFile } from '../BinaryDataFile'
 
 interface CameraContextType {
   selectedCamera: string
   setSelectedCamera: (camera: string) => void
   cameraComponentNames: string[]
+  registerCameraNames: (imageFiles: BinaryDataFile[]) => void
 }
 
 const CameraContext = createContext<CameraContextType | undefined>(undefined)
 
 export function CameraProvider({ children }: { children: ReactNode }) {
-  const { imageFiles } = useFiles()
   const [selectedCamera, setSelectedCamera] = useState<string>(() => {
     return localStorage.getItem('selectedCamera') || ''
   })
   const [hasAutoSelectedCamera, setHasAutoSelectedCamera] = useState(false)
   const [cameraComponentNames, setCameraComponentNames] = useState<string[]>([])
 
-  useEffect(() => {
+  const registerCameraNames = useCallback((imageFiles: BinaryDataFile[]) => {
     const names = Array.from(
       new Set(
-        Array.from(imageFiles.values())
+        imageFiles
           .filter(
             (file) =>
-              file.metadata?.captureMetadata?.componentType ===
+              file.binaryData.metadata?.captureMetadata?.componentType ===
               'rdk:component:camera'
           )
-          .map((file) => file.metadata?.captureMetadata?.componentName)
+          .map(
+            (file) => file.binaryData.metadata?.captureMetadata?.componentName
+          )
           .filter((name): name is string => !!name)
       )
     )
+
     setCameraComponentNames(names)
-  }, [imageFiles])
+  }, [])
 
   useEffect(() => {
     if (cameraComponentNames.length === 0 || hasAutoSelectedCamera) return
@@ -62,7 +66,12 @@ export function CameraProvider({ children }: { children: ReactNode }) {
 
   return (
     <CameraContext.Provider
-      value={{ selectedCamera, setSelectedCamera, cameraComponentNames }}
+      value={{
+        selectedCamera,
+        setSelectedCamera,
+        cameraComponentNames,
+        registerCameraNames,
+      }}
     >
       {children}
     </CameraContext.Provider>

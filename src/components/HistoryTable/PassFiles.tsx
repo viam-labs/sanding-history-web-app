@@ -2,14 +2,14 @@ import React, { useMemo, useState, useEffect } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
-import { useFiles } from '../../lib/contexts/FilesContext'
+import Spinner from '../Spinner.tsx'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 export const PassFiles: React.FC = () => {
-  const { pass, passFiles } = useSinglePass()
+  const { isFetching, isLoaded, fileCount, allFiles } = useSinglePass()
   const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
-  const { fetchTimestamp } = useFiles()
+
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [fileSearchInput, setFileSearchInput] = useState<string>('')
   const [debouncedFileSearchInput, setDebouncedFileSearchInput] =
@@ -49,32 +49,29 @@ export const PassFiles: React.FC = () => {
 
   const filteredPassFiles = useMemo(() => {
     const searchTerm = debouncedFileSearchInput.toLowerCase()
-    if (!searchTerm) return passFiles
+    if (!searchTerm) return allFiles
 
-    return passFiles.filter((file) => {
+    return allFiles.filter((file) => {
       const fileName = file.fileName.split('/').pop()?.toLowerCase() || ''
       const fullPath = file.fileName.toLowerCase() || ''
       return fileName.includes(searchTerm) || fullPath.includes(searchTerm)
     })
-  }, [passFiles, debouncedFileSearchInput])
+  }, [allFiles, debouncedFileSearchInput])
 
   const filesCountDisplay = useMemo(() => {
     const searchTerm = debouncedFileSearchInput.toLowerCase()
     if (searchTerm) {
-      return `(showing ${filteredPassFiles.length} of ${passFiles.length})`
+      return `(showing ${filteredPassFiles.length} of ${fileCount})`
     }
-    return `(${passFiles.length})`
-  }, [passFiles.length, filteredPassFiles.length, debouncedFileSearchInput])
 
-  const isLoading = fetchTimestamp && fetchTimestamp > pass.start
+    return `(${fileCount})`
+  }, [fileCount, filteredPassFiles.length, debouncedFileSearchInput])
 
-  if (isLoading && passFiles.length === 0) {
+  if (isFetching) {
     return (
       <div className="pass-files-section">
         <span className="inline-block w-7 h-7 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></span>
-        <p className="mt-3 text-gray-500 text-sm">
-          Loading files...
-        </p>
+        <p className="mt-3 text-gray-500 text-sm">Loading files...</p>
       </div>
     )
   }
@@ -93,7 +90,7 @@ export const PassFiles: React.FC = () => {
         Files captured during this pass {filesCountDisplay}
       </h4>
 
-      {isExpanded && passFiles.length > 0 && (
+      {isExpanded && isLoaded && fileCount > 0 && (
         <>
           <div className="mt-2 ml-3 mb-2">
             <input
@@ -113,7 +110,9 @@ export const PassFiles: React.FC = () => {
                 <div
                   key={fileIndex}
                   className={`flex items-center justify-between px-1.5 py-1 bg-gray-50 hover:bg-gray-100 text-[13px] min-w-[280px] box-border transition-colors duration-200 ${
-                    fileIndex < filteredFiles.length - 1 ? 'border-b border-gray-200' : ''
+                    fileIndex < filteredFiles.length - 1
+                      ? 'border-b border-gray-200'
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
@@ -163,7 +162,7 @@ export const PassFiles: React.FC = () => {
         </>
       )}
 
-      {passFiles.length === 0 && !isLoading && (
+      {isLoaded && fileCount === 0 && (
         <p className="text-[13px] text-gray-500 mt-2 pl-8">
           No files found for this pass.
         </p>

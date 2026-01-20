@@ -21,7 +21,7 @@ export const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
-  const { pass } = useSinglePass()
+  const { pass, fetchFiles } = useSinglePass()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [configMetadata, setConfigMetadata] = useState<
@@ -32,31 +32,31 @@ export const Row = ({ globalIndex }: RowProps) => {
   >(new Set())
 
   const toggleRowExpansion = () => {
-    if (!isExpanded) {
-      setIsExpanded(true)
+    const newExpandedState = !isExpanded
+    setIsExpanded(newExpandedState)
 
-      // Fetch config metadata when expanding a row
+    if (newExpandedState) {
       const [dayIndexStr, passIndexStr] = globalIndex.split('-')
       const dayIndex = parseInt(dayIndexStr)
       const passIndex = parseInt(passIndexStr)
       const dateKey = Object.keys(groupedPasses)[dayIndex]
-      const pass = groupedPasses[dateKey]?.[passIndex]
+      const currentPass = groupedPasses[dateKey]?.[passIndex]
+
+      fetchFiles()
 
       if (
-        pass &&
-        !configMetadata.has(pass.pass_id) &&
-        !loadingConfigMetadata.has(pass.pass_id)
+        currentPass &&
+        !configMetadata.has(currentPass.pass_id) &&
+        !loadingConfigMetadata.has(currentPass.pass_id)
       ) {
         const flatPasses = Object.values(groupedPasses).flat()
         const { prevPass } = getPassConfigComparison(
-          pass,
+          currentPass,
           flatPasses,
           configMetadata
         )
-        fetchConfigMetadata(pass, prevPass)
+        fetchConfigMetadata(currentPass, prevPass)
       }
-    } else {
-      setIsExpanded(false)
     }
   }
 

@@ -1,11 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react'
-import * as VIAM from '@viamrobotics/sdk'
 
 import { useViamClients } from '../lib/contexts/ViamClientContext'
 import VideoShareButtons from './VideoShareButtons'
+import { BinaryDataFile } from '../lib/BinaryDataFile'
 
 interface VideoModalProps {
-  selectedVideo: VIAM.dataApi.BinaryData | null
+  selectedVideo: BinaryDataFile | null
   onClose: () => void
 }
 
@@ -22,8 +22,8 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
       return ''
     }
 
-    const videoId = selectedVideo.metadata!.binaryDataId.split('/').pop()
-    const fileName = selectedVideo.metadata!.fileName
+    const videoId = selectedVideo.binaryDataId.split('/').pop()
+    const fileName = selectedVideo.fileName
     const baseUrl = `${window.location.origin}${window.location.pathname}`
 
     return `${baseUrl}#/videos/${videoId}?name=${encodeURIComponent(fileName)}`
@@ -59,10 +59,10 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
         try {
           console.log(
             'creating signed URL for video',
-            selectedVideo.metadata!.binaryDataId
+            selectedVideo.binaryDataId
           )
           const url = await viamClient.dataClient.createBinaryDataSignedURL(
-            selectedVideo.metadata!.binaryDataId,
+            selectedVideo.binaryDataId,
             60
           )
           setModalVideoUrl(url)
@@ -132,19 +132,18 @@ const VideoModal: React.FC<VideoModalProps> = ({ selectedVideo, onClose }) => {
 
             <p>
               <strong>File:</strong>{' '}
-              {selectedVideo.metadata?.uri ? (
+              {selectedVideo.uri ? (
                 <a
-                  href={selectedVideo.metadata.uri}
+                  href={selectedVideo.uri}
                   download={
-                    selectedVideo.metadata?.fileName?.split('/').pop() ||
-                    'video.mp4'
+                    selectedVideo.fileName?.split('/').pop() || 'video.mp4'
                   }
                   className="text-blue-500 underline cursor-pointer hover:text-blue-600"
                 >
-                  {selectedVideo.metadata?.fileName || 'Unknown'}
+                  {selectedVideo.fileName || 'Unknown'}
                 </a>
               ) : (
-                selectedVideo.metadata?.fileName || 'Unknown'
+                selectedVideo.fileName || 'Unknown'
               )}
             </p>
           </div>

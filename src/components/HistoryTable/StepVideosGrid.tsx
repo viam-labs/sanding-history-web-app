@@ -1,41 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react'
-import * as VIAM from '@viamrobotics/sdk'
-import VideoModal from './VideoModal'
-import { Step } from '../lib/types'
-import { generateVideo, getVideoStoreName } from '../lib/videoUtils'
-import { VideoPollingManager } from '../lib/videoPollingManager'
-import { constructStepLogUrl } from '../lib/uiUtils'
-import { useToast } from '../lib/contexts/ToastContext'
+import VideoModal from '../VideoModal'
+import { Step } from '../../lib/types'
+import { generateVideo, getVideoStoreName } from '../../lib/videoUtils'
+import { VideoPollingManager } from '../../lib/videoPollingManager'
+import { constructStepLogUrl } from '../../lib/uiUtils'
+import { useToast } from '../../lib/contexts/ToastContext'
 import { useMemo } from 'react'
-import { useVideoStore } from '../lib/contexts/VideoStoreContext'
+import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
+import { BinaryDataFile } from '../../lib/BinaryDataFile'
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext'
+import { getStepVideos } from '../../lib/passUtils'
+import Spinner from '../Spinner'
 
 interface StepVideosGridProps {
-  stepVideos: VIAM.dataApi.BinaryData[]
-  videoFiles: Map<string, VIAM.dataApi.BinaryData>
   step: Step
-  fetchVideos: (start: Date, shouldSetLoadingState: boolean) => Promise<void>
-  fetchTimestamp: Date | null
-  machineId: string
-  organizationId: string
 }
 
-const StepVideosGrid: React.FC<StepVideosGridProps> = ({
-  stepVideos,
-  videoFiles,
-  step,
-  fetchVideos,
-  fetchTimestamp,
-  machineId,
-  organizationId,
-}) => {
-  const [selectedVideo, setSelectedVideo] =
-    useState<VIAM.dataApi.BinaryData | null>(null)
+const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
+  const { fetchFiles, isLoaded, videos } = useSinglePass()
+
+  const { machineId, organizationId } = useViamClients()
+
+  const [selectedVideo, setSelectedVideo] = useState<BinaryDataFile | null>(
+    null
+  )
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null)
   const { addMessage } = useToast()
   const [isPolling, setIsPolling] = useState<boolean>(false)
   const requestIdRef = useRef<string | null>(null)
   const pollingManager = VideoPollingManager.getInstance()
   const { videoStoreClient } = useVideoStore()
+
+  const stepVideos = useMemo(() => {
+    return getStepVideos(step, videos)
+  }, [step, videos])
 
   // Add CSS keyframes for spinner animation
   useEffect(() => {
@@ -56,14 +55,14 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   // Register this step's fetch function with the polling manager when generating
   // The polling manager will use the most recent fetchVideos function set
   const registerFetchForPolling = () => {
-    pollingManager.setFetchData(() => fetchVideos(step.start, false))
+    pollingManager.setFetchData(() => fetchFiles())
   }
 
   // Update polling manager whenever videoFiles changes
   useEffect(() => {
-    pollingManager.updateCurrentVideos(videoFiles)
+    pollingManager.updateCurrentVideos(videos)
     pollingManager.forceVideoCheck()
-  }, [videoFiles])
+  }, [videos])
 
   const hasVideosForVideoStore = useMemo(() => {
     return stepVideos.some(
@@ -91,7 +90,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     }
   }, [])
 
-  const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
+  const handleVideoClick = (video: BinaryDataFile) => {
     setSelectedVideo(video)
   }
 
@@ -141,8 +140,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     }
   }
 
-  const isLoading =
-    stepVideos.length === 0 && fetchTimestamp && fetchTimestamp > step.start
   const showLogsLink =
     machineId &&
     organizationId &&
@@ -151,7 +148,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   return (
     <>
       {/* Loading state */}
-      {isLoading && (
+      {stepVideos.length === 0 && !isLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
           <div className="w-6 h-6 border-3 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-2" />
           <div className="text-sm">Loading videos...</div>
@@ -159,7 +156,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       )}
 
       {/* Generate video button */}
-      {!hasVideosForVideoStore && !isLoading && (
+      {!hasVideosForVideoStore && isLoaded && (
         <div className="generate-video flex flex-col items-center justify-center mt-4">
           <button
             type="button"
@@ -195,7 +192,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
             const videoStoreName = getVideoStoreName(video)
             return (
               <div
-                key={video.metadata?.fileName}
+                key={video.fileName}
                 className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 w-full"
               >
                 {/* Video store badge */}
@@ -218,13 +215,10 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
                   >
                     Play
                   </button>
-                  {video.metadata?.uri && (
+                  {video.uri && (
                     <a
-                      href={video.metadata.uri}
-                      download={
-                        video.metadata?.fileName?.split('/').pop() ||
-                        'video.mp4'
-                      }
+                      href={video.uri}
+                      download={video.fileName?.split('/').pop() || 'video.mp4'}
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 px-2 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
                     >

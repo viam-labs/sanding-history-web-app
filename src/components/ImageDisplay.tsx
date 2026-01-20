@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import * as VIAM from '@viamrobotics/sdk'
 
 import { useViamClients } from '../lib/contexts/ViamClientContext'
+import { BinaryDataFile } from '../lib/BinaryDataFile'
 
 interface ImageDisplayProps {
-  binaryData: VIAM.dataApi.BinaryData
+  binaryData: BinaryDataFile
   className?: string
   alt?: string
 }
@@ -25,12 +25,10 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     let isMounted = true
     let currentObjectUrl: string | null = null
 
-    const getImageUrl = async (
-      binaryData: VIAM.dataApi.BinaryData
-    ): Promise<void> => {
+    const getImageUrl = async (binaryData: BinaryDataFile): Promise<void> => {
       try {
-        let data = binaryData.binary
-        const binaryId = binaryData.metadata?.binaryDataId
+        let data = binaryData.binaryData.binary
+        const binaryId = binaryData.binaryDataId
 
         if ((!data || data.length === 0) && binaryId) {
           const results = await viamClient.dataClient.binaryDataByIds([
@@ -49,13 +47,13 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
         }
 
         if (!data || data.length === 0) {
-          const errMsg = `No binary data available for image ${binaryData.metadata?.fileName || binaryId}`
+          const errMsg = `No binary data available for image ${binaryData.fileName || binaryId}`
           throw new Error(errMsg)
         }
 
         let mimeType = 'image/jpeg'
-        const fileName = binaryData.metadata?.fileName?.toLowerCase()
-        const fileExt = binaryData.metadata?.fileExt?.toLowerCase()
+        const fileName = binaryData.fileName?.toLowerCase()
+        const fileExt = binaryData.fileExtension?.toLowerCase()
 
         if (fileName?.endsWith('.png') || fileExt === 'png') {
           mimeType = 'image/png'
@@ -128,9 +126,9 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
             {errorMessage}
           </div>
         )}
-        {binaryData.metadata?.fileName && (
+        {binaryData.fileName && (
           <div className="text-xs mt-2 text-gray-400">
-            {binaryData.metadata.fileName.split('/').pop()}
+            {binaryData.fileName.split('/').pop()}
           </div>
         )}
       </div>
