@@ -150,7 +150,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
       {/* Loading state */}
       {stepVideos.length === 0 && !isLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
-          <div className="w-6 h-6 border-3 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-2" />
+          <Spinner size="24px" />
           <div className="text-sm">Loading videos...</div>
         </div>
       )}

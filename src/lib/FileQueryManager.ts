@@ -2,25 +2,31 @@ import * as VIAM from '@viamrobotics/sdk'
 import { Timestamp } from '@viamrobotics/sdk'
 import { BinaryDataFile } from './BinaryDataFile'
 
+export type FileQueryCallback = (
+  nextData: BinaryDataFile[],
+  nextVideos: BinaryDataFile[],
+  nextImages: BinaryDataFile[]
+) => void
+
 interface FileQueryParams {
   machineId: string
   viamClient: VIAM.ViamClient
   passId: string
   start: Date
   end: Date
-  onQuery: (
-    passId: string,
-    nextData: BinaryDataFile[],
-    nextVideos: BinaryDataFile[],
-    nextImages: BinaryDataFile[]
-  ) => void
+  onQuery: FileQueryCallback
 }
 
 export class FileQueryManager {
   private _queries: Map<string, Promise<void>> = new Map()
   private _paginationTokens: Map<string, string> = new Map()
+  private _loadedPasses: Set<string> = new Set()
 
   public async queryFiles(params: FileQueryParams) {
+    if (this._loadedPasses.has(params.passId)) {
+      return
+    }
+
     const existingQuery = this._queries.get(params.passId)
     if (existingQuery) {
       return existingQuery
@@ -88,7 +94,7 @@ export class FileQueryManager {
       }
     })
 
-    onQuery(passId, nextData, nextVideos, nextImages)
+    onQuery(nextData, nextVideos, nextImages)
 
     // Break if no more data to fetch
     if (!binaryData.last) {

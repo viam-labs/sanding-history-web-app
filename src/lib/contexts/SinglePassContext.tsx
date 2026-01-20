@@ -5,6 +5,7 @@ import {
   useCallback,
   useMemo,
   useEffect,
+  useState,
 } from 'react'
 import { Pass } from '../types'
 import { useCamera } from './CameraContext'
@@ -19,7 +20,7 @@ interface SinglePassContextType {
   data: BinaryDataFile[]
   videos: BinaryDataFile[]
   images: BinaryDataFile[]
-  allFiles: BinaryDataFile[]
+  passFiles: BinaryDataFile[]
   fetchFiles: () => Promise<void>
 }
 
@@ -35,52 +36,66 @@ export function SinglePassProvider({
   children: ReactNode
 }) {
   const { registerCameraNames } = useCamera()
-  const {
-    fetchPassFiles,
-    getIsFetching,
-    getIsLoaded,
-    getFileCount,
-    getDataFiles,
-    getVideoFiles,
-    getImageFiles,
-  } = useFiles()
+  const { fetchPassFiles } = useFiles()
 
-  const isFetching = useMemo(() => {
-    return getIsFetching(pass.pass_id)
-  }, [getIsFetching, pass.pass_id])
+  const [isFetching, setIsFetching] = useState<boolean>(false)
+  const [isLoaded, setIsLoaded] = useState<boolean>(false)
 
-  const isLoaded = useMemo(() => {
-    return getIsLoaded(pass.pass_id)
-  }, [getIsLoaded, pass.pass_id])
-
-  const fileCount = useMemo(() => {
-    return getFileCount(pass.pass_id)
-  }, [getFileCount, pass.pass_id])
-
-  const data = useMemo(() => {
-    return getDataFiles(pass.pass_id)
-  }, [getDataFiles, pass.pass_id])
-
-  const videos = useMemo(() => {
-    return getVideoFiles(pass.pass_id)
-  }, [getVideoFiles, pass.pass_id])
-
-  const images = useMemo(() => {
-    return getImageFiles(pass.pass_id)
-  }, [getImageFiles, pass.pass_id])
-
-  const allFiles = useMemo(() => {
-    return [...data, ...videos, ...images]
-  }, [data, videos, images])
+  const [data, setData] = useState<BinaryDataFile[]>([])
+  const [videos, setVideos] = useState<BinaryDataFile[]>([])
+  const [images, setImages] = useState<BinaryDataFile[]>([])
+  const [fileCount, setFileCount] = useState<number>(0)
 
   const fetchFiles = useCallback(async () => {
-    await fetchPassFiles(pass)
+    let dataCount = 0
+    let videoCount = 0
+    let imageCount = 0
+    let totalFiles = 0
+
+    setIsFetching(true)
+
+    await fetchPassFiles(pass, (nextData, nextVideos, nextImages) => {
+      if (nextData.length > 0) {
+        dataCount += nextData.length
+        setData((prev) => [...prev, ...nextData])
+      }
+      if (nextVideos.length > 0) {
+        videoCount += nextVideos.length
+        setVideos((prev) => [...prev, ...nextVideos])
+      }
+      if (nextImages.length > 0) {
+        imageCount += nextImages.length
+        setImages((prev) => [...prev, ...nextImages])
+      }
+
+      const nextTotalFiles =
+        nextData.length + nextVideos.length + nextImages.length
+
+      if (nextTotalFiles > 0) {
+        totalFiles += nextTotalFiles
+        setFileCount(totalFiles)
+      }
+
+      console.log(
+        `Files fetched for pass ${pass.pass_id}`,
+        `\n\tData: ${dataCount}`,
+        `\n\tVideos: ${videoCount}`,
+        `\n\tImages: ${imageCount}`,
+        `\n\t - Total files: ${totalFiles}`
+      )
+    })
+
+    setIsFetching(false)
+    setIsLoaded(true)
   }, [pass, fetchPassFiles])
 
   useEffect(() => {
-    const nextImages = getImageFiles(pass.pass_id)
-    if (nextImages.length > 0) registerCameraNames(nextImages)
-  }, [getImageFiles, registerCameraNames, pass.pass_id])
+    if (images.length > 0) registerCameraNames(images)
+  }, [images, registerCameraNames])
+
+  const passFiles = useMemo(() => {
+    return [...data, ...videos, ...images]
+  }, [data, videos, images])
 
   return (
     <SinglePassContext.Provider
@@ -92,7 +107,7 @@ export function SinglePassProvider({
         data,
         videos,
         images,
-        allFiles,
+        passFiles,
         fetchFiles,
       }}
     >

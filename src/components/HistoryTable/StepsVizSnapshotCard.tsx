@@ -7,6 +7,8 @@ import { getSnapshotFromGzipBinaryData } from '../../lib/snapshotUtils'
 import { useState } from 'react'
 import RenderIf from '../RenderIf.tsx'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import Spinner from '../Spinner.tsx'
 
 interface StepsVizSnapshotCardProps {
   snapshotFiles: BinaryDataFile[]
@@ -17,6 +19,7 @@ export const StepsVizSnapshotCard = ({
 }: StepsVizSnapshotCardProps) => {
   const { openModal } = useModal()
   const { viamClient } = useViamClients()
+  const { isFetching } = useSinglePass()
   const { addMessage } = useToast()
   const [loadingSnapshot, setLoadingSnapshot] = useState(false)
 
@@ -58,6 +61,12 @@ export const StepsVizSnapshotCard = ({
     <div className="step-card">
       <div className="step-name">View Snapshot</div>
       <p>Load and display a 3D scene from a snapshot file.</p>
+      <RenderIf condition={isFetching}>
+        <div className="flex flex-col items-center justify-center py-2">
+          <Spinner size="24px" />
+          <p className="text-gray-500 text-sm">Loading snapshots...</p>
+        </div>
+      </RenderIf>
       <RenderIf condition={loadingSnapshot}>
         <LoadingIndicator loadingText="Loading snapshot..." />
       </RenderIf>

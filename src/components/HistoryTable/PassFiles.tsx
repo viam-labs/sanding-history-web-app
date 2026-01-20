@@ -2,11 +2,16 @@ import React, { useMemo, useState, useEffect } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePass } from '../../lib/contexts/PassContext'
-import Spinner from '../Spinner.tsx'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import Spinner from '../Spinner.tsx'
 
 export const PassFiles: React.FC = () => {
-  const { isFetching, isLoaded, fileCount, allFiles } = useSinglePass()
+  const {
+    isFetching,
+    isLoaded,
+    fileCount,
+    passFiles: allFiles,
+  } = useSinglePass()
   const { machineId, organizationId, viamClient } = useViamClients()
   const { partId } = usePass()
 
@@ -69,9 +74,9 @@ export const PassFiles: React.FC = () => {
 
   if (isFetching) {
     return (
-      <div className="pass-files-section">
-        <span className="inline-block w-7 h-7 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></span>
-        <p className="mt-3 text-gray-500 text-sm">Loading files...</p>
+      <div className="flex gap-2 items-center">
+        <Spinner size="16px" />
+        <p className="text-gray-500 text-sm">Loading files...</p>
       </div>
     )
   }
