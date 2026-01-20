@@ -24,7 +24,7 @@ export function CameraProvider({ children }: { children: ReactNode }) {
   const [hasAutoSelectedCamera, setHasAutoSelectedCamera] = useState(false)
   const [cameraComponentNames, setCameraComponentNames] = useState<string[]>([])
 
-  const registerCameraNames = useCallback((imageFiles: BinaryDataFile[]) => {
+  const registerCameraNames = (imageFiles: BinaryDataFile[]) => {
     const names = Array.from(
       new Set(
         imageFiles
@@ -41,7 +41,7 @@ export function CameraProvider({ children }: { children: ReactNode }) {
     )
 
     setCameraComponentNames(names)
-  }, [])
+  }
 
   useEffect(() => {
     if (cameraComponentNames.length === 0 || hasAutoSelectedCamera) return
