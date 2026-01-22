@@ -12,6 +12,9 @@ interface PollingRequest {
   onComplete: () => void
 }
 
+// Polling interval in milliseconds
+const POLL_INTERVAL_MS = 2000
+
 export class VideoPollingManager {
   private static instance: VideoPollingManager
   private activeRequests: Map<string, PollingRequest> = new Map()
@@ -140,7 +143,7 @@ export class VideoPollingManager {
           this.stopPolling()
           return
         } else {
-          this.pollTimeout = window.setTimeout(poll)
+          this.pollTimeout = window.setTimeout(poll, POLL_INTERVAL_MS)
         }
       } catch (error) {
         console.error('Error during polling:', error)
