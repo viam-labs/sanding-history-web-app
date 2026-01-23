@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.4
+
+### Patch Changes
+
+- 9cf1365: use binary data uri to download files instead of another binarydata query
+
 ## 1.7.3
 
 ### Patch Changes
