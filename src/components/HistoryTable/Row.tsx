@@ -2,7 +2,7 @@ import { Pass, RobotConfigMetadata } from '../../lib/types'
 import { CollapsedRow } from './CollapsedRow'
 import RenderIf from '../RenderIf'
 import { PassInfo } from './PassInfo'
-import { StepsGrid } from './StepsGrid'
+import {lazy, Suspense} from 'react'
 import { Diagnosis } from './Diagnosis'
 import { PassFiles } from './PassFiles'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -13,11 +13,13 @@ import { getPassConfigComparison } from '../../lib/configUtils'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
+const StepsGrid = lazy(() => import('./StepsGrid'))
+
 interface RowProps {
   globalIndex: string
 }
 
-export const Row = ({ globalIndex }: RowProps) => {
+const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
@@ -126,7 +128,9 @@ export const Row = ({ globalIndex }: RowProps) => {
               </RenderIf>
 
               <div className="passes-container">
-                <StepsGrid />
+                <Suspense fallback={<div>Loading steps...</div>}>
+                  <StepsGrid />
+                </Suspense>
 
                 {/* Diagnosis and Notes Section - shows for all passes, diagnosis fields only for failed */}
                 <Diagnosis />
@@ -146,3 +150,5 @@ export const Row = ({ globalIndex }: RowProps) => {
     </>
   )
 }
+
+export default Row

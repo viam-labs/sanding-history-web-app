@@ -1,10 +1,12 @@
 import './AppInterface.css'
 import { CameraProvider } from './lib/contexts/CameraContext'
 import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
-import { ResourceSelection } from './components/ResouceSelection'
-import HistoryTable from './components/HistoryTable'
-import { Pagination } from './components/HistoryTable/Pagination'
+import { lazy } from 'react'
 import GlobalLoadingIndicator from './components/GlobalLoadingIndicator'
+import ResourceSelection from './components/ResouceSelection'
+import Pagination from './components/HistoryTable/Pagination'
+
+const HistoryTable = lazy(() => import('./components/HistoryTable'))
 
 function App() {
   return (

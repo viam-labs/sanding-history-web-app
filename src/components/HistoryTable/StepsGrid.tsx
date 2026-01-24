@@ -12,7 +12,7 @@ import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useMemo } from 'react'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
-export const StepsGrid = () => {
+const StepsGrid = () => {
   const { pass, passFiles } = useSinglePass()
   const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
   const { selectedCamera } = useCamera()
@@ -77,3 +77,5 @@ export const StepsGrid = () => {
     </div>
   )
 }
+
+export default StepsGrid

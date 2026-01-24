@@ -3,7 +3,7 @@ import VideoStoreSelector from './VideoStoreSelector'
 import { useCamera } from '../lib/contexts/CameraContext'
 import { useVideoStore } from '../lib/contexts/VideoStoreContext'
 
-export const ResourceSelection: React.FC = () => {
+const ResourceSelection: React.FC = () => {
   const { robotClient, machineName } = useViamClients()
   const { selectedCamera, cameraComponentNames, setSelectedCamera } =
     useCamera()
@@ -59,3 +59,5 @@ export const ResourceSelection: React.FC = () => {
     </div>
   )
 }
+
+export default ResourceSelection
