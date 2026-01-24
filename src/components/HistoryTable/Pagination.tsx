@@ -1,6 +1,6 @@
 import { usePagination } from '../../lib/contexts/PaginationContext'
 
-const Pagination: React.FC = () => {
+export const Pagination: React.FC = () => {
   const { currentPage, totalPages, changePage, currentPassSummaries } =
     usePagination()
   if (currentPassSummaries.length === 0) {
@@ -67,5 +67,3 @@ const Pagination: React.FC = () => {
     </div>
   )
 }
-
-export default Pagination

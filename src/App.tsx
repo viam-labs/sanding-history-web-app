@@ -2,9 +2,9 @@ import './AppInterface.css'
 import { CameraProvider } from './lib/contexts/CameraContext'
 import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
 import { lazy } from 'react'
+import { ResourceSelection } from './components/ResouceSelection'
+import { Pagination } from './components/HistoryTable/Pagination'
 import GlobalLoadingIndicator from './components/GlobalLoadingIndicator'
-import ResourceSelection from './components/ResouceSelection'
-import Pagination from './components/HistoryTable/Pagination'
 
 const HistoryTable = lazy(() => import('./components/HistoryTable'))
 
