@@ -1,9 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode, Suspense } from 'react'
 import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
-import SnapshotModal from '../../components/SnapshotModal'
 import * as VIAM from '@viamrobotics/sdk'
-import BeforeAfterModal from '../../components/BeforeAfterModal'
-
+import { lazy } from 'react'
+import { LoadingIndicator } from '../../components/LoadingIndicator.tsx'
+const SnapshotModal = lazy(() => import('../../components/SnapshotModal.tsx'))
+const BeforeAfterModal = lazy(
+  () => import('../../components/BeforeAfterModal.tsx')
+)
 // Define modal types
 export enum ModalType {
   SNAPSHOT = 'snapshot',
@@ -40,19 +43,20 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const renderModal = () => {
     if (!modalData) return null
 
-    if (modalData.type === ModalType.SNAPSHOT) {
-      return <SnapshotModal close={closeModal} snapshot={modalData.snapshot} />
-    } else if (modalData.type === ModalType.BEFORE_AFTER) {
-      return (
-        <BeforeAfterModal
-          onClose={closeModal}
-          beforeImage={modalData.beforeImage}
-          afterImage={modalData.afterImage}
-        />
-      )
-    }
-
-    return null
+    return (
+      <Suspense fallback={<LoadingIndicator loadingText="Loading..." />}>
+        {modalData.type === ModalType.SNAPSHOT && (
+          <SnapshotModal close={closeModal} snapshot={modalData.snapshot} />
+        )}
+        {modalData.type === ModalType.BEFORE_AFTER && (
+          <BeforeAfterModal
+            onClose={closeModal}
+            beforeImage={modalData.beforeImage}
+            afterImage={modalData.afterImage}
+          />
+        )}
+      </Suspense>
+    )
   }
 
   return (
