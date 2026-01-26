@@ -3,7 +3,6 @@ import {
   useContext,
   ReactNode,
   useCallback,
-  useMemo,
   useEffect,
   useState,
 } from 'react'
@@ -11,17 +10,30 @@ import { Pass } from '../types'
 import { useCamera } from './CameraContext'
 import { useFiles } from './FilesContext'
 import { BinaryDataFile } from '../BinaryDataFile'
+import { SNAPSHOT_FILE_NAME_PREFIX } from '../constants'
 
 interface SinglePassContextType {
   pass: Pass
-  isFetching: boolean
-  isLoaded: boolean
-  fileCount: number
-  data: BinaryDataFile[]
-  videos: BinaryDataFile[]
+
+  isFetchingImages: boolean
+  areImagesLoaded: boolean
   images: BinaryDataFile[]
+
+  isFetchingVideos: boolean
+  areVideosLoaded: boolean
+  videos: BinaryDataFile[]
+
+  isFetchingSnapshots: boolean
+  areSnapshotsLoaded: boolean
+  snapshots: BinaryDataFile[]
+
+  isFetchingPassFiles: boolean
+  arePassFilesLoaded: boolean
   passFiles: BinaryDataFile[]
-  fetchFiles: () => Promise<void>
+
+  fetchStepFiles: () => Promise<void>
+  fetchAllPassFiles: () => Promise<void>
+  fetchVideos: (forceRefresh?: boolean) => Promise<BinaryDataFile[]>
 }
 
 const SinglePassContext = createContext<SinglePassContextType | undefined>(
@@ -36,79 +48,130 @@ export function SinglePassProvider({
   children: ReactNode
 }) {
   const { registerCameraNames } = useCamera()
-  const { fetchPassFiles } = useFiles()
+  const {
+    fetchImages: fetchImagesFromApi,
+    fetchVideos: fetchVideosFromApi,
+    fetchAllPassFiles: fetchAllPassFilesFromApi,
+  } = useFiles()
 
-  const [isFetching, setIsFetching] = useState<boolean>(false)
-  const [isLoaded, setIsLoaded] = useState<boolean>(false)
-
-  const [data, setData] = useState<BinaryDataFile[]>([])
-  const [videos, setVideos] = useState<BinaryDataFile[]>([])
+  const [isFetchingImages, setIsFetchingImages] = useState<boolean>(false)
+  const [areImagesLoaded, setAreImagesLoaded] = useState<boolean>(false)
   const [images, setImages] = useState<BinaryDataFile[]>([])
-  const [fileCount, setFileCount] = useState<number>(0)
 
-  const fetchFiles = useCallback(async () => {
-    let dataCount = 0
-    let videoCount = 0
-    let imageCount = 0
-    let totalFiles = 0
+  const [isFetchingVideos, setIsFetchingVideos] = useState<boolean>(false)
+  const [areVideosLoaded, setAreVideosLoaded] = useState<boolean>(false)
+  const [videos, setVideos] = useState<BinaryDataFile[]>([])
 
-    setIsFetching(true)
+  const [isFetchingSnapshots, setIsFetchingSnapshots] = useState<boolean>(false)
+  const [areSnapshotsLoaded, setAreSnapshotsLoaded] = useState<boolean>(false)
+  const [snapshots, setSnapshots] = useState<BinaryDataFile[]>([])
 
-    await fetchPassFiles(pass, (nextData, nextVideos, nextImages) => {
-      if (nextData.length > 0) {
-        dataCount += nextData.length
-        setData((prev) => [...prev, ...nextData])
-      }
-      if (nextVideos.length > 0) {
-        videoCount += nextVideos.length
-        setVideos((prev) => [...prev, ...nextVideos])
-      }
+  const [isFetchingPassFiles, setIsFetchingPassFiles] = useState<boolean>(false)
+  const [arePassFilesLoaded, setArePassFilesLoaded] = useState<boolean>(false)
+  const [passFiles, setPassFiles] = useState<BinaryDataFile[]>([])
+
+  const fetchImages = useCallback(async () => {
+    if (areImagesLoaded || isFetchingImages) return
+
+    setIsFetchingImages(true)
+
+    await fetchImagesFromApi(pass, (nextImages) => {
       if (nextImages.length > 0) {
-        imageCount += nextImages.length
-        setImages((prev) => [...prev, ...nextImages])
+        setImages((prev) => deduplicateFiles(prev, nextImages))
+        setPassFiles((prev) => deduplicateFiles(prev, nextImages))
       }
-
-      const nextTotalFiles =
-        nextData.length + nextVideos.length + nextImages.length
-
-      if (nextTotalFiles > 0) {
-        totalFiles += nextTotalFiles
-        setFileCount(totalFiles)
-      }
-
-      console.log(
-        `Files fetched for pass ${pass.pass_id}`,
-        `\n\tData: ${dataCount}`,
-        `\n\tVideos: ${videoCount}`,
-        `\n\tImages: ${imageCount}`,
-        `\n\t - Total files: ${totalFiles}`
-      )
     })
 
-    setIsFetching(false)
-    setIsLoaded(true)
-  }, [pass, fetchPassFiles])
+    setIsFetchingImages(false)
+    setAreImagesLoaded(true)
+  }, [pass, fetchImagesFromApi, areImagesLoaded, isFetchingImages])
 
+  const fetchVideos = useCallback(
+    async (forceRefresh?: boolean) => {
+      if (!forceRefresh && (areVideosLoaded || isFetchingVideos)) {
+        return videos
+      }
+
+      setIsFetchingVideos(true)
+
+      const result = await fetchVideosFromApi(
+        pass,
+        (nextVideos) => {
+          if (nextVideos.length > 0) {
+            // Filter out existing videos since this call can be reinvoked after generating a video
+            setVideos((prev) => deduplicateFiles(prev, nextVideos))
+            setPassFiles((prev) => deduplicateFiles(prev, nextVideos))
+          }
+        },
+        forceRefresh
+      )
+
+      setIsFetchingVideos(false)
+      setAreVideosLoaded(true)
+      return result
+    },
+    [pass, fetchVideosFromApi, areVideosLoaded, isFetchingVideos, videos]
+  )
+
+  const fetchStepFiles = useCallback(async () => {
+    // Snapshots are filtered from pass files query
+    await Promise.all([fetchImages(), fetchVideos()])
+  }, [fetchImages, fetchVideos])
+
+  const fetchAllPassFiles = useCallback(async () => {
+    if (arePassFilesLoaded || isFetchingPassFiles) return
+
+    setIsFetchingPassFiles(true)
+    setIsFetchingSnapshots(true)
+
+    await fetchAllPassFilesFromApi(pass, (nextFiles) => {
+      if (nextFiles.length > 0) {
+        // Filter snapshots from the response
+        const newSnapshots = nextFiles.filter(({ fileName }) =>
+          fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
+        )
+        if (newSnapshots.length > 0)
+          setSnapshots((prev) => [...prev, ...newSnapshots])
+
+        setPassFiles((prev) => [...prev, ...nextFiles])
+      }
+    })
+
+    setIsFetchingPassFiles(false)
+    setIsFetchingSnapshots(false)
+
+    setArePassFilesLoaded(true)
+    setAreSnapshotsLoaded(true)
+  }, [pass, fetchAllPassFilesFromApi, arePassFilesLoaded, isFetchingPassFiles])
+
+  // Register camera names when images are loaded
   useEffect(() => {
     if (images.length > 0) registerCameraNames(images)
   }, [images, registerCameraNames])
-
-  const passFiles = useMemo(() => {
-    return [...data, ...videos, ...images]
-  }, [data, videos, images])
 
   return (
     <SinglePassContext.Provider
       value={{
         pass,
-        isFetching,
-        isLoaded,
-        fileCount,
-        data,
-        videos,
+        isFetchingImages,
+        areImagesLoaded,
         images,
+
+        isFetchingVideos,
+        areVideosLoaded,
+        videos,
+
+        isFetchingSnapshots,
+        areSnapshotsLoaded,
+        snapshots,
+
+        isFetchingPassFiles,
+        arePassFilesLoaded,
         passFiles,
-        fetchFiles,
+
+        fetchStepFiles,
+        fetchAllPassFiles,
+        fetchVideos,
       }}
     >
       {children}
@@ -122,4 +185,12 @@ export function useSinglePass() {
     throw new Error('useSinglePass must be used within an SinglePassProvider')
   }
   return context
+}
+
+const deduplicateFiles = (prev: BinaryDataFile[], next: BinaryDataFile[]) => {
+  const existingIds = new Set(prev.map((file) => file.binaryDataId))
+  const newFiles = next.filter((file) => !existingIds.has(file.binaryDataId))
+  if (newFiles.length > 0) return [...prev, ...newFiles]
+
+  return prev
 }

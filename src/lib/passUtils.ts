@@ -1,5 +1,6 @@
 import { Pass, Step } from './types'
 import { BinaryDataFile } from './BinaryDataFile'
+import { getVideoTimestamp } from './videoUtils'
 
 /**
  * Get before and after images for a given pass from a list of image files.
@@ -63,11 +64,26 @@ export const getStepVideos = (
   videoFiles.forEach((file) => {
     if (!file.fileName) return
 
-    const isMatchingStep =
+    // 1. Try matching by metadata in filename (pass_id and step name)
+    const hasMetadataMatch =
       file.fileName.includes(step.pass_id) && file.fileName.includes(step.name)
 
-    if (isMatchingStep) {
+    if (hasMetadataMatch) {
       stepVideos.push(file)
+      return
+    }
+
+    // 2. Try matching by timestamp in filename
+    const videoTime = getVideoTimestamp(file.fileName)
+    if (videoTime) {
+      const stepEnd = step.end.getTime()
+      const vidTime = videoTime.getTime()
+
+      // The video timestamp is typically step.end + 10s buffer
+      const windowMs = 10_000
+      if (Math.abs(vidTime - stepEnd) < windowMs) {
+        stepVideos.push(file)
+      }
     }
   })
 

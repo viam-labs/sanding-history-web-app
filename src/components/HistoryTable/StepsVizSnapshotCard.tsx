@@ -10,16 +10,10 @@ import { LoadingIndicator } from '../LoadingIndicator.tsx'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 import Spinner from '../Spinner.tsx'
 
-interface StepsVizSnapshotCardProps {
-  snapshotFiles: BinaryDataFile[]
-}
-
-export const StepsVizSnapshotCard = ({
-  snapshotFiles,
-}: StepsVizSnapshotCardProps) => {
+export const StepsVizSnapshotCard = () => {
   const { openModal } = useModal()
   const { viamClient } = useViamClients()
-  const { isFetching } = useSinglePass()
+  const { snapshots, isFetchingSnapshots } = useSinglePass()
   const { addMessage } = useToast()
   const [loadingSnapshot, setLoadingSnapshot] = useState(false)
 
@@ -61,7 +55,7 @@ export const StepsVizSnapshotCard = ({
     <div className="step-card">
       <div className="step-name">View Snapshot</div>
       <p>Load and display a 3D scene from a snapshot file.</p>
-      <RenderIf condition={isFetching}>
+      <RenderIf condition={isFetchingSnapshots}>
         <div className="flex flex-col items-center justify-center py-2">
           <Spinner size="24px" />
           <p className="text-gray-500 text-sm">Loading snapshots...</p>
@@ -72,7 +66,7 @@ export const StepsVizSnapshotCard = ({
       </RenderIf>
       <RenderIf condition={!loadingSnapshot}>
         <div className="flex flex-col items-center gap-1 w-full">
-          {snapshotFiles.map((snapshotFile) => {
+          {snapshots.map((snapshotFile) => {
             const snapshotName = cleanSnapshotFileName(snapshotFile.fileName)
             return (
               <div

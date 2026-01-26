@@ -1,5 +1,4 @@
 import { getBeforeAfterImages } from '../../lib/passUtils'
-import { Pass } from '../../lib/types'
 import { formatTimeDifference } from '../../lib/videoUtils'
 import ImageDisplay from '../ImageDisplay'
 import { useCamera } from '../../lib/contexts/CameraContext'
@@ -8,12 +7,8 @@ import { useEffect, useState } from 'react'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext'
 import { BinaryDataFile } from '../../lib/BinaryDataFile'
 
-interface StepImagesGridProps {
-  pass: Pass
-}
-
-export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
-  const { isLoaded, images } = useSinglePass()
+export const StepImagesGrid = () => {
+  const { pass, images, areImagesLoaded } = useSinglePass()
   const { selectedCamera } = useCamera()
   const { openModal } = useModal()
 
@@ -37,7 +32,7 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
   }, [pass, images, selectedCamera, before, after])
 
   // If no images at all, show a message
-  if (!before && !after && isLoaded) {
+  if (!before && !after && areImagesLoaded) {
     return (
       <div className="step-card order-none">
         <div className="flex h-full items-center justify-center bg-gray-100 rounded p-3 text-gray-400 text-sm">

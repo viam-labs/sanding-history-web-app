@@ -145,3 +145,26 @@ export const getVideoStoreName = (video: BinaryDataFile): string => {
   if (!fileName) return 'Unknown'
   return fileName.replace(VIDEO_UPLOAD_PATH, '').split('/')[0]
 }
+
+/**
+ * Extracts a timestamp from a video filename.
+ *
+ * Pattern: matches YYYY-MM-DD and HH-mm-ss
+ *
+ * @example ptz-video-store_2026-01-21_16-10-00_...mp4
+ */
+export const getVideoTimestamp = (fileName: string): Date | null => {
+  const regex = /_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})_/
+  const match = fileName.match(regex)
+  if (!match) return null
+
+  const datePart = match[1]
+  const timePart = match[2]
+
+  // Replace dashes in time with colons for standard ISO format parsing
+  // Parse as local time (no Z suffix) to match the comparison dates
+  const isoString = `${datePart}T${timePart.replace(/-/g, ':')}`
+
+  const date = new Date(isoString)
+  return isNaN(date.getTime()) ? null : date
+}

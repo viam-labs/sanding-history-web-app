@@ -4,27 +4,27 @@ import { StepImagesGrid } from './StepImagesGrid'
 import StepVideosGrid from './StepVideosGrid.tsx'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { StepsVizSnapshotCard } from './StepsVizSnapshotCard'
-import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
 import { useCamera } from '../../lib/contexts/CameraContext'
-import { useMemo } from 'react'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 
 export const StepsGrid = () => {
-  const { pass, isFetching, fileCount, data } = useSinglePass()
+  const {
+    pass,
+    images,
+    videos,
+    snapshots,
+    areImagesLoaded,
+    areVideosLoaded,
+    areSnapshotsLoaded,
+  } = useSinglePass()
 
   const { selectedCamera } = useCamera()
-
-  const snapshotFiles = useMemo(() => {
-    return data.filter((file) =>
-      file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
-    )
-  }, [data])
 
   return (
     <div className="steps-grid">
       {/* Camera Images */}
       <RenderIf condition={selectedCamera !== ''}>
-        <StepImagesGrid pass={pass} />
+        <StepImagesGrid />
       </RenderIf>
 
       {/* Regular step cards */}
@@ -57,19 +57,19 @@ export const StepsGrid = () => {
       })}
 
       {/* View snapshot card */}
-      <RenderIf condition={snapshotFiles.length > 0}>
-        <StepsVizSnapshotCard snapshotFiles={snapshotFiles} />
-      </RenderIf>
+      <StepsVizSnapshotCard />
 
       {/* Loading state */}
-      <RenderIf condition={isFetching}>
+      <RenderIf
+        condition={!areImagesLoaded || !areVideosLoaded || !areSnapshotsLoaded}
+      >
         <div
           className="step-card animate-pulse bg-gray-100"
           style={{ order: 1000 }}
         >
-          <div className="step-name text-center">Loading step files</div>
+          <div className="step-name text-center">Loading pass files</div>
           <div className="text-subtle-1 py-18 text-center">
-            {fileCount} files downloaded
+            {images.length + videos.length + snapshots.length} files downloaded
           </div>
         </div>
       </RenderIf>

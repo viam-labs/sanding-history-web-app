@@ -18,7 +18,7 @@ interface StepVideosGridProps {
 }
 
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
-  const { fetchFiles, isLoaded, videos } = useSinglePass()
+  const { videos, areVideosLoaded, fetchVideos } = useSinglePass()
 
   const { machineId, organizationId } = useViamClients()
 
@@ -55,7 +55,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
   // Register this step's fetch function with the polling manager when generating
   // The polling manager will use the most recent fetchVideos function set
   const registerFetchForPolling = () => {
-    pollingManager.setFetchData(() => fetchFiles())
+    pollingManager.setFetchData(() => fetchVideos(true))
   }
 
   // Update polling manager whenever videoFiles changes
@@ -125,12 +125,22 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
         throw new Error(errorMessage)
       }
 
-      // Add to polling manager
+      // Add to polling manager with onComplete and onTimeout callbacks
       requestIdRef.current = pollingManager.addRequest(
         step,
         videoStoreClient.name,
         () => {
+          // Video found
           setIsPolling(false)
+        },
+        () => {
+          // Timeout - video generation may still be in progress
+          setIsPolling(false)
+          addMessage({
+            message:
+              'Video generation timed out. The video may still be processing.',
+            type: 'warning',
+          })
         }
       )
     } catch (error) {
@@ -148,7 +158,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
   return (
     <>
       {/* Loading state */}
-      {stepVideos.length === 0 && !isLoaded && (
+      {stepVideos.length === 0 && !areVideosLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
           <Spinner size="24px" />
           <div className="text-sm">Loading videos...</div>
@@ -156,7 +166,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
       )}
 
       {/* Generate video button */}
-      {!hasVideosForVideoStore && isLoaded && (
+      {!hasVideosForVideoStore && areVideosLoaded && (
         <div className="generate-video flex flex-col items-center justify-center mt-4">
           <button
             type="button"
@@ -179,7 +189,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
           </button>
           {isPolling && (
             <div className="mt-2 text-xs text-gray-500 text-center">
-              This can take up to a minute.
+              This can take a few minutes.
             </div>
           )}
         </div>

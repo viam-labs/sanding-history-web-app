@@ -21,7 +21,7 @@ const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
-  const { pass, fetchFiles } = useSinglePass()
+  const { pass, fetchStepFiles, fetchAllPassFiles } = useSinglePass()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [configMetadata, setConfigMetadata] = useState<
@@ -42,7 +42,10 @@ const Row = ({ globalIndex }: RowProps) => {
       const dateKey = Object.keys(groupedPasses)[dayIndex]
       const currentPass = groupedPasses[dateKey]?.[passIndex]
 
-      fetchFiles()
+      // Priority: Load step files (images, videos, snapshots) for quick StepsGrid rendering
+      fetchStepFiles()
+      // Secondary: Load all files for PassFiles component
+      fetchAllPassFiles()
 
       if (
         currentPass &&
