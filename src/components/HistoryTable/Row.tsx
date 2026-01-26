@@ -42,9 +42,7 @@ const Row = ({ globalIndex }: RowProps) => {
       const dateKey = Object.keys(groupedPasses)[dayIndex]
       const currentPass = groupedPasses[dateKey]?.[passIndex]
 
-      // Priority: Load step files (images, videos, snapshots) for quick StepsGrid rendering
       fetchStepFiles()
-      // Secondary: Load all files for PassFiles component
       fetchAllPassFiles()
 
       if (

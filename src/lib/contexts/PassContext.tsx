@@ -48,8 +48,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
   const fetchPasses = async () => {
     if (isLoaded) return
 
-    console.log('Fetching sanding summaries')
-
     // batched fetching of pass summaries
     let allTabularData: any[] = []
     let hasMoreData = true
@@ -211,7 +209,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
       setFetchingNotes(false)
     }
 
-    console.log('Sanding summaries fetched')
     setIsLoaded(true)
   }
 

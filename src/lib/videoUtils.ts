@@ -149,9 +149,7 @@ export const getVideoStoreName = (video: BinaryDataFile): string => {
 /**
  * Extracts a timestamp from a video filename.
  *
- * Pattern: matches YYYY-MM-DD and HH-mm-ss
- *
- * @example ptz-video-store_2026-01-21_16-10-00_...mp4
+ * Pattern: matches YYYY-MM-DD and HH-mm-ss, e.g. ptz-video-store_2026-01-21_16-10-00_...mp4
  */
 export const getVideoTimestamp = (fileName: string): Date | null => {
   const regex = /_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})_/

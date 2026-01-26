@@ -19,9 +19,7 @@ interface StepVideosGridProps {
 
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
   const { videos, areVideosLoaded, fetchVideos } = useSinglePass()
-
   const { machineId, organizationId } = useViamClients()
-
   const [selectedVideo, setSelectedVideo] = useState<BinaryDataFile | null>(
     null
   )
@@ -111,7 +109,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
 
     // Register fetch function for this step's time range
     registerFetchForPolling()
-
     setIsPolling(true)
 
     try {
@@ -125,16 +122,12 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
         throw new Error(errorMessage)
       }
 
-      // Add to polling manager with onComplete and onTimeout callbacks
+      // Add to polling manager
       requestIdRef.current = pollingManager.addRequest(
         step,
         videoStoreClient.name,
+        () => setIsPolling(false),
         () => {
-          // Video found
-          setIsPolling(false)
-        },
-        () => {
-          // Timeout - video generation may still be in progress
           setIsPolling(false)
           addMessage({
             message:
