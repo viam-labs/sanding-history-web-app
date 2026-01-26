@@ -1,9 +1,11 @@
 import './AppInterface.css'
 import { CameraProvider } from './lib/contexts/CameraContext'
 import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
+import { lazy } from 'react'
 import { ResourceSelection } from './components/ResouceSelection'
-import HistoryTable from './components/HistoryTable'
 import { Pagination } from './components/HistoryTable/Pagination'
+
+const HistoryTable = lazy(() => import('./components/HistoryTable'))
 
 function App() {
   return (
