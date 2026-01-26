@@ -2,7 +2,6 @@ import { Pass, RobotConfigMetadata } from '../../lib/types'
 import { CollapsedRow } from './CollapsedRow'
 import RenderIf from '../RenderIf'
 import { PassInfo } from './PassInfo'
-import { StepsGrid } from './StepsGrid'
 import { Diagnosis } from './Diagnosis'
 import { PassFiles } from './PassFiles'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -12,12 +11,13 @@ import { getRobotConfigAtTime } from '../../lib/configUtils'
 import { getPassConfigComparison } from '../../lib/configUtils'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { StepsGrid } from './StepsGrid'
 
 interface RowProps {
   globalIndex: string
 }
 
-export const Row = ({ globalIndex }: RowProps) => {
+const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
@@ -146,3 +146,5 @@ export const Row = ({ globalIndex }: RowProps) => {
     </>
   )
 }
+
+export default Row

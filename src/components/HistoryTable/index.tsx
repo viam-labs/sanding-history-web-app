@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, Suspense } from 'react'
 import { Pass } from '../../lib/types'
 import { DaySummaryHeader, DayAggregateData } from './DaySummaryHeader.tsx'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
-import { Row } from './Row.tsx'
+import {lazy} from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
+const Row = lazy(() => import('./Row.tsx'))
 
 const HistoryTable: React.FC = () => {
   const { passDiagnoses } = usePass()
@@ -140,7 +141,9 @@ const HistoryTable: React.FC = () => {
                   return (
                     <React.Fragment key={globalIndex}>
                       <SinglePassProvider pass={pass}>
-                        <Row globalIndex={globalIndex} />
+                        <Suspense fallback={<tr><td colSpan={13}>Loading...</td></tr>}>
+                          <Row globalIndex={globalIndex} />
+                        </Suspense>
                       </SinglePassProvider>
                     </React.Fragment>
                   )
