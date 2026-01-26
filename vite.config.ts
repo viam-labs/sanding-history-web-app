@@ -2,10 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
+import { analyzer } from 'vite-bundle-analyzer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), svelte(), tailwindcss()],
+  plugins: [react(), svelte(), tailwindcss(), analyzer()],
   server: {
     port: 3000,
     open: false
