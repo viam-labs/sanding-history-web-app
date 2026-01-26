@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.5
+
+### Patch Changes
+
+- 3e130f5: split code bundle for faster first paint load
+
 ## 1.7.4
 
 ### Patch Changes
