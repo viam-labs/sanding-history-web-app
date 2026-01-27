@@ -94,7 +94,7 @@ export function SinglePassProvider({
 
       setIsFetchingVideos(true)
 
-      const result = await fetchVideosFromApi(
+      await fetchVideosFromApi(
         pass,
         (nextVideos) => {
           if (nextVideos.length > 0) {
@@ -108,7 +108,7 @@ export function SinglePassProvider({
 
       setIsFetchingVideos(false)
       setAreVideosLoaded(true)
-      return result
+      return videos
     },
     [pass, fetchVideosFromApi, areVideosLoaded, isFetchingVideos, videos]
   )

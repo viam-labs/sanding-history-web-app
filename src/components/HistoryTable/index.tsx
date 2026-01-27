@@ -3,7 +3,7 @@ import { Pass } from '../../lib/types'
 import { DaySummaryHeader, DayAggregateData } from './DaySummaryHeader.tsx'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
-import {lazy} from 'react'
+import { lazy } from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
 const Row = lazy(() => import('./Row.tsx'))
 
@@ -141,7 +141,13 @@ const HistoryTable: React.FC = () => {
                   return (
                     <React.Fragment key={globalIndex}>
                       <SinglePassProvider pass={pass}>
-                        <Suspense fallback={<tr><td colSpan={13}>Loading...</td></tr>}>
+                        <Suspense
+                          fallback={
+                            <tr>
+                              <td colSpan={13}>Loading...</td>
+                            </tr>
+                          }
+                        >
                           <Row globalIndex={globalIndex} />
                         </Suspense>
                       </SinglePassProvider>

@@ -1,5 +1,51 @@
 import * as VIAM from '@viamrobotics/sdk'
 
+const MONTH_NAME_TO_INDEX: Record<string, number> = {
+  January: 0,
+  February: 1,
+  March: 2,
+  April: 3,
+  May: 4,
+  June: 5,
+  July: 6,
+  August: 7,
+  September: 8,
+  October: 9,
+  November: 10,
+  December: 11,
+}
+
+/** Parses _YYYY-MM-DD_HH-mm-ss_ pattern */
+const parseIsoTimestamp = (fileName: string): Date | null => {
+  const match = fileName.match(/_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})_/)
+  if (!match) return null
+
+  const date = new Date(`${match[1]}T${match[2].replace(/-/g, ':')}`)
+  return isNaN(date.getTime()) ? null : date
+}
+
+/** Parses Month_DD_YYYY_HH_mm_ss_ pattern (e.g., January_23_2026_11_06_46_) */
+const parseMonthNameTimestamp = (fileName: string): Date | null => {
+  const match = fileName.match(
+    /([A-Z][a-z]+)_(\d{1,2})_(\d{4})_(\d{1,2})_(\d{2})_(\d{2})_/
+  )
+  if (!match) return null
+
+  const [, month, day, year, hour, minute, second] = match
+  const monthIndex = MONTH_NAME_TO_INDEX[month]
+  if (monthIndex === undefined) return null
+
+  const date = new Date(
+    parseInt(year),
+    monthIndex,
+    parseInt(day),
+    parseInt(hour),
+    parseInt(minute),
+    parseInt(second)
+  )
+  return isNaN(date.getTime()) ? null : date
+}
+
 export class BinaryDataFile {
   private _binaryData: VIAM.dataApi.BinaryData
 
@@ -52,15 +98,23 @@ export class BinaryDataFile {
   }
 
   public isInTimeRange(start: Date, end: Date): boolean {
-    const timeRequested = this.timeRequested
+    const fileTimestamp = this.getFileTimestamp()
+    const timeRequested = fileTimestamp || this.timeRequested
     if (!timeRequested) return false
     return timeRequested >= start && timeRequested <= end
   }
 
   public isPartOfPass(passId: string): boolean {
     return (
-      this.fileName.split('/').filter((fileNamePart) => fileNamePart === passId)
-        .length > 0
+      this.fileName
+        .split('/')
+        .filter((fileNamePart) => fileNamePart.includes(passId)).length > 0
+    )
+  }
+
+  public getFileTimestamp = (): Date | null => {
+    return (
+      parseIsoTimestamp(this.fileName) ?? parseMonthNameTimestamp(this.fileName)
     )
   }
 

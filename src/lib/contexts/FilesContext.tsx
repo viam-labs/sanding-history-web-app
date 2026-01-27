@@ -8,25 +8,24 @@ import {
 import { useViamClients } from './ViamClientContext'
 import { Pass } from '../types'
 import { FileQueryManager, FileQueryCallback } from '../FileQueryManager'
-import { BinaryDataFile } from '../BinaryDataFile'
 
 interface FilesContextType {
-  fetchImages: (
-    pass: Pass,
-    onQuery: FileQueryCallback
-  ) => Promise<BinaryDataFile[]>
+  fetchImages: (pass: Pass, onQuery: FileQueryCallback) => Promise<void>
+
   fetchVideos: (
     pass: Pass,
     onQuery: FileQueryCallback,
     forceRefresh?: boolean
-  ) => Promise<BinaryDataFile[]>
+  ) => Promise<void>
+
   fetchAllPassFiles: (pass: Pass, onQuery: FileQueryCallback) => Promise<void>
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
 
 export function FilesProvider({ children }: { children: ReactNode }) {
-  const { viamClient, machineId } = useViamClients()
+  const { viamClient, organizationId, locationId, machineId, partId } =
+    useViamClients()
 
   const queryManager = useRef<FileQueryManager>(new FileQueryManager())
 
@@ -35,15 +34,18 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       console.log(`Fetching images for pass ${pass.pass_id}`)
 
       return await queryManager.current.queryImages({
+        organizationId,
+        locationId,
         machineId,
+        partId,
         viamClient,
         passId: pass.pass_id,
-        start: pass.start,
-        end: pass.end,
+        passStart: pass.start,
+        passEnd: pass.end,
         onQuery,
       })
     },
-    [machineId, viamClient]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   const fetchVideos = useCallback(
@@ -53,16 +55,18 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       )
 
       return await queryManager.current.queryVideos({
+        organizationId,
+        locationId,
         machineId,
+        partId,
         viamClient,
-        passId: pass.pass_id,
-        start: pass.start,
-        end: pass.end,
+        passStart: pass.start,
+        passEnd: pass.end,
         onQuery,
         forceRefresh,
       })
     },
-    [machineId, viamClient]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   const fetchAllPassFiles = useCallback(
@@ -70,15 +74,18 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       console.log(`Fetching all files for pass ${pass.pass_id}`)
 
       await queryManager.current.queryPassFiles({
+        organizationId,
+        locationId,
         machineId,
+        partId,
         viamClient,
         passId: pass.pass_id,
-        start: pass.start,
-        end: pass.end,
+        passStart: pass.start,
+        passEnd: pass.end,
         onQuery,
       })
     },
-    [machineId, viamClient]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   return (
