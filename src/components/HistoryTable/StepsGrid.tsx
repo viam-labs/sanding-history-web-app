@@ -5,7 +5,7 @@ import StepVideosGrid from './StepVideosGrid.tsx'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { StepsVizSnapshotCard } from './StepsVizSnapshotCard'
 import { useCamera } from '../../lib/contexts/CameraContext'
-import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext'
 
 export const StepsGrid = () => {
   const {
