@@ -1,5 +1,5 @@
-import * as VIAM from '@viamrobotics/sdk'
 import { Pass, Step } from './types'
+import { BinaryDataFile } from './BinaryDataFile'
 
 /**
  * Get before and after images for a given pass from a list of image files.
@@ -10,33 +10,29 @@ import { Pass, Step } from './types'
  */
 export const getBeforeAfterImages = (
   pass: Pass,
-  imageFiles: Map<string, VIAM.dataApi.BinaryData>,
+  imageFiles: BinaryDataFile[],
   selectedCamera: string
 ): {
-  beforeImage: VIAM.dataApi.BinaryData | null
-  afterImage: VIAM.dataApi.BinaryData | null
+  beforeImage: BinaryDataFile | null
+  afterImage: BinaryDataFile | null
 } => {
   const passStart = new Date(pass.start)
   const passEnd = new Date(pass.end)
 
-  const allCameraImages = Array.from(imageFiles.values())
+  const allCameraImages = imageFiles
     .filter((file) => {
       if (
-        file.metadata?.captureMetadata?.componentName !== selectedCamera ||
-        !file.metadata?.timeRequested
+        file.captureMetadata?.componentName !== selectedCamera ||
+        !file.timeRequested
       ) {
         return false
       }
 
-      const imgTime = file.metadata.timeRequested.toDate()
+      const imgTime = file.timeRequested
       // Only consider images within the pass time range
       return imgTime >= passStart && imgTime <= passEnd
     })
-    .sort(
-      (a, b) =>
-        a.metadata!.timeRequested!.toDate().getTime() -
-        b.metadata!.timeRequested!.toDate().getTime()
-    )
+    .sort((a, b) => a.timeRequested!.getTime() - b.timeRequested!.getTime())
 
   // Get the first image in the pass (closest to start)
   const beforeImage = allCameraImages[0]
@@ -58,21 +54,35 @@ export const getBeforeAfterImages = (
  */
 export const getStepVideos = (
   step: Step,
-  videoFiles: Map<string, VIAM.dataApi.BinaryData>
-): VIAM.dataApi.BinaryData[] => {
-  if (!videoFiles || videoFiles.size === 0) return []
+  videoFiles: BinaryDataFile[]
+): BinaryDataFile[] => {
+  if (!videoFiles || videoFiles.length === 0) return []
 
-  const stepVideos: VIAM.dataApi.BinaryData[] = []
+  const stepVideos: BinaryDataFile[] = []
 
   videoFiles.forEach((file) => {
-    if (!file.metadata || !file.metadata.fileName) return
+    if (!file.fileName) return
 
-    const isMatchingStep =
-      file.metadata.fileName.includes(step.pass_id) &&
-      file.metadata.fileName.includes(step.name)
+    // 1. Try matching by metadata in filename (pass_id and step name)
+    const hasMetadataMatch =
+      file.fileName.includes(step.pass_id) && file.fileName.includes(step.name)
 
-    if (isMatchingStep) {
+    if (hasMetadataMatch) {
       stepVideos.push(file)
+      return
+    }
+
+    // 2. Try matching by timestamp in filename
+    const videoTime = file.getFileTimestamp()
+    if (videoTime) {
+      const stepEnd = step.end.getTime()
+      const vidTime = videoTime.getTime()
+
+      // The video timestamp is typically step.end + 10s buffer
+      const windowMs = 10_000
+      if (Math.abs(vidTime - stepEnd) < windowMs) {
+        stepVideos.push(file)
+      }
     }
   })
 

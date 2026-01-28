@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import * as VIAM from '@viamrobotics/sdk'
 
 import { useViamClients } from '../lib/contexts/ViamClientContext'
+import { BinaryDataFile } from '../lib/BinaryDataFile'
+
+// Signed URL expiration time in minutes
+const SIGNED_URL_EXPIRATION_MINUTES = 60
 
 interface ImageDisplayProps {
-  binaryData: VIAM.dataApi.BinaryData
+  binaryData: BinaryDataFile
   className?: string
   alt?: string
 }
@@ -23,64 +26,23 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
 
   useEffect(() => {
     let isMounted = true
-    let currentObjectUrl: string | null = null
 
-    const getImageUrl = async (
-      binaryData: VIAM.dataApi.BinaryData
-    ): Promise<void> => {
+    const getSignedUrl = async (binaryData: BinaryDataFile): Promise<void> => {
       try {
-        let data = binaryData.binary
-        const binaryId = binaryData.metadata?.binaryDataId
+        const binaryId = binaryData.binaryDataId
 
-        if ((!data || data.length === 0) && binaryId) {
-          const results = await viamClient.dataClient.binaryDataByIds([
-            binaryId,
-          ])
-          if (
-            results &&
-            results.length > 0 &&
-            results[0].binary &&
-            results[0].binary.length > 0
-          ) {
-            data = results[0].binary
-          } else {
-            throw new Error(`Failed to retrieve binary data for ID ${binaryId}`)
-          }
+        if (!binaryId) {
+          throw new Error('No binary data ID available for image')
         }
 
-        if (!data || data.length === 0) {
-          const errMsg = `No binary data available for image ${binaryData.metadata?.fileName || binaryId}`
-          throw new Error(errMsg)
-        }
-
-        let mimeType = 'image/jpeg'
-        const fileName = binaryData.metadata?.fileName?.toLowerCase()
-        const fileExt = binaryData.metadata?.fileExt?.toLowerCase()
-
-        if (fileName?.endsWith('.png') || fileExt === 'png') {
-          mimeType = 'image/png'
-        } else if (
-          fileName?.endsWith('.jpg') ||
-          fileName?.endsWith('.jpeg') ||
-          fileExt === 'jpg' ||
-          fileExt === 'jpeg'
-        ) {
-          mimeType = 'image/jpeg'
-        }
-
-        if (data.length === 0) {
-          throw new Error('Cannot create image from empty data')
-        }
-
-        const buffer = new ArrayBuffer(data.length)
-        const view = new Uint8Array(buffer)
-        view.set(data)
-
-        const blob = new Blob([buffer], { type: mimeType })
-        currentObjectUrl = URL.createObjectURL(blob)
+        // Use signed URL API for better performance (matching sanding module approach)
+        const signedUrl = await viamClient.dataClient.createBinaryDataSignedURL(
+          binaryId,
+          SIGNED_URL_EXPIRATION_MINUTES
+        )
 
         if (isMounted) {
-          setImageUrl(currentObjectUrl)
+          setImageUrl(signedUrl)
           setIsLoading(false)
           setHasError(false)
           setErrorMessage('')
@@ -97,13 +59,10 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
       }
     }
 
-    getImageUrl(binaryData)
+    getSignedUrl(binaryData)
 
     return () => {
       isMounted = false
-      if (currentObjectUrl) {
-        URL.revokeObjectURL(currentObjectUrl)
-      }
     }
   }, [binaryData, viamClient])
 
@@ -128,9 +87,9 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
             {errorMessage}
           </div>
         )}
-        {binaryData.metadata?.fileName && (
+        {binaryData.fileName && (
           <div className="text-xs mt-2 text-gray-400">
-            {binaryData.metadata.fileName.split('/').pop()}
+            {binaryData.fileName.split('/').pop()}
           </div>
         )}
       </div>

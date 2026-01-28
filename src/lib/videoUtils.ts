@@ -1,6 +1,7 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
 import { VIDEO_UPLOAD_PATH } from './constants'
+import { BinaryDataFile } from './BinaryDataFile'
 
 export const createVideoStreamFromBase64 = (
   base64Data: Uint8Array
@@ -139,8 +140,8 @@ export const generateVideo = async (
   return await videoStoreClient.doCommand(command)
 }
 
-export const getVideoStoreName = (video: VIAM.dataApi.BinaryData): string => {
-  const fileName = video.metadata?.fileName
+export const getVideoStoreName = (video: BinaryDataFile): string => {
+  const fileName = video.fileName
   if (!fileName) return 'Unknown'
   return fileName.replace(VIDEO_UPLOAD_PATH, '').split('/')[0]
 }

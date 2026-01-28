@@ -1,6 +1,10 @@
-import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
 import { getVideoStoreName } from './videoUtils'
+import { BinaryDataFile } from './BinaryDataFile'
+
+// Polling configuration
+const POLL_INTERVAL_MS = 10000 // 10 seconds between polls
+const MAX_POLLING_TIME_MS = 300000 // 5 minutes timeout
 
 // Global polling state to handle multiple concurrent requests
 interface PollingRequest {
@@ -10,6 +14,7 @@ interface PollingRequest {
   stepName: string
   startTime: number
   onComplete: () => void
+  onTimeout: () => void
 }
 
 export class VideoPollingManager {
@@ -17,8 +22,8 @@ export class VideoPollingManager {
   private activeRequests: Map<string, PollingRequest> = new Map()
   private isPolling: boolean = false
   private pollTimeout: number | null = null
-  private fetchDataFn: (() => Promise<void>) | null = null
-  private currentVideos: Map<string, VIAM.dataApi.BinaryData> = new Map()
+  private fetchDataFn: (() => Promise<BinaryDataFile[]>) | null = null
+  private currentVideos: BinaryDataFile[] = []
 
   static getInstance(): VideoPollingManager {
     if (!VideoPollingManager.instance) {
@@ -27,38 +32,40 @@ export class VideoPollingManager {
     return VideoPollingManager.instance
   }
 
-  setFetchData(fn: () => Promise<void>) {
+  setFetchData(fn: () => Promise<BinaryDataFile[]>) {
     this.fetchDataFn = fn
   }
 
   // Method to check if videos are available for a specific step
   checkVideoAvailability(step: Step, videoStoreName: string): boolean {
-    return Array.from(this.currentVideos.values()).some((file) => {
-      if (!file.metadata || !file.metadata.fileName) return false
+    return this.currentVideos.some((file) => {
+      if (!file.fileName) return false
       const isMatchingStep =
-        file.metadata.fileName.includes(step.pass_id) &&
-        file.metadata.fileName.includes(step.name)
+        file.fileName.includes(step.pass_id) &&
+        file.fileName.includes(step.name)
       const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
       return isMatchingStep && isMatchingVideoStore
     })
   }
 
   // Method to update current videos for availability checking
-  updateCurrentVideos(videos: Map<string, VIAM.dataApi.BinaryData>) {
+  updateCurrentVideos(videos: BinaryDataFile[]) {
     this.currentVideos = videos
   }
 
   addRequest(
     step: Step,
     videoStoreName: string,
-    onComplete: () => void
+    onComplete: () => void,
+    onTimeout: () => void
   ): string {
     const requestId = `${step.pass_id}-${step.name}`
 
     if (this.activeRequests.has(requestId)) {
-      // Request already exists, just update the callback
+      // Request already exists, just update the callbacks
       const existing = this.activeRequests.get(requestId)!
       existing.onComplete = onComplete
+      existing.onTimeout = onTimeout
       return requestId
     }
 
@@ -69,6 +76,7 @@ export class VideoPollingManager {
       startTime: Date.now(),
       videoStoreName: videoStoreName,
       onComplete,
+      onTimeout,
     }
 
     this.activeRequests.set(requestId, request)
@@ -94,7 +102,6 @@ export class VideoPollingManager {
     if (this.isPolling || !this.fetchDataFn) return
 
     this.isPolling = true
-    const maxPollingTime = 60000 // 60 seconds
 
     const poll = async () => {
       if (this.activeRequests.size === 0) {
@@ -127,9 +134,9 @@ export class VideoPollingManager {
           }
 
           // Check timeout
-          if (Date.now() - request.startTime > maxPollingTime) {
+          if (Date.now() - request.startTime > MAX_POLLING_TIME_MS) {
             console.log(`Polling timeout reached for ${requestId}`)
-            request.onComplete()
+            request.onTimeout()
             this.activeRequests.delete(requestId)
             continue
           }
@@ -139,16 +146,21 @@ export class VideoPollingManager {
         if (this.activeRequests.size === 0) {
           this.stopPolling()
           return
-        } else {
-          this.pollTimeout = window.setTimeout(poll)
         }
+
+        // Schedule next poll with interval
+        this.pollTimeout = window.setTimeout(poll, POLL_INTERVAL_MS)
       } catch (error) {
         console.error('Error during polling:', error)
-        // Continue polling on error
+        // Continue polling on error with interval
+        if (this.activeRequests.size > 0) {
+          this.pollTimeout = window.setTimeout(poll, POLL_INTERVAL_MS)
+        }
       }
     }
 
-    this.pollTimeout = window.setTimeout(poll)
+    // Start first poll immediately
+    poll()
   }
 
   private stopPolling() {
@@ -169,7 +181,7 @@ export class VideoPollingManager {
     console.log(
       `Checking ${this.activeRequests.size} active requests for video availability`
     )
-    console.log(`Current videos count: ${this.currentVideos.size}`)
+    console.log(`Current videos count: ${this.currentVideos.length}`)
 
     for (const [requestId, request] of this.activeRequests.entries()) {
       const step: Step = {

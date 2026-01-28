@@ -1,29 +1,38 @@
 import { getBeforeAfterImages } from '../../lib/passUtils'
-import { Pass } from '../../lib/types'
 import { formatTimeDifference } from '../../lib/videoUtils'
 import ImageDisplay from '../ImageDisplay'
-import { useFiles } from '../../lib/contexts/FilesContext'
 import { useCamera } from '../../lib/contexts/CameraContext'
 import { useModal, ModalType } from '../../lib/contexts/ModalContext'
+import { useEffect, useState } from 'react'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext'
+import { BinaryDataFile } from '../../lib/BinaryDataFile'
 
-interface StepImagesGridProps {
-  pass: Pass
-}
-
-export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
-  const { imageFiles } = useFiles()
+export const StepImagesGrid = () => {
+  const { pass, images, areImagesLoaded } = useSinglePass()
   const { selectedCamera } = useCamera()
   const { openModal } = useModal()
-  const { beforeImage, afterImage } = getBeforeAfterImages(
-    pass,
-    imageFiles,
-    selectedCamera
-  )
-  const passStart = pass.start
-  const passEnd = pass.end
+
+  const [before, setBefore] = useState<BinaryDataFile | null>(null)
+  const [after, setAfter] = useState<BinaryDataFile | null>(null)
+
+  useEffect(() => {
+    const { beforeImage, afterImage } = getBeforeAfterImages(
+      pass,
+      images,
+      selectedCamera
+    )
+
+    if (beforeImage && !before) {
+      setBefore(beforeImage)
+    }
+
+    if (afterImage && !after) {
+      setAfter(afterImage)
+    }
+  }, [pass, images, selectedCamera, before, after])
 
   // If no images at all, show a message
-  if (!beforeImage && !afterImage) {
+  if (!before && !after && areImagesLoaded) {
     return (
       <div className="step-card order-none">
         <div className="flex h-full items-center justify-center bg-gray-100 rounded p-3 text-gray-400 text-sm">
@@ -36,17 +45,16 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
   return (
     <>
       {/* Start Image */}
-      {beforeImage && (
+      {before && (
         <div className="step-card -order-1">
           <div className="step-name">Start Image</div>
           <div className="step-duration">
-            {beforeImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+            {before.timeRequested?.toLocaleTimeString()}
             <span className="text-xs text-gray-500 ml-2">
               (
               {formatTimeDifference(
-                beforeImage.metadata?.timeRequested?.toDate()?.getTime() ||
-                  passStart.getTime(),
-                passStart.getTime()
+                before.timeRequested?.getTime() || pass.start.getTime(),
+                pass.start.getTime()
               )}{' '}
               from start)
             </span>
@@ -57,28 +65,27 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
             onClick={() =>
               openModal({
                 type: ModalType.BEFORE_AFTER,
-                beforeImage: beforeImage,
-                afterImage: afterImage,
+                beforeImage: before,
+                afterImage: after,
               })
             }
           >
-            <ImageDisplay binaryData={beforeImage} />
+            <ImageDisplay binaryData={before} />
           </div>
         </div>
       )}
 
       {/* End Image */}
-      {afterImage && afterImage !== beforeImage && (
+      {after && after !== before && (
         <div className="step-card order-[999]">
           <div className="step-name">End Image</div>
           <div className="step-duration">
-            {afterImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+            {after.timeRequested?.toLocaleTimeString()}
             <span className="text-xs text-gray-500 ml-2">
               (
               {formatTimeDifference(
-                passEnd.getTime(),
-                afterImage.metadata?.timeRequested?.toDate()?.getTime() ||
-                  passEnd.getTime()
+                pass.end.getTime(),
+                after.timeRequested?.getTime() || pass.end.getTime()
               )}{' '}
               before end)
             </span>
@@ -89,12 +96,12 @@ export const StepImagesGrid = ({ pass }: StepImagesGridProps) => {
             onClick={() =>
               openModal({
                 type: ModalType.BEFORE_AFTER,
-                beforeImage: beforeImage,
-                afterImage: afterImage,
+                beforeImage: before,
+                afterImage: after,
               })
             }
           >
-            <ImageDisplay binaryData={afterImage} />
+            <ImageDisplay binaryData={after} />
           </div>
         </div>
       )}

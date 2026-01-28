@@ -6,13 +6,20 @@ import { analyzer } from 'vite-bundle-analyzer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), svelte(), tailwindcss(), analyzer()],
+  plugins: [
+    react(),
+    svelte(),
+    tailwindcss(),
+    analyzer({
+      analyzerMode: process.env.ANALYZE_BUNDLE ? 'server' : 'json',
+    }),
+  ],
   server: {
     port: 3000,
-    open: false
+    open: false,
   },
-  base: "./",
+  base: './',
   build: {
-    outDir: "dist",
+    outDir: 'dist',
   },
 })

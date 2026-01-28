@@ -4,7 +4,6 @@ import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
 import { lazy } from 'react'
 import { ResourceSelection } from './components/ResouceSelection'
 import { Pagination } from './components/HistoryTable/Pagination'
-import GlobalLoadingIndicator from './components/GlobalLoadingIndicator'
 
 const HistoryTable = lazy(() => import('./components/HistoryTable'))
 
@@ -30,7 +29,6 @@ function App() {
       </main>
 
       <Pagination />
-      <GlobalLoadingIndicator />
     </div>
   )
 }

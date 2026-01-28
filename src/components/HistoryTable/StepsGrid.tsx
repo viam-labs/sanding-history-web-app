@@ -1,40 +1,32 @@
 import { Step } from '../../lib/types'
 import RenderIf from '../RenderIf'
 import { StepImagesGrid } from './StepImagesGrid'
-import StepVideosGrid from '../StepVideosGrid'
+import StepVideosGrid from './StepVideosGrid.tsx'
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
-import { getStepVideos } from '../../lib/passUtils'
 import { StepsVizSnapshotCard } from './StepsVizSnapshotCard'
-import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
-import { useFiles } from '../../lib/contexts/FilesContext'
 import { useCamera } from '../../lib/contexts/CameraContext'
-import { useViamClients } from '../../lib/contexts/ViamClientContext'
-import { useMemo } from 'react'
-import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { useSinglePass } from '../../lib/contexts/SinglePassContext'
 
 export const StepsGrid = () => {
-  const { pass, passFiles } = useSinglePass()
-  const { videoFiles, fetchTimestamp, fetchFiles } = useFiles()
-  const { selectedCamera } = useCamera()
-  const { machineId, organizationId } = useViamClients()
+  const {
+    pass,
+    passFiles,
+    areImagesLoaded,
+    areVideosLoaded,
+    areSnapshotsLoaded,
+  } = useSinglePass()
 
-  const snapshotFiles = useMemo(() => {
-    return passFiles.filter((file) =>
-      file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
-    )
-  }, [passFiles])
+  const { selectedCamera } = useCamera()
 
   return (
     <div className="steps-grid">
       {/* Camera Images */}
       <RenderIf condition={selectedCamera !== ''}>
-        <StepImagesGrid pass={pass} />
+        <StepImagesGrid />
       </RenderIf>
 
       {/* Regular step cards */}
       {pass.steps.map((step: Step) => {
-        const stepVideos = getStepVideos(step, videoFiles)
-
         return (
           <div key={step.name} className="step-card">
             <div className="step-name">{step.name}</div>
@@ -57,22 +49,27 @@ export const StepsGrid = () => {
               {formatDurationToMinutesSeconds(step.start, step.end)}
             </div>
 
-            <StepVideosGrid
-              step={step}
-              stepVideos={stepVideos}
-              videoFiles={videoFiles}
-              fetchTimestamp={fetchTimestamp}
-              fetchVideos={fetchFiles}
-              machineId={machineId}
-              organizationId={organizationId}
-            />
+            <StepVideosGrid step={step} />
           </div>
         )
       })}
 
       {/* View snapshot card */}
-      <RenderIf condition={snapshotFiles.length > 0}>
-        <StepsVizSnapshotCard snapshotFiles={snapshotFiles} />
+      <StepsVizSnapshotCard />
+
+      {/* Loading state */}
+      <RenderIf
+        condition={!areImagesLoaded || !areVideosLoaded || !areSnapshotsLoaded}
+      >
+        <div
+          className="step-card animate-pulse bg-gray-100"
+          style={{ order: 1000 }}
+        >
+          <div className="step-name text-center">Loading pass files</div>
+          <div className="text-subtle-1 py-18 text-center">
+            {passFiles.length} files downloaded
+          </div>
+        </div>
       </RenderIf>
     </div>
   )

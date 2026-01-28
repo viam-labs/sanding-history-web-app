@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode, Suspense } from 'react'
 import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
-import * as VIAM from '@viamrobotics/sdk'
 import { lazy } from 'react'
 import { LoadingIndicator } from '../../components/LoadingIndicator.tsx'
+import { BinaryDataFile } from '../BinaryDataFile.ts'
 const SnapshotModal = lazy(() => import('../../components/SnapshotModal.tsx'))
 const BeforeAfterModal = lazy(
   () => import('../../components/BeforeAfterModal.tsx')
@@ -21,8 +21,8 @@ interface SnapshotModalData {
 
 interface BeforeAfterModalData {
   type: ModalType.BEFORE_AFTER
-  beforeImage: VIAM.dataApi.BinaryData | null
-  afterImage: VIAM.dataApi.BinaryData | null
+  beforeImage: BinaryDataFile | null
+  afterImage: BinaryDataFile | null
 }
 
 // Discriminated union of all modal configs

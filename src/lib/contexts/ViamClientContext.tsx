@@ -14,6 +14,7 @@ interface ViamClientContextType {
   machineId: string
   machineName: string
   organizationId: string
+  partId: string
   robotClient: VIAM.RobotClient | null
   viamClient: VIAM.ViamClient
 }
@@ -47,6 +48,7 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
   const [initializationErrors, setInitializationErrors] = useState<string[]>([])
 
   const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [partId, setPartId] = useState<string | null>(null)
 
   // Parse URL and cookie data.
   const urlAndCookieData = useMemo(() => {
@@ -142,7 +144,7 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const initializeClients = async () => {
+    const initializeClients = async (machineId: string) => {
       setInitializationErrors([])
       setViamClient(null)
       setRobotClient(null)
@@ -183,6 +185,21 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
       }
 
       try {
+        const parts = await viamClient.appClient.getRobotParts(machineId)
+        if (parts.length !== 1) {
+          throw new Error(`expected 1 part, got ${parts.length}`)
+        }
+
+        setPartId(parts[0].id)
+      } catch (error) {
+        setInitializationErrors((prev) => [
+          ...prev,
+          `Failed to get part ID: ${error instanceof Error ? error.message : String(error)}`,
+        ])
+        return
+      }
+
+      try {
         const robotClient = await viamClient.connectToMachine({
           host: urlAndCookieData.hostname,
           id: urlAndCookieData.machineId,
@@ -193,7 +210,7 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    initializeClients()
+    initializeClients(urlAndCookieData.machineId)
   }, [
     urlAndCookieData.apiKeyId,
     urlAndCookieData.apiKeySecret,
@@ -221,7 +238,8 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
     !urlAndCookieData.machineId ||
     !urlAndCookieData.locationId ||
     !urlAndCookieData.machineName ||
-    !organizationId
+    !organizationId ||
+    !partId
   ) {
     return <div>Initializing...</div>
   }
@@ -233,6 +251,7 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
         machineId: urlAndCookieData.machineId,
         machineName: urlAndCookieData.machineName,
         organizationId,
+        partId,
         viamClient,
         robotClient,
       }}

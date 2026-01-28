@@ -43,9 +43,10 @@ export function PassProvider({ children }: { children: ReactNode }) {
     Map<string, PassDiagnosis>
   >(new Map())
   const [fetchingNotes, setFetchingNotes] = useState<boolean>(false)
+  const [isLoaded, setIsLoaded] = useState<boolean>(false)
 
   const fetchPasses = async () => {
-    console.log('Fetching data start')
+    if (isLoaded) return
 
     // batched fetching of pass summaries
     let allTabularData: any[] = []
@@ -208,7 +209,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
       setFetchingNotes(false)
     }
 
-    console.log('Fetching data end')
+    setIsLoaded(true)
   }
 
   useEffect(() => {

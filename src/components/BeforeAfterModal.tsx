@@ -1,10 +1,10 @@
 import React from 'react'
-import * as VIAM from '@viamrobotics/sdk'
+import { BinaryDataFile } from '../lib/BinaryDataFile'
 import ImageDisplay from './ImageDisplay'
 
 interface BeforeAfterModalProps {
-  beforeImage: VIAM.dataApi.BinaryData | null
-  afterImage: VIAM.dataApi.BinaryData | null
+  beforeImage: BinaryDataFile | null
+  afterImage: BinaryDataFile | null
   onClose: () => void
 }
 
@@ -55,11 +55,7 @@ const BeforeAfterModal: React.FC<BeforeAfterModalProps> = ({
                     alt="Before image"
                   />
                   <div className="before-after-info">
-                    <p>
-                      {beforeImage.metadata?.timeRequested
-                        ?.toDate()
-                        .toLocaleString()}
-                    </p>
+                    <p>{beforeImage.timeRequested?.toLocaleString()}</p>
                   </div>
                 </div>
               ) : (
@@ -81,11 +77,7 @@ const BeforeAfterModal: React.FC<BeforeAfterModalProps> = ({
                     alt="After image"
                   />
                   <div className="before-after-info">
-                    <p>
-                      {afterImage.metadata?.timeRequested
-                        ?.toDate()
-                        .toLocaleString()}
-                    </p>
+                    <p>{afterImage.timeRequested?.toLocaleString()}</p>
                   </div>
                 </div>
               ) : (

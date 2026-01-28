@@ -21,7 +21,8 @@ const Row = ({ globalIndex }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
-  const { pass } = useSinglePass()
+  const { pass, fetchStepFiles, fetchAllPassFiles, cancelFetch } =
+    useSinglePass()
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false)
   const [configMetadata, setConfigMetadata] = useState<
@@ -32,32 +33,34 @@ const Row = ({ globalIndex }: RowProps) => {
   >(new Set())
 
   const toggleRowExpansion = () => {
-    if (!isExpanded) {
-      setIsExpanded(true)
+    const newExpandedState = !isExpanded
+    setIsExpanded(newExpandedState)
 
-      // Fetch config metadata when expanding a row
-      const [dayIndexStr, passIndexStr] = globalIndex.split('-')
-      const dayIndex = parseInt(dayIndexStr)
-      const passIndex = parseInt(passIndexStr)
-      const dateKey = Object.keys(groupedPasses)[dayIndex]
-      const pass = groupedPasses[dateKey]?.[passIndex]
-
-      if (
-        pass &&
-        !configMetadata.has(pass.pass_id) &&
-        !loadingConfigMetadata.has(pass.pass_id)
-      ) {
-        const flatPasses = Object.values(groupedPasses).flat()
-        const { prevPass } = getPassConfigComparison(
-          pass,
-          flatPasses,
-          configMetadata
-        )
-        fetchConfigMetadata(pass, prevPass)
-      }
-    } else {
-      setIsExpanded(false)
+    if (!newExpandedState) {
+      cancelFetch()
+      return
     }
+
+    const [dayIndexStr, passIndexStr] = globalIndex.split('-')
+    const dayIndex = parseInt(dayIndexStr)
+    const passIndex = parseInt(passIndexStr)
+    const dateKey = Object.keys(groupedPasses)[dayIndex]
+    const currentPass = groupedPasses[dateKey]?.[passIndex]
+
+    fetchStepFiles()
+    fetchAllPassFiles()
+
+    if (!currentPass) return
+    if (configMetadata.has(currentPass.pass_id)) return
+    if (loadingConfigMetadata.has(currentPass.pass_id)) return
+    const flatPasses = Object.values(groupedPasses).flat()
+    const { prevPass } = getPassConfigComparison(
+      currentPass,
+      flatPasses,
+      configMetadata
+    )
+
+    fetchConfigMetadata(currentPass, prevPass)
   }
 
   const fetchConfigMetadata = async (pass: Pass, prevPass: Pass | null) => {
@@ -65,7 +68,6 @@ const Row = ({ globalIndex }: RowProps) => {
 
     const passId = pass.pass_id
     const prevPassId = prevPass?.pass_id
-
     const idsToLoad = [passId]
     if (prevPassId && !configMetadata.has(prevPassId)) {
       idsToLoad.push(prevPassId)
