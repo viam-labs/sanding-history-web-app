@@ -68,6 +68,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         locationId,
         machineId,
         partId,
+        passId: pass.pass_id,
         viamClient,
         passStart: pass.start,
         passEnd: pass.end,

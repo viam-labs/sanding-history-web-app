@@ -8,19 +8,6 @@ const BINARY_DATA_BATCH_SIZE = 1500
 const IMAGES_PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000
 const PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000 * 3
 
-interface VideoQueryParams {
-  organizationId: string
-  locationId: string
-  machineId: string
-  partId: string
-  viamClient: VIAM.ViamClient
-  passStart: Date
-  passEnd: Date
-  forceRefresh?: boolean
-  onQuery: FileQueryCallback
-  signal?: AbortSignal
-}
-
 interface FileQueryParams {
   organizationId: string
   locationId: string
@@ -32,6 +19,9 @@ interface FileQueryParams {
   passEnd: Date
   onQuery: FileQueryCallback
   signal?: AbortSignal
+}
+interface VideoQueryParams extends FileQueryParams {
+  forceRefresh?: boolean
 }
 
 export class FileQueryManager {
@@ -52,7 +42,9 @@ export class FileQueryManager {
       this._paginationTokens.delete(`videos-${params.machineId}`)
       this._loadedVideos = false
     } else if (this._loadedVideos) {
-      const videos = this.getVideosForPass(params.passStart, params.passEnd)
+      const videos = this._videoFiles.filter((file) =>
+        file.isPartOfPass(params.passId)
+      )
       return params.onQuery(videos)
     }
 
@@ -60,7 +52,9 @@ export class FileQueryManager {
     const existingQuery = this._queries.get(queryKey)
     if (existingQuery && !params.forceRefresh) {
       await existingQuery
-      const videos = this.getVideosForPass(params.passStart, params.passEnd)
+      const videos = this._videoFiles.filter((file) =>
+        file.isPartOfPass(params.passId)
+      )
       return params.onQuery(videos)
     }
 
@@ -70,7 +64,9 @@ export class FileQueryManager {
     try {
       await queryPromise
       this._loadedVideos = true
-      const videos = this.getVideosForPass(params.passStart, params.passEnd)
+      const videos = this._videoFiles.filter((file) =>
+        file.isPartOfPass(params.passId)
+      )
       return params.onQuery(videos)
     } finally {
       this._queries.delete(queryKey)
@@ -143,17 +139,6 @@ export class FileQueryManager {
     } finally {
       this._queries.delete(queryKey)
     }
-  }
-
-  private getVideosForPass(start: Date, end: Date): BinaryDataFile[] {
-    const videos: BinaryDataFile[] = []
-    for (const file of this._videoFiles) {
-      const videoTime = file.getFileTimestamp()
-      if (!videoTime) continue
-      if (videoTime >= start && videoTime <= end) videos.push(file)
-    }
-
-    return videos
   }
 
   private async makeVideoQuery(params: VideoQueryParams): Promise<void> {
@@ -263,7 +248,7 @@ export class FileQueryManager {
     const newImages = []
     for (const file of nextImages) {
       if (existingIds.has(file.binaryDataId)) continue
-      if (!isRelevantFile(file, passStart, passEnd, passId)) continue
+      if (!file.isPartOfPass(passId)) continue
       newImages.push(file)
     }
 
@@ -344,7 +329,7 @@ export class FileQueryManager {
     const newFiles = []
     for (const file of nextFiles) {
       if (existingIds.has(file.binaryDataId)) continue
-      if (!isRelevantFile(file, passStart, passEnd, passId)) continue
+      if (!file.isPartOfPass(passId)) continue
       newFiles.push(file)
     }
 
@@ -366,13 +351,4 @@ export class FileQueryManager {
     this._paginationTokens.set(paginationKey, binaryData.last)
     await this.makePassFilesQuery(params)
   }
-}
-
-const isRelevantFile = (
-  file: BinaryDataFile,
-  passStart: Date,
-  passEnd: Date,
-  passId: string
-) => {
-  return file.isPartOfPass(passId) || file.isInTimeRange(passStart, passEnd)
 }
