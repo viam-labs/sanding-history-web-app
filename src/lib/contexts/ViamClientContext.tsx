@@ -167,36 +167,40 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      try {
-        const organizations = await viamClient.appClient.listOrganizations()
-        if (organizations.length !== 1) {
-          throw new Error(
-            `expected 1 organization, got ${organizations.length}`
-          )
-        }
-
-        setOrganizationId(organizations[0].id)
-      } catch (error) {
-        setInitializationErrors((prev) => [
-          ...prev,
-          `Failed to get organization ID: ${error instanceof Error ? error.message : String(error)}`,
+      const [organizationsResult, partsResult] =
+        await Promise.allSettled([
+          viamClient.appClient.listOrganizations(),
+          viamClient.appClient.getRobotParts(machineId),
         ])
-        return
+
+      const errors: string[] = []
+
+      if (organizationsResult.status === 'fulfilled') {
+        const organizations = organizationsResult.value
+        if (organizations.length !== 1) {
+          errors.push(
+            `Failed to get organization ID: expected 1 organization, got ${organizations.length}`
+          )
+        } else {
+          setOrganizationId(organizations[0].id)
+        }
+      } else {
+        errors.push(
+          `Failed to get organization ID: ${organizationsResult.reason instanceof Error ? organizationsResult.reason.message : String(organizationsResult.reason)}`
+        )
       }
 
-      try {
-        const parts = await viamClient.appClient.getRobotParts(machineId)
+      if (partsResult.status === 'fulfilled') {
+        const parts = partsResult.value
         if (parts.length !== 1) {
-          throw new Error(`expected 1 part, got ${parts.length}`)
+          errors.push(`Failed to get part ID: expected 1 part, got ${parts.length}`)
+        } else {
+          setPartId(parts[0].id)
         }
-
-        setPartId(parts[0].id)
-      } catch (error) {
-        setInitializationErrors((prev) => [
-          ...prev,
-          `Failed to get part ID: ${error instanceof Error ? error.message : String(error)}`,
-        ])
-        return
+      } else {
+        errors.push(
+          `Failed to get part ID: ${partsResult.reason instanceof Error ? partsResult.reason.message : String(partsResult.reason)}`
+        )
       }
 
       try {
@@ -207,6 +211,10 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
         setRobotClient(robotClient)
       } catch (error) {
         console.error('Failed to create robot client:', error)
+      }
+
+      if (errors.length > 0) {
+        setInitializationErrors((prev) => [...prev, ...errors])
       }
     }
 
