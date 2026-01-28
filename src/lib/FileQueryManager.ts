@@ -19,6 +19,7 @@ interface VideoQueryParams {
   passEnd: Date
   forceRefresh?: boolean
   onQuery: FileQueryCallback
+  signal?: AbortSignal
 }
 
 interface FileQueryParams {
@@ -31,6 +32,7 @@ interface FileQueryParams {
   passStart: Date
   passEnd: Date
   onQuery: FileQueryCallback
+  signal?: AbortSignal
 }
 
 export class FileQueryManager {
@@ -77,6 +79,8 @@ export class FileQueryManager {
   }
 
   public async queryImages(params: FileQueryParams) {
+    if (params.signal?.aborted) return
+
     const cacheKey = params.passId
 
     if (this._loadedImages.has(cacheKey)) {
@@ -88,6 +92,7 @@ export class FileQueryManager {
     const existingQuery = this._queries.get(queryKey)
     if (existingQuery) {
       await existingQuery
+      if (params.signal?.aborted) return
       const cached = this._imageFiles.get(cacheKey) || []
       return params.onQuery(cached)
     }
@@ -97,15 +102,19 @@ export class FileQueryManager {
 
     try {
       await queryPromise
-      this._loadedImages.add(cacheKey)
-      const images = this._imageFiles.get(cacheKey) || []
-      return params.onQuery(images)
+      if (!params.signal?.aborted) {
+        this._loadedImages.add(cacheKey)
+        const images = this._imageFiles.get(cacheKey) || []
+        return params.onQuery(images)
+      }
     } finally {
       this._queries.delete(queryKey)
     }
   }
 
   public async queryPassFiles(params: FileQueryParams): Promise<void> {
+    if (params.signal?.aborted) return
+
     if (this._loadedPassFiles.has(params.passId)) {
       const cachedFiles = this._passFiles.get(params.passId)
       if (cachedFiles) {
@@ -118,6 +127,7 @@ export class FileQueryManager {
     const existingQuery = this._queries.get(queryKey)
     if (existingQuery) {
       await existingQuery
+      if (params.signal?.aborted) return
       const cachedFiles = this._passFiles.get(params.passId)
       if (cachedFiles) params.onQuery(cachedFiles)
       return
@@ -128,7 +138,9 @@ export class FileQueryManager {
 
     try {
       await queryPromise
-      this._loadedPassFiles.add(params.passId)
+      if (!params.signal?.aborted) {
+        this._loadedPassFiles.add(params.passId)
+      }
     } finally {
       this._queries.delete(queryKey)
     }
@@ -177,7 +189,11 @@ export class FileQueryManager {
       this._videoFiles.push(video)
     }
 
-    // Break if no more data to fetch
+    const hasMorePages = !!binaryData.last
+    console.log(
+      `Fetched video batch: ${binaryData.data.length} in batch, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+    )
+
     if (!binaryData.last) {
       this._paginationTokens.delete(paginationKey)
       return
@@ -198,7 +214,11 @@ export class FileQueryManager {
       passStart,
       passEnd,
       onQuery,
+      signal,
     } = params
+
+    if (signal?.aborted) return
+
     const cacheKey = passId
     const paginationKey = `images-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
@@ -230,6 +250,8 @@ export class FileQueryManager {
       false
     )
 
+    if (signal?.aborted) return
+
     const nextImages: BinaryDataFile[] = []
 
     for (const file of binaryData.data) {
@@ -248,11 +270,18 @@ export class FileQueryManager {
 
     this._imageFiles.set(cacheKey, [...existing, ...newImages])
 
-    if (newImages.length > 0) onQuery(newImages)
+    const hasMorePages = !!binaryData.last
+    console.log(
+      `Fetched images batch for pass ${passId}: ${binaryData.data.length} in batch, ${newImages.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+    )
+
+    if (newImages.length > 0 && !signal?.aborted) onQuery(newImages)
     if (!binaryData.last) {
       this._paginationTokens.delete(paginationKey)
       return
     }
+
+    if (signal?.aborted) return
 
     this._paginationTokens.set(paginationKey, binaryData.last)
     await this.makeImagesQuery(params)
@@ -269,7 +298,11 @@ export class FileQueryManager {
       passStart,
       passEnd,
       onQuery,
+      signal,
     } = params
+
+    if (signal?.aborted) return
+
     const paginationKey = `allfiles-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
 
@@ -299,6 +332,8 @@ export class FileQueryManager {
       false
     )
 
+    if (signal?.aborted) return
+
     const nextFiles: BinaryDataFile[] = []
     for (const file of binaryData.data) {
       if (!file.metadata?.binaryDataId) continue
@@ -316,11 +351,18 @@ export class FileQueryManager {
 
     this._passFiles.set(passId, [...existingFiles, ...newFiles])
 
-    if (newFiles.length > 0) onQuery(newFiles)
+    const hasMorePages = !!binaryData.last
+    console.log(
+      `Fetched files batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+    )
+
+    if (newFiles.length > 0 && !signal?.aborted) onQuery(newFiles)
     if (!binaryData.last) {
       this._paginationTokens.delete(paginationKey)
       return
     }
+
+    if (signal?.aborted) return
 
     this._paginationTokens.set(paginationKey, binaryData.last)
     await this.makePassFilesQuery(params)

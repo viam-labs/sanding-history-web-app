@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useState,
+  useRef,
 } from 'react'
 import { Pass } from '../types'
 import { useCamera } from './CameraContext'
@@ -34,6 +35,7 @@ interface SinglePassContextType {
   fetchStepFiles: () => Promise<void>
   fetchAllPassFiles: () => Promise<void>
   fetchVideos: (forceRefresh?: boolean) => Promise<BinaryDataFile[]>
+  cancelFetch: () => void
 }
 
 const SinglePassContext = createContext<SinglePassContextType | undefined>(
@@ -70,42 +72,72 @@ export function SinglePassProvider({
   const [arePassFilesLoaded, setArePassFilesLoaded] = useState<boolean>(false)
   const [passFiles, setPassFiles] = useState<BinaryDataFile[]>([])
 
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  const cancelFetch = useCallback(() => {
+    if (abortControllerRef.current) {
+      console.log(`Cancelled fetching files for pass ${pass.pass_id}`)
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+
+    setIsFetchingImages(false)
+    setIsFetchingPassFiles(false)
+    setIsFetchingSnapshots(false)
+  }, [pass.pass_id])
+
+  useEffect(() => {
+    return () => {
+      if (!abortControllerRef.current) return
+      abortControllerRef.current.abort()
+    }
+  }, [])
+
   const fetchImages = useCallback(async () => {
     if (areImagesLoaded || isFetchingImages) return
 
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setIsFetchingImages(true)
 
-    await fetchImagesFromApi(pass, (nextImages) => {
-      if (nextImages.length > 0) {
+    await fetchImagesFromApi(
+      pass,
+      (nextImages) => {
+        if (controller.signal.aborted) return
+        if (nextImages.length === 0) return
+
         setImages((prev) => deduplicateFiles(prev, nextImages))
         setPassFiles((prev) => deduplicateFiles(prev, nextImages))
-      }
-    })
+      },
+      controller.signal
+    )
 
-    setIsFetchingImages(false)
-    setAreImagesLoaded(true)
+    if (!controller.signal.aborted) {
+      console.log(`Fetched images for pass ${pass.pass_id}`)
+      setIsFetchingImages(false)
+      setAreImagesLoaded(true)
+    }
   }, [pass, fetchImagesFromApi, areImagesLoaded, isFetchingImages])
 
   const fetchVideos = useCallback(
     async (forceRefresh?: boolean) => {
-      if (!forceRefresh && (areVideosLoaded || isFetchingVideos)) {
-        return videos
-      }
+      if (!forceRefresh && (areVideosLoaded || isFetchingVideos)) return videos
 
       setIsFetchingVideos(true)
 
       await fetchVideosFromApi(
         pass,
         (nextVideos) => {
-          if (nextVideos.length > 0) {
-            // Filter out existing videos since this call can be reinvoked after generating a video
-            setVideos((prev) => deduplicateFiles(prev, nextVideos))
-            setPassFiles((prev) => deduplicateFiles(prev, nextVideos))
-          }
+          if (nextVideos.length === 0) return
+
+          setVideos((prev) => deduplicateFiles(prev, nextVideos))
+          setPassFiles((prev) => deduplicateFiles(prev, nextVideos))
         },
         forceRefresh
       )
 
+      console.log(`Fetched videos for pass ${pass.pass_id}`)
       setIsFetchingVideos(false)
       setAreVideosLoaded(true)
       return videos
@@ -121,32 +153,43 @@ export function SinglePassProvider({
   const fetchAllPassFiles = useCallback(async () => {
     if (arePassFilesLoaded || isFetchingPassFiles) return
 
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setIsFetchingPassFiles(true)
     setIsFetchingSnapshots(true)
 
-    await fetchAllPassFilesFromApi(pass, (nextFiles) => {
-      if (nextFiles.length > 0) {
-        // Filter snapshots from the response
-        const newSnapshots = nextFiles.filter(({ fileName }) =>
-          fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
+    await fetchAllPassFilesFromApi(
+      pass,
+      (nextFiles) => {
+        if (controller.signal.aborted) return
+        if (nextFiles.length === 0) return
+
+        const newSnapshots = nextFiles.filter((file) =>
+          file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
         )
-        if (newSnapshots.length > 0)
-          setSnapshots((prev) => [...prev, ...newSnapshots])
+        if (newSnapshots.length === 0) return
 
-        setPassFiles((prev) => [...prev, ...nextFiles])
-      }
-    })
+        setSnapshots((prev) => [...prev, ...newSnapshots])
+        setPassFiles((prev) => deduplicateFiles(prev, nextFiles))
+      },
+      controller.signal
+    )
 
-    setIsFetchingPassFiles(false)
-    setIsFetchingSnapshots(false)
+    if (!controller.signal.aborted) {
+      console.log(`Fetched all files for pass ${pass.pass_id}`)
+      setIsFetchingPassFiles(false)
+      setIsFetchingSnapshots(false)
 
-    setArePassFilesLoaded(true)
-    setAreSnapshotsLoaded(true)
+      setArePassFilesLoaded(true)
+      setAreSnapshotsLoaded(true)
+    }
   }, [pass, fetchAllPassFilesFromApi, arePassFilesLoaded, isFetchingPassFiles])
 
-  // Register camera names when images are loaded
   useEffect(() => {
-    if (images.length > 0) registerCameraNames(images)
+    // Register camera names when images are loaded
+    if (images.length === 0) return
+    registerCameraNames(images)
   }, [images, registerCameraNames])
 
   return (
@@ -172,6 +215,7 @@ export function SinglePassProvider({
         fetchStepFiles,
         fetchAllPassFiles,
         fetchVideos,
+        cancelFetch,
       }}
     >
       {children}

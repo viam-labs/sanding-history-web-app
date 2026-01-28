@@ -10,7 +10,11 @@ import { Pass } from '../types'
 import { FileQueryManager, FileQueryCallback } from '../FileQueryManager'
 
 interface FilesContextType {
-  fetchImages: (pass: Pass, onQuery: FileQueryCallback) => Promise<void>
+  fetchImages: (
+    pass: Pass,
+    onQuery: FileQueryCallback,
+    signal?: AbortSignal
+  ) => Promise<void>
 
   fetchVideos: (
     pass: Pass,
@@ -18,7 +22,11 @@ interface FilesContextType {
     forceRefresh?: boolean
   ) => Promise<void>
 
-  fetchAllPassFiles: (pass: Pass, onQuery: FileQueryCallback) => Promise<void>
+  fetchAllPassFiles: (
+    pass: Pass,
+    onQuery: FileQueryCallback,
+    signal?: AbortSignal
+  ) => Promise<void>
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
@@ -30,7 +38,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   const queryManager = useRef<FileQueryManager>(new FileQueryManager())
 
   const fetchImages = useCallback(
-    async (pass: Pass, onQuery: FileQueryCallback) => {
+    async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
       console.log(`Fetching images for pass ${pass.pass_id}`)
 
       return await queryManager.current.queryImages({
@@ -43,6 +51,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passStart: pass.start,
         passEnd: pass.end,
         onQuery,
+        signal,
       })
     },
     [organizationId, locationId, machineId, partId, viamClient]
@@ -70,7 +79,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   )
 
   const fetchAllPassFiles = useCallback(
-    async (pass: Pass, onQuery: FileQueryCallback) => {
+    async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
       console.log(`Fetching all files for pass ${pass.pass_id}`)
 
       await queryManager.current.queryPassFiles({
@@ -83,6 +92,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passStart: pass.start,
         passEnd: pass.end,
         onQuery,
+        signal,
       })
     },
     [organizationId, locationId, machineId, partId, viamClient]

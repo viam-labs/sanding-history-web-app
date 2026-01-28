@@ -10,9 +10,7 @@ import { useSinglePass } from '../../lib/contexts/SinglePassContext'
 export const StepsGrid = () => {
   const {
     pass,
-    images,
-    videos,
-    snapshots,
+    passFiles,
     areImagesLoaded,
     areVideosLoaded,
     areSnapshotsLoaded,
@@ -69,7 +67,7 @@ export const StepsGrid = () => {
         >
           <div className="step-name text-center">Loading pass files</div>
           <div className="text-subtle-1 py-18 text-center">
-            {images.length + videos.length + snapshots.length} files downloaded
+            {passFiles.length} files downloaded
           </div>
         </div>
       </RenderIf>
