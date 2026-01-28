@@ -248,7 +248,7 @@ export class FileQueryManager {
     const newImages = []
     for (const file of nextImages) {
       if (existingIds.has(file.binaryDataId)) continue
-      if (!file.isPartOfPass(passId)) continue
+      if (!file.isInTimeRange(passStart, passEnd)) continue
       newImages.push(file)
     }
 

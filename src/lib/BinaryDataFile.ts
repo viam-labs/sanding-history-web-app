@@ -105,11 +105,7 @@ export class BinaryDataFile {
   }
 
   public isPartOfPass(passId: string): boolean {
-    return (
-      this.fileName
-        .split('/')
-        .filter((fileNamePart) => fileNamePart.includes(passId)).length > 0
-    )
+    return this.fileName.includes(passId)
   }
 
   public getFileTimestamp = (): Date | null => {
