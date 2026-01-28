@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.6
+
+### Patch Changes
+
+- 9e2c146: Update pass summary and file loading behavior
+
 ## 1.7.5
 
 ### Patch Changes
