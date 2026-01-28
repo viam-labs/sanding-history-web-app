@@ -3,11 +3,10 @@ import { BinaryDataFile } from './BinaryDataFile'
 
 export type FileQueryCallback = (files: BinaryDataFile[]) => void
 
-// Batch size for binary data queries (matching sanding module's binaryDataSearchBatchsize)
 const BINARY_DATA_BATCH_SIZE = 1500
 
-// Buffer to add to pass end time to account for sync delays (1 hour in milliseconds)
-const PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000
+const IMAGES_PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000
+const PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000 * 3
 
 interface VideoQueryParams {
   organizationId: string
@@ -225,7 +224,7 @@ export class FileQueryManager {
 
     // Add buffer to end time to account for sync delays
     const bufferedEndTime = new Date(
-      passEnd.getTime() + PASS_END_TIME_BUFFER_MS
+      passEnd.getTime() + IMAGES_PASS_END_TIME_BUFFER_MS
     )
 
     const filter = new VIAM.dataApi.Filter({
