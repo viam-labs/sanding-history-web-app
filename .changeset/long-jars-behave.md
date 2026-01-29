@@ -2,4 +2,4 @@
 'sanding-monitoring-web-app': patch
 ---
 
-parallelize get org id and get robot part
+do initial 7 day pass query to load page faster
