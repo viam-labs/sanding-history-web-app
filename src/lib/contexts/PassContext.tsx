@@ -14,6 +14,73 @@ const sandingSummaryName = 'sanding-summary'
 const sandingSummaryComponentType = 'rdk:component:sensor'
 const BATCH_SIZE = 1000
 
+/**
+ * Transforms raw tabular data from MQL query into Pass objects
+ */
+function processTabularDataToPasses(tabularData: any[]): Pass[] {
+  return tabularData.map((item: any) => {
+    const pass = item.data!.readings!
+    const buildInfo = pass.build_info ? pass.build_info : {}
+
+    return {
+      start: new Date(pass.start),
+      end: new Date(pass.end),
+      steps: pass.steps
+        ? pass.steps.map((x: any) => ({
+            name: x.name!,
+            start: new Date(x.start),
+            end: new Date(x.end),
+            pass_id: pass.pass_id,
+          }))
+        : [],
+      success: pass.success ?? true,
+      pass_id: pass.pass_id,
+      err_string: pass.err_string || null,
+      build_info: buildInfo,
+      blue_point_count:
+        pass.target_points_count !== undefined &&
+        pass.target_points_count !== null
+          ? Number(pass.target_points_count)
+          : undefined,
+      sanding_distance_mm:
+        pass.sanding_distance_mm !== undefined &&
+        pass.sanding_distance_mm !== null
+          ? Number(pass.sanding_distance_mm)
+          : undefined,
+      selected_zones:
+        pass.selected_zones !== undefined && pass.selected_zones !== null
+          ? pass.selected_zones
+          : undefined,
+      selected_num_rounds:
+        pass.selected_num_rounds !== undefined &&
+        pass.selected_num_rounds !== null
+          ? Number(pass.selected_num_rounds)
+          : undefined,
+    }
+  })
+}
+
+/**
+ * Calculates blue point percentage differences between consecutive passes.
+ * Mutates the passes array in place.
+ */
+function calculateBluePointDiffs(passes: Pass[]): void {
+  for (let i = 0; i < passes.length - 1; i++) {
+    const current = passes[i]
+    const previous = passes[i + 1]
+
+    if (
+      current.blue_point_count !== undefined &&
+      previous.blue_point_count !== undefined &&
+      previous.blue_point_count !== 0
+    ) {
+      const diff = current.blue_point_count - previous.blue_point_count
+      current.blue_point_diff_percent =
+        (diff / previous.blue_point_count) * 100
+    }
+  }
+}
+
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
 interface PassContextType {
   passSummaries: Pass[]
@@ -43,11 +110,72 @@ export function PassProvider({ children }: { children: ReactNode }) {
     Map<string, PassDiagnosis>
   >(new Map())
   const [fetchingNotes, setFetchingNotes] = useState<boolean>(false)
-  const [isLoaded, setIsLoaded] = useState<boolean>(false)
+
+  const fetchPassMetadata = async (
+    passes: Pass[],
+    extractedPartId: string
+  ) => {
+    if (passes.length === 0 || !extractedPartId) return
+
+    const passIds = passes.map((pass) => pass.pass_id).filter(Boolean)
+
+    setFetchingNotes(true)
+
+    const metadataManager = getPassMetadataManager(viamClient, machineId)
+    const [fetchedNotes, fetchedDiagnoses] = await Promise.all([
+      metadataManager.fetchNotesForPasses(passIds),
+      metadataManager.fetchDiagnosesForPasses(passIds),
+    ])
+
+    setPassNotes(fetchedNotes)
+    setPassDiagnoses(fetchedDiagnoses)
+    setFetchingNotes(false)
+  }
+
+  const initialPassQuery = async () => {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const hdsQuery: any[] = [
+      {
+        $match: {
+          organization_id: organizationId,
+          location_id: locationId,
+          component_name: sandingSummaryName,
+          robot_id: machineId,
+          component_type: sandingSummaryComponentType,
+          time_received: {
+            $gte: oneWeekAgo,
+          },
+        },
+      },
+      {
+        $sort: {
+          time_received: -1,
+        },
+      },
+    ]
+
+    // TODO: actually use HDS flag when we turn it on
+    const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
+      organizationId,
+      hdsQuery
+    )
+
+    console.log('Hot Data Store Results length:', hotDataStoreResults.length)
+
+    let extractedPartId = ''
+    if (hotDataStoreResults && hotDataStoreResults.length > 0) {
+      extractedPartId = (hotDataStoreResults[0] as any).part_id || ''
+      setPartId(extractedPartId)
+    }
+
+    const processedPasses = processTabularDataToPasses(hotDataStoreResults)
+    calculateBluePointDiffs(processedPasses)
+    setPassSummaries(processedPasses)
+
+    await fetchPassMetadata(processedPasses, extractedPartId)
+  }
 
   const fetchPasses = async () => {
-    if (isLoaded) return
-
     // batched fetching of pass summaries
     let allTabularData: any[] = []
     let hasMoreData = true
@@ -130,90 +258,18 @@ export function PassProvider({ children }: { children: ReactNode }) {
       setPartId(extractedPartId)
     }
 
-    // Process tabular data into pass summaries
-    const processedPasses: Pass[] = allTabularData.map((item: any) => {
-      const pass = item.data!.readings!
-      const buildInfo = pass.build_info ? pass.build_info : {}
-
-      return {
-        start: new Date(pass.start),
-        end: new Date(pass.end),
-        steps: pass.steps
-          ? pass.steps.map((x: any) => ({
-              name: x.name!,
-              start: new Date(x.start),
-              end: new Date(x.end),
-              pass_id: pass.pass_id,
-            }))
-          : [],
-        success: pass.success ?? true,
-        pass_id: pass.pass_id,
-        err_string: pass.err_string || null,
-        build_info: buildInfo,
-        blue_point_count:
-          pass.target_points_count !== undefined &&
-          pass.target_points_count !== null
-            ? Number(pass.target_points_count)
-            : undefined,
-        sanding_distance_mm:
-          pass.sanding_distance_mm !== undefined &&
-          pass.sanding_distance_mm !== null
-            ? Number(pass.sanding_distance_mm)
-            : undefined,
-        selected_zones:
-          pass.selected_zones !== undefined && pass.selected_zones !== null
-            ? pass.selected_zones
-            : undefined,
-        selected_num_rounds:
-          pass.selected_num_rounds !== undefined &&
-          pass.selected_num_rounds !== null
-            ? Number(pass.selected_num_rounds)
-            : undefined,
-      }
-    })
-
-    // Calculate percentage difference in blue points
-    for (let i = 0; i < processedPasses.length - 1; i++) {
-      const current = processedPasses[i]
-      const previous = processedPasses[i + 1]
-
-      if (
-        current.blue_point_count !== undefined &&
-        previous.blue_point_count !== undefined &&
-        previous.blue_point_count !== 0
-      ) {
-        const diff = current.blue_point_count - previous.blue_point_count
-        current.blue_point_diff_percent =
-          (diff / previous.blue_point_count) * 100
-      }
-    }
-
+    const processedPasses = processTabularDataToPasses(allTabularData)
+    calculateBluePointDiffs(processedPasses)
     setPassSummaries(processedPasses)
 
-    // Fetch all notes and diagnoses for all passes
-    if (processedPasses.length > 0 && extractedPartId) {
-      const passIds = processedPasses
-        .map((pass) => pass.pass_id)
-        .filter(Boolean)
-
-      setFetchingNotes(true)
-
-      const metadataManager = getPassMetadataManager(viamClient, machineId)
-      const [fetchedNotes, fetchedDiagnoses] = await Promise.all([
-        metadataManager.fetchNotesForPasses(passIds),
-        metadataManager.fetchDiagnosesForPasses(passIds),
-      ])
-
-      setPassNotes(fetchedNotes)
-      setPassDiagnoses(fetchedDiagnoses)
-      setFetchingNotes(false)
-    }
-
-    setIsLoaded(true)
+    await fetchPassMetadata(processedPasses, extractedPartId)
   }
 
   useEffect(() => {
-    fetchPasses()
+    initialPassQuery()
+    .then(() => {
+      fetchPasses()
+    })
   }, [locationId, machineId, organizationId, viamClient])
 
   useEffect(() => {
