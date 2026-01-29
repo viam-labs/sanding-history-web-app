@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.7.7
+
+### Patch Changes
+
+- 3685486: do initial 7 day pass query to load page faster
+
 ## 1.7.6
 
 ### Patch Changes
