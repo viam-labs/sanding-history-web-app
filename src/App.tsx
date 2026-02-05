@@ -4,7 +4,6 @@ import { VideoStoreProvider } from './lib/contexts/VideoStoreContext'
 import { lazy } from 'react'
 import { ResourceSelection } from './components/ResouceSelection'
 import { Pagination } from './components/HistoryTable/Pagination'
-import { SyncDelayIndicator } from './components/SyncDelayIndicator'
 
 const HistoryTable = lazy(() => import('./components/HistoryTable'))
 
@@ -13,7 +12,6 @@ function App() {
     <div className="appInterface">
       <header className="flex items-center justify-between sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
         <div className="h-5 font-semibold text-zinc-900">Sanding history</div>
-        <SyncDelayIndicator />
       </header>
 
       <main className="mainContent">
