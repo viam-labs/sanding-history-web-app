@@ -154,10 +154,10 @@ export function PassProvider({ children }: { children: ReactNode }) {
       },
     ]
 
-    // TODO: actually use HDS flag when we turn it on
     const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
       organizationId,
-      hdsQuery
+      hdsQuery,
+      true
     )
 
     console.log('Hot Data Store Results length:', hotDataStoreResults.length)
