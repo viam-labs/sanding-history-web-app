@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.8.0
+
+### Minor Changes
+
+- e09cce1: enable HDS for T-7 days pass entries
+
 ## 1.7.7
 
 ### Patch Changes
