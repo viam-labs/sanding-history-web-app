@@ -75,8 +75,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       locationId,
       machineId,
       partId,
-      viamClient,
-      updateMostRecentReceivedFile,
+      viamClient
     ]
   )
 
@@ -107,8 +106,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       locationId,
       machineId,
       partId,
-      viamClient,
-      updateMostRecentReceivedFile,
+      viamClient
     ]
   )
 
@@ -137,8 +135,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
       locationId,
       machineId,
       partId,
-      viamClient,
-      updateMostRecentReceivedFile,
+      viamClient
     ]
   )
 
