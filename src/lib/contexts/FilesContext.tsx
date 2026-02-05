@@ -8,7 +8,6 @@ import {
 import { useViamClients } from './ViamClientContext'
 import { Pass } from '../types'
 import { FileQueryManager, FileQueryCallback } from '../FileQueryManager'
-import { BinaryDataFile } from '../BinaryDataFile'
 
 interface FilesContextType {
   fetchImages: (
@@ -29,7 +28,11 @@ interface FilesContextType {
     signal?: AbortSignal
   ) => Promise<void>
 
-  mostRecentReceivedFile: () => BinaryDataFile | undefined
+  fetchMostRecentFile: (
+    mostRecentPass: Pass,
+    onQuery: FileQueryCallback,
+    signal?: AbortSignal
+  ) => Promise<void>
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
@@ -39,16 +42,32 @@ export function FilesProvider({ children }: { children: ReactNode }) {
     useViamClients()
 
   const queryManager = useRef<FileQueryManager>(new FileQueryManager())
-  const mostRecentReceivedFileRef = useRef<BinaryDataFile | undefined>(undefined)
 
-  const updateMostRecentReceivedFile = (files: BinaryDataFile[]) => {
-    for (const file of files) {
-      if (!mostRecentReceivedFileRef.current || ((file.timeReceived ?? 0) > (mostRecentReceivedFileRef.current.timeReceived ?? 0))) {
-        console.log(`latest file ID: ${file.binaryDataId}`)
-        mostRecentReceivedFileRef.current = file
-      }
-    }
-  }
+  const fetchMostRecentFile = useCallback(
+    async (mostRecentPass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
+      return await queryManager.current.queryMostRecentFile({
+        organizationId,
+        locationId,
+        machineId,
+        partId,
+        viamClient,
+        passId: mostRecentPass.pass_id,
+        passStart: mostRecentPass.start,
+        passEnd: mostRecentPass.end,
+        onQuery: (files) => {
+          onQuery(files)
+        },
+        signal,
+      })
+    },
+    [
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient
+    ]
+  )
 
   const fetchImages = useCallback(
     async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
@@ -64,7 +83,6 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passStart: pass.start,
         passEnd: pass.end,
         onQuery: (files) => {
-          updateMostRecentReceivedFile(files)
           onQuery(files)
         },
         signal,
@@ -95,7 +113,6 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passStart: pass.start,
         passEnd: pass.end,
         onQuery: (files) => {
-          updateMostRecentReceivedFile(files)
           onQuery(files)
         },
         forceRefresh,
@@ -124,7 +141,6 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passStart: pass.start,
         passEnd: pass.end,
         onQuery: (files) => {
-          updateMostRecentReceivedFile(files)
           onQuery(files)
         },
         signal,
@@ -145,7 +161,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         fetchImages,
         fetchVideos,
         fetchAllPassFiles,
-        mostRecentReceivedFile: () => mostRecentReceivedFileRef.current,
+        fetchMostRecentFile,
       }}
     >
       {children}

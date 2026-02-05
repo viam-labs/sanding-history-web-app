@@ -141,6 +141,26 @@ export class FileQueryManager {
     }
   }
 
+  public async queryMostRecentFile(params: FileQueryParams): Promise<void> {
+    if (params.signal?.aborted) return
+
+    const queryKey = `mostrecentfile`
+    const existingQuery = this._queries.get(queryKey)
+    if (existingQuery) {
+      await existingQuery
+      return
+    }
+    
+    const queryPromise = this.makeMostRecentFileQuery(params)
+    this._queries.set(queryKey, queryPromise)
+
+    try {
+      await queryPromise
+    } finally {
+      this._queries.delete(queryKey)
+    }
+  }
+
   private async makeVideoQuery(params: VideoQueryParams): Promise<void> {
     const { organizationId, locationId, machineId, partId, viamClient } = params
     const paginationKey = `videos-${machineId}`
@@ -350,5 +370,49 @@ export class FileQueryManager {
 
     this._paginationTokens.set(paginationKey, binaryData.last)
     await this.makePassFilesQuery(params)
+  }
+
+
+  private async makeMostRecentFileQuery(params: FileQueryParams): Promise<void> {
+    const {
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient,
+      passStart,
+      onQuery,
+      signal,
+    } = params
+
+    if (signal?.aborted) return
+
+
+    const filter = new VIAM.dataApi.Filter({
+      organizationIds: [organizationId],
+      locationIds: [locationId],
+      robotId: machineId,
+      partId: partId,
+      interval: new VIAM.dataApi.CaptureInterval({
+        start: VIAM.Timestamp.fromDate(passStart),
+        end: VIAM.Timestamp.fromDate(new Date()),
+      }),
+    })
+
+    const binaryData = await viamClient.dataClient.binaryDataByFilter(
+      filter,
+      1,
+      VIAM.dataApi.Order.DESCENDING,
+      undefined,
+      false,
+      false,
+      false
+    )
+
+    if (binaryData.data.length === 0) return
+
+    const mostRecentFile = new BinaryDataFile(binaryData.data[0])
+    console.log(`Most recent file ID: ${mostRecentFile.binaryDataId} with time received: ${mostRecentFile.timeReceived?.toISOString()}`)
+    onQuery([mostRecentFile])
   }
 }
