@@ -75,8 +75,7 @@ function calculateBluePointDiffs(passes: Pass[]): void {
       previous.blue_point_count !== 0
     ) {
       const diff = current.blue_point_count - previous.blue_point_count
-      current.blue_point_diff_percent =
-        (diff / previous.blue_point_count) * 100
+      current.blue_point_diff_percent = (diff / previous.blue_point_count) * 100
     }
   }
 }
@@ -111,10 +110,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
   >(new Map())
   const [fetchingNotes, setFetchingNotes] = useState<boolean>(false)
 
-  const fetchPassMetadata = async (
-    passes: Pass[],
-    extractedPartId: string
-  ) => {
+  const fetchPassMetadata = async (passes: Pass[], extractedPartId: string) => {
     if (passes.length === 0 || !extractedPartId) return
 
     const passIds = passes.map((pass) => pass.pass_id).filter(Boolean)
@@ -266,8 +262,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    initialPassQuery()
-    .then(() => {
+    initialPassQuery().then(() => {
       fetchPasses()
     })
   }, [locationId, machineId, organizationId, viamClient])

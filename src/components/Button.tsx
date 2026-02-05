@@ -31,7 +31,9 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       className={`generate-video-button px-2 py-1.5 text-xs text-white border-none rounded cursor-pointer transition-colors duration-200 flex items-center gap-1.5 ${
-        isDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+        isDisabled
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-blue-500 hover:bg-blue-600'
       } ${className}`}
       disabled={isDisabled}
       onMouseEnter={onMouseEnter}
