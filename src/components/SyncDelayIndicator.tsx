@@ -4,9 +4,6 @@ import { usePass } from '../lib/contexts/PassContext'
 import { useEffect, useMemo, useState } from 'react'
 import { BinaryDataFile } from '../lib/BinaryDataFile'
 
-const TEN_MINUTES_MS = 10 * 60 * 1000 // 600,000 ms
-const THIRTY_MINUTES_MS = 30 * 60 * 1000 // 1,800,000 ms
-
 export function SyncDelayIndicator() {
   const { fetchMostRecentFile } = useFiles()
   const { passSummaries } = usePass()
@@ -14,15 +11,6 @@ export function SyncDelayIndicator() {
   const [mostRecentFile, setMostRecentFile] = useState<BinaryDataFile | undefined>(undefined)
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined)
 
-  // Determine color based on sync delay thresholds
-  const getDelayColor = (delayMs: number): string => {
-    if (delayMs >= THIRTY_MINUTES_MS) {
-      return 'text-red-600'
-    } else if (delayMs >= TEN_MINUTES_MS) {
-      return 'text-yellow-600'
-    }
-    return 'text-zinc-600'
-  }
 
   useEffect(() => {
     let timeoutId: number;
@@ -42,35 +30,26 @@ export function SyncDelayIndicator() {
     };
   }, [mostRecentPass, fetchMostRecentFile]);
 
-  if (!mostRecentFile) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-zinc-600">
-        <span className="font-medium">Most recent sync delay:</span>
-        <span className="font-mono">Loading...</span>
-      </div>
-    );
-  }
-
-  const syncDelayMs = mostRecentFile.getSyncDelayMs() ?? 0;
-  const delayColor = getDelayColor(syncDelayMs);
-  const { timeRequested, timeReceived } = mostRecentFile;
-
   return (
-    <div className={`flex flex-col gap-1 text-sm ${delayColor}`}>
+    <div className={`flex ${!mostRecentFile ? 'items-center gap-2 text-zinc-600' : 'flex-col gap-1'} text-sm`}>
       <div className="flex items-center gap-2">
         <span className="font-medium">Most recent sync delay:</span>
-        <span className="font-mono">{formatDurationMs(syncDelayMs)}</span>
+        <span className="font-mono">
+          {!mostRecentFile ? 'Loading...' : formatDurationMs(mostRecentFile.getSyncDelayMs() ?? 0)}
+        </span>
       </div>
-      {timeRequested && timeReceived && (
-        <div className="flex flex-col gap-0.5 text-xs text-zinc-500">
-          <span className="font-mono">Captured: {timeRequested.toLocaleString()}</span>
-          <span className="font-mono">Received: {timeReceived.toLocaleString()}</span>
-        </div>
-      )}
-      {lastFetchTime && (
-        <div className="flex flex-col gap-0.5 text-xs text-zinc-500">
-          <span className="font-mono">Last fetched: {lastFetchTime.toLocaleString()}</span>
-        </div>
+      {mostRecentFile && (
+        <>
+          <div className="flex flex-col gap-0.5 text-xs text-zinc-500">
+            <span className="font-mono">Captured: {mostRecentFile.timeRequested?.toLocaleString()}</span>
+            <span className="font-mono">Received: {mostRecentFile.timeReceived?.toLocaleString()}</span>
+          </div>
+          {lastFetchTime && (
+            <div className="flex flex-col gap-0.5 text-xs text-zinc-500">
+              <span className="font-mono">Last fetched: {lastFetchTime.toLocaleString()}</span>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
