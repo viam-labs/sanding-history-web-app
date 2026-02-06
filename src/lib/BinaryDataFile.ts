@@ -81,8 +81,23 @@ export class BinaryDataFile {
     return this._binaryData.metadata?.timeRequested?.toDate()
   }
 
+  get timeReceived(): Date | undefined {
+    return this._binaryData.metadata?.timeReceived?.toDate()
+  }
+
   get uri(): string {
     return this._binaryData.metadata?.uri || ''
+  }
+
+  /**
+   * Get the sync delay in milliseconds between when data was captured and when it was received.
+   * Returns undefined if either timestamp is missing.
+   */
+  getSyncDelayMs(): number | undefined {
+    const requested = this.timeRequested
+    const received = this.timeReceived
+    if (!requested || !received) return undefined
+    return received.getTime() - requested.getTime()
   }
 
   public async getFileBinaryData(

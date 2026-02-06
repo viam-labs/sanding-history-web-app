@@ -27,6 +27,12 @@ interface FilesContextType {
     onQuery: FileQueryCallback,
     signal?: AbortSignal
   ) => Promise<void>
+
+  fetchMostRecentFile: (
+    mostRecentPass: Pass,
+    onQuery: FileQueryCallback,
+    signal?: AbortSignal
+  ) => Promise<void>
 }
 
 const FilesContext = createContext<FilesContextType | undefined>(undefined)
@@ -36,6 +42,32 @@ export function FilesProvider({ children }: { children: ReactNode }) {
     useViamClients()
 
   const queryManager = useRef<FileQueryManager>(new FileQueryManager())
+
+  const fetchMostRecentFile = useCallback(
+    async (mostRecentPass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
+      return await queryManager.current.queryMostRecentFile({
+        organizationId,
+        locationId,
+        machineId,
+        partId,
+        viamClient,
+        passId: mostRecentPass.pass_id,
+        passStart: mostRecentPass.start,
+        passEnd: mostRecentPass.end,
+        onQuery: (files) => {
+          onQuery(files)
+        },
+        signal,
+      })
+    },
+    [
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient
+    ]
+  )
 
   const fetchImages = useCallback(
     async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
@@ -50,11 +82,19 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passId: pass.pass_id,
         passStart: pass.start,
         passEnd: pass.end,
-        onQuery,
+        onQuery: (files) => {
+          onQuery(files)
+        },
         signal,
       })
     },
-    [organizationId, locationId, machineId, partId, viamClient]
+    [
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient
+    ]
   )
 
   const fetchVideos = useCallback(
@@ -72,11 +112,19 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         viamClient,
         passStart: pass.start,
         passEnd: pass.end,
-        onQuery,
+        onQuery: (files) => {
+          onQuery(files)
+        },
         forceRefresh,
       })
     },
-    [organizationId, locationId, machineId, partId, viamClient]
+    [
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient
+    ]
   )
 
   const fetchAllPassFiles = useCallback(
@@ -92,11 +140,19 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passId: pass.pass_id,
         passStart: pass.start,
         passEnd: pass.end,
-        onQuery,
+        onQuery: (files) => {
+          onQuery(files)
+        },
         signal,
       })
     },
-    [organizationId, locationId, machineId, partId, viamClient]
+    [
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient
+    ]
   )
 
   return (
@@ -105,6 +161,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         fetchImages,
         fetchVideos,
         fetchAllPassFiles,
+        fetchMostRecentFile,
       }}
     >
       {children}
