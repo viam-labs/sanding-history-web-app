@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.9.0
+
+### Minor Changes
+
+- b46dc22: add sync delay indicator
+
 ## 1.8.0
 
 ### Minor Changes
