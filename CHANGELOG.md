@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.9.1
+
+### Patch Changes
+
+- a2bd2c7: Increase size of LoadingModal component for better visibility
+
 ## 1.9.0
 
 ### Minor Changes
