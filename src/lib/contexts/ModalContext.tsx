@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, Suspense } from 'react'
 import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
 import { lazy } from 'react'
-import { LoadingIndicator } from '../../components/LoadingIndicator.tsx'
+import LoadingModal from '../../components/LoadingModal.tsx'
 import { BinaryDataFile } from '../BinaryDataFile.ts'
 const SnapshotModal = lazy(() => import('../../components/SnapshotModal.tsx'))
 const BeforeAfterModal = lazy(
@@ -44,7 +44,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     if (!modalData) return null
 
     return (
-      <Suspense fallback={<LoadingIndicator loadingText="Loading..." />}>
+      <Suspense fallback={<LoadingModal loadingText="Loading modal..." />}>
         {modalData.type === ModalType.SNAPSHOT && (
           <SnapshotModal close={closeModal} snapshot={modalData.snapshot} />
         )}

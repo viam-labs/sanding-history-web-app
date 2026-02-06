@@ -167,11 +167,10 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      const [organizationsResult, partsResult] =
-        await Promise.allSettled([
-          viamClient.appClient.listOrganizations(),
-          viamClient.appClient.getRobotParts(machineId),
-        ])
+      const [organizationsResult, partsResult] = await Promise.allSettled([
+        viamClient.appClient.listOrganizations(),
+        viamClient.appClient.getRobotParts(machineId),
+      ])
 
       const errors: string[] = []
 
@@ -193,7 +192,9 @@ export function ViamClientProvider({ children }: { children: ReactNode }) {
       if (partsResult.status === 'fulfilled') {
         const parts = partsResult.value
         if (parts.length !== 1) {
-          errors.push(`Failed to get part ID: expected 1 part, got ${parts.length}`)
+          errors.push(
+            `Failed to get part ID: expected 1 part, got ${parts.length}`
+          )
         } else {
           setPartId(parts[0].id)
         }

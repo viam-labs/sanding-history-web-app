@@ -13,9 +13,7 @@ export const ResourceSelection: React.FC = () => {
     <div className="flex gap-8">
       {machineName && (
         <div className="video-store-selector">
-          <div className="video-store-selector-label mb-2.5">
-            Machine name
-          </div>
+          <div className="video-store-selector-label mb-2.5">Machine name</div>
           <div>
             <span className="inline-block bg-gray-100 text-zinc-800 px-3 py-2 rounded-md text-sm font-semibold">
               {machineName}
