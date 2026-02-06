@@ -2,6 +2,7 @@ import { useViamClients } from '../lib/contexts/ViamClientContext'
 import VideoStoreSelector from './VideoStoreSelector'
 import { useCamera } from '../lib/contexts/CameraContext'
 import { useVideoStore } from '../lib/contexts/VideoStoreContext'
+import { SyncDelayIndicator } from './SyncDelayIndicator'
 
 export const ResourceSelection: React.FC = () => {
   const { robotClient, machineName } = useViamClients()
@@ -53,6 +54,10 @@ export const ResourceSelection: React.FC = () => {
             No camera resources found
           </div>
         )}
+      </div>
+
+      <div className="ml-auto">
+        <SyncDelayIndicator />
       </div>
     </div>
   )
