@@ -15,6 +15,7 @@ interface PollingRequest {
   startTime: number
   onComplete: () => void
   onTimeout: () => void
+  last30s?: boolean
 }
 
 export class VideoPollingManager {
@@ -37,14 +38,22 @@ export class VideoPollingManager {
   }
 
   // Method to check if videos are available for a specific step
-  checkVideoAvailability(step: Step, videoStoreName: string): boolean {
+  checkVideoAvailability(step: Step, videoStoreName: string, last30s?: boolean): boolean {
     return this.currentVideos.some((file) => {
       if (!file.fileName) return false
       const isMatchingStep =
         file.fileName.includes(step.pass_id) &&
         file.fileName.includes(step.name)
       const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
-      return isMatchingStep && isMatchingVideoStore
+      
+      // If last30s is specified, also check for the last30s marker
+      const isMatchingType = last30s !== undefined
+        ? last30s
+          ? file.fileName.includes('_last30s_')
+          : !file.fileName.includes('_last30s_')
+        : true
+      
+      return isMatchingStep && isMatchingVideoStore && isMatchingType
     })
   }
 
@@ -57,9 +66,10 @@ export class VideoPollingManager {
     step: Step,
     videoStoreName: string,
     onComplete: () => void,
-    onTimeout: () => void
+    onTimeout: () => void,
+    last30s?: boolean
   ): string {
-    const requestId = `${step.pass_id}-${step.name}`
+    const requestId = `${step.pass_id}-${step.name}${last30s ? '-last30s' : '-full'}`
 
     if (this.activeRequests.has(requestId)) {
       // Request already exists, just update the callbacks
@@ -77,6 +87,7 @@ export class VideoPollingManager {
       videoStoreName: videoStoreName,
       onComplete,
       onTimeout,
+      last30s,
     }
 
     this.activeRequests.set(requestId, request)
@@ -124,7 +135,7 @@ export class VideoPollingManager {
             end: new Date(),
           }
 
-          if (this.checkVideoAvailability(step, request.videoStoreName)) {
+          if (this.checkVideoAvailability(step, request.videoStoreName, request.last30s)) {
             console.log(
               `Videos found for ${requestId}, stopping polling for this request`
             )
@@ -195,7 +206,7 @@ export class VideoPollingManager {
         `Checking request ${requestId} for step ${request.stepName} with pass_id ${request.passId}`
       )
 
-      if (this.checkVideoAvailability(step, request.videoStoreName)) {
+      if (this.checkVideoAvailability(step, request.videoStoreName, request.last30s)) {
         console.log(
           `Videos found for ${requestId}, marking request as complete`
         )

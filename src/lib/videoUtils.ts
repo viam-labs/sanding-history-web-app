@@ -115,12 +115,24 @@ const getVideoTimeWithBuffer = (date: Date, isStart: boolean): Date => {
 
 export const generateVideo = async (
   videoStoreClient: VIAM.GenericComponentClient,
-  step: Step
+  step: Step,
+  last30s: boolean = false
 ) => {
-  console.log('generateVideo called for step', step)
+  console.log('generateVideo called for step', step, 'last30s:', last30s)
 
-  const videoStart = getVideoTimeWithBuffer(step.start, true)
-  const videoEnd = getVideoTimeWithBuffer(step.end, false)
+  let videoStart: Date
+  let videoEnd: Date
+
+  if (last30s) {
+    // For last 30s: end at step.end, start 30 seconds before step.end
+    const now = new Date()
+    videoEnd = step.end > now ? now : step.end
+    videoStart = new Date(videoEnd.getTime() - 30000)
+  } else {
+    // For full video: add 10 second buffers
+    videoStart = getVideoTimeWithBuffer(step.start, true)
+    videoEnd = getVideoTimeWithBuffer(step.end, false)
+  }
 
   console.log(
     'formatDateToVideoStoreFormat(step.end)',
@@ -130,11 +142,12 @@ export const generateVideo = async (
     'formatDateToVideoStoreFormat(step.start)',
     formatDateToVideoStoreFormat(videoStart)
   )
+  const metadataMarker = last30s ? '_last30s_' : '_'
   const command = VIAM.Struct.fromJson({
     command: 'save',
     to: formatDateToVideoStoreFormat(videoEnd),
     from: formatDateToVideoStoreFormat(videoStart),
-    metadata: `${step.pass_id}${step.name}`,
+    metadata: `${step.pass_id}${metadataMarker}${step.name}`,
   })
 
   return await videoStoreClient.doCommand(command)
