@@ -32,12 +32,10 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   const pollingManager = VideoPollingManager.getInstance()
   const { videoStoreClient } = useVideoStore()
 
-  // Separate full and last30s videos
   const { fullVideos, last30sVideos } = useMemo(() => {
     return getStepVideos(step, videos)
   }, [step, videos])
 
-  // Group videos by video store
   const videosByStore = useMemo(() => {
     const stores = new Map<string, { fullVideos: BinaryDataFile[]; last30sVideos: BinaryDataFile[] }>()
     
@@ -60,7 +58,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     return stores
   }, [fullVideos, last30sVideos])
 
-  // Check if current video store has any videos
   const hasFullVideoForStore = useMemo(() => {
     return fullVideos.some(
       (video) => getVideoStoreName(video) === videoStoreClient?.name
@@ -73,14 +70,12 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     )
   }, [last30sVideos, videoStoreClient])
 
-  // Check if there are videos from other stores (to show "selected" label)
   const hasVideosFromOtherStores = useMemo(() => {
     return Array.from(videosByStore.keys()).some(
       (storeName) => storeName !== videoStoreClient?.name
     )
   }, [videosByStore, videoStoreClient])
 
-  // Add CSS keyframes for spinner animation
   useEffect(() => {
     const style = document.createElement('style')
     style.textContent = `
@@ -96,19 +91,15 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     }
   }, [])
 
-  // Register this step's fetch function with the polling manager when generating
-  // The polling manager will use the most recent fetchVideos function set
   const registerFetchForPolling = () => {
     pollingManager.setFetchData(() => fetchVideos(true))
   }
 
-  // Update polling manager whenever videoFiles changes
   useEffect(() => {
     pollingManager.updateCurrentVideos(videos)
     pollingManager.forceVideoCheck()
   }, [videos])
 
-  // Stop polling if videos are now available
   useEffect(() => {
     if (hasFullVideoForStore && isPollingFull) {
       setIsPollingFull(false)
@@ -126,7 +117,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     }
   }, [hasFullVideoForStore, hasLast30sVideoForStore, isPollingFull, isPollingLast30s])
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (requestIdFullRef.current) {
@@ -139,7 +129,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   }, [])
 
   const closeVideoModal = () => {
-    // Clean up video URL if it exists
     if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
       URL.revokeObjectURL(modalVideoUrl)
     }
@@ -153,7 +142,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
       return
     }
 
-    // Register fetch function for this step's time range
     registerFetchForPolling()
     
     if (last30s) {
@@ -163,7 +151,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     }
 
     try {
-      // Start video generation
       await generateVideo(videoStoreClient, step, last30s)
 
       if (!videoStoreClient.name) {
@@ -173,7 +160,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         throw new Error(errorMessage)
       }
 
-      // Add to polling manager
       const requestId = pollingManager.addRequest(
         step,
         videoStoreClient.name,
@@ -222,7 +208,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
   return (
     <>
-      {/* Loading state */}
       {fullVideos.length === 0 && last30sVideos.length === 0 && !areVideosLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
           <Spinner size="24px" />
@@ -230,7 +215,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         </div>
       )}
       
-      {/* Logs link - shared across all states */}
       {showLogsLink && (
         <a
           href={constructStepLogUrl(
@@ -247,7 +231,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         </a>
       )}
 
-      {/* Generate/Display section for current video store */}
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
           <VideoStoreHeader 
@@ -255,7 +238,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
             isSelected={hasVideosFromOtherStores} 
           />
 
-          {/* Two-column layout for generate/display */}
           <div className="grid grid-cols-2 gap-4">
             <VideoColumn
               title="Full video"
@@ -276,7 +258,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         </div>
       )}
 
-      {/* Video display sections for OTHER video stores (not the current one) */}
       {videosByStore.size > 0 && (
         <div className="flex flex-col gap-3 py-2">
           {Array.from(videosByStore.entries())
@@ -288,7 +269,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
             >
               <VideoStoreHeader storeName={storeName} />
 
-              {/* Two-column video display */}
               <div className="grid grid-cols-2 gap-4">
                 <VideoColumn
                   title="Full video"
