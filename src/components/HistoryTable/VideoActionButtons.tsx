@@ -1,20 +1,21 @@
 import React from 'react'
 import { BinaryDataFile } from '../../lib/BinaryDataFile'
+import { useVideoModal } from '../../lib/contexts/VideoModalContext'
 
 interface VideoActionButtonsProps {
   video: BinaryDataFile
-  onPlay: (video: BinaryDataFile) => void
 }
 
 export const VideoActionButtons: React.FC<VideoActionButtonsProps> = ({
   video,
-  onPlay,
 }) => {
+  const { setSelectedVideo } = useVideoModal()
+
   return (
     <div className="flex gap-1.5">
       <button
         type="button"
-        onClick={() => onPlay(video)}
+        onClick={() => setSelectedVideo(video)}
         className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
         title="Play video"
       >

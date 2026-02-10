@@ -8,7 +8,6 @@ interface VideoColumnProps {
   videos: BinaryDataFile[]
   isPolling: boolean
   onGenerate: () => void
-  onPlayVideo: (video: BinaryDataFile) => void
   canGenerate?: boolean
 }
 
@@ -17,7 +16,6 @@ export const VideoColumn: React.FC<VideoColumnProps> = ({
   videos,
   isPolling,
   onGenerate,
-  onPlayVideo,
   canGenerate = false,
 }) => {
   const hasVideos = videos.length > 0
@@ -30,7 +28,6 @@ export const VideoColumn: React.FC<VideoColumnProps> = ({
           <VideoActionButtons
             key={video.fileName}
             video={video}
-            onPlay={onPlayVideo}
           />
         ))
       ) : canGenerate ? (

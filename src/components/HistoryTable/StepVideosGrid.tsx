@@ -13,17 +13,16 @@ import { getStepVideos } from '../../lib/passUtils'
 import Spinner from '../Spinner'
 import { VideoStoreHeader } from './VideoStoreHeader'
 import { VideoColumn } from './VideoColumn'
+import { VideoModalProvider, useVideoModal } from '../../lib/contexts/VideoModalContext'
 
 interface StepVideosGridProps {
   step: Step
 }
 
-const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
+const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   const { videos, areVideosLoaded, fetchVideos } = useSinglePass()
   const { machineId, organizationId } = useViamClients()
-  const [selectedVideo, setSelectedVideo] = useState<BinaryDataFile | null>(
-    null
-  )
+  const { selectedVideo, setSelectedVideo } = useVideoModal()
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null)
   const { addMessage } = useToast()
   const [isPollingFull, setIsPollingFull] = useState<boolean>(false)
@@ -131,10 +130,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
       }
     }
   }, [])
-
-  const handleVideoClick = (video: BinaryDataFile) => {
-    setSelectedVideo(video)
-  }
 
   const closeVideoModal = () => {
     // Clean up video URL if it exists
@@ -257,7 +252,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
               videos={videosByStore.get(videoStoreClient.name)?.fullVideos || []}
               isPolling={isPollingFull}
               onGenerate={() => handleGenerateVideo(false)}
-              onPlayVideo={handleVideoClick}
               canGenerate={!hasFullVideoForStore}
             />
 
@@ -266,7 +260,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
               videos={videosByStore.get(videoStoreClient.name)?.last30sVideos || []}
               isPolling={isPollingLast30s}
               onGenerate={() => handleGenerateVideo(true)}
-              onPlayVideo={handleVideoClick}
               canGenerate={!hasLast30sVideoForStore}
             />
           </div>
@@ -292,7 +285,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                   videos={storeVideos.fullVideos}
                   isPolling={false}
                   onGenerate={() => {}}
-                  onPlayVideo={handleVideoClick}
                   canGenerate={false}
                 />
 
@@ -301,7 +293,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                   videos={storeVideos.last30sVideos}
                   isPolling={false}
                   onGenerate={() => {}}
-                  onPlayVideo={handleVideoClick}
                   canGenerate={false}
                 />
               </div>
@@ -312,6 +303,14 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
 
       <VideoModal selectedVideo={selectedVideo} onClose={closeVideoModal} />
     </>
+  )
+}
+
+const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
+  return (
+    <VideoModalProvider>
+      <StepVideosGridContent step={step} />
+    </VideoModalProvider>
   )
 }
 
