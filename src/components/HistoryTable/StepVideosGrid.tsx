@@ -226,6 +226,23 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
           <div className="text-sm">Loading videos...</div>
         </div>
       )}
+      
+      {/* Logs link - shared across all states */}
+      {showLogsLink && (
+        <a
+          href={constructStepLogUrl(
+            step.start,
+            step.end,
+            machineId,
+            organizationId
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block mt-2 text-blue-500 text-xs underline text-center"
+        >
+          View logs for this step
+        </a>
+      )}
 
       {/* Generate/Display section for current video store */}
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
@@ -242,11 +259,11 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
           </div>
 
           {/* Two-column layout for generate/display */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {/* Full video column */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <div className="text-[10px] text-gray-500 font-medium">
-                {hasFullVideoForStore ? 'Full video' : 'Full'}
+                Full video
               </div>
               {hasFullVideoForStore ? (
                 // Show existing full videos
@@ -255,20 +272,20 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                     <button
                       type="button"
                       onClick={() => handleVideoClick(video)}
-                      className="flex-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
+                      className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
                       title="Play video"
                     >
-                      🎬
+                      ▶
                     </button>
                     {video.uri && (
                       <a
                         href={video.uri}
                         download={video.fileName?.split('/').pop() || 'video.mp4'}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
+                        className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
                         title="Download video"
                       >
-                        ⬇️
+                        ↓
                       </a>
                     )}
                   </div>
@@ -286,14 +303,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                     onClick={() => handleGenerateVideo(false)}
                     disabled={isPollingFull}
                   >
-                    {isPollingFull ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate'
-                    )}
+                    {isPollingFull ? 'Generating...' : 'Generate'}
                   </button>
                   {isPollingFull && (
                     <div className="text-[9px] text-gray-500 text-center">
@@ -305,7 +315,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
             </div>
 
             {/* Last 30s column */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <div className="text-[10px] text-gray-500 font-medium">
                 {hasLast30sVideoForStore ? 'Last 30s' : 'Last 30s'}
               </div>
@@ -316,20 +326,20 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                     <button
                       type="button"
                       onClick={() => handleVideoClick(video)}
-                      className="flex-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
+                      className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
                       title="Play video"
                     >
-                      🎬
+                      ▶
                     </button>
                     {video.uri && (
                       <a
                         href={video.uri}
                         download={video.fileName?.split('/').pop() || 'video.mp4'}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
+                        className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
                         title="Download video"
                       >
-                        ⬇️
+                        ↓
                       </a>
                     )}
                   </div>
@@ -347,14 +357,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                     onClick={() => handleGenerateVideo(true)}
                     disabled={isPollingLast30s}
                   >
-                    {isPollingLast30s ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate'
-                    )}
+                    {isPollingLast30s ? 'Generating...' : 'Generate'}
                   </button>
                   {isPollingLast30s && (
                     <div className="text-[9px] text-gray-500 text-center">
@@ -390,9 +393,9 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
               </div>
 
               {/* Two-column video display */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {/* Full video column */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   <div className="text-[10px] text-gray-500 font-medium">Full video</div>
                   {storeVideos.fullVideos.length > 0 ? (
                     storeVideos.fullVideos.map((video) => (
@@ -400,20 +403,20 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                         <button
                           type="button"
                           onClick={() => handleVideoClick(video)}
-                          className="flex-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
+                          className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
                           title="Play video"
                         >
-                          🎬
+                          ▶
                         </button>
                         {video.uri && (
                           <a
                             href={video.uri}
                             download={video.fileName?.split('/').pop() || 'video.mp4'}
                             onClick={(e) => e.stopPropagation()}
-                            className="flex-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
+                            className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
                             title="Download video"
                           >
-                            ⬇️
+                            ↓
                           </a>
                         )}
                       </div>
@@ -424,7 +427,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                 </div>
 
                 {/* Last 30s column */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   <div className="text-[10px] text-gray-500 font-medium">Last 30s</div>
                   {storeVideos.last30sVideos.length > 0 ? (
                     storeVideos.last30sVideos.map((video) => (
@@ -432,20 +435,20 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
                         <button
                           type="button"
                           onClick={() => handleVideoClick(video)}
-                          className="flex-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
+                          className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
                           title="Play video"
                         >
-                          🎬
+                          ▶
                         </button>
                         {video.uri && (
                           <a
                             href={video.uri}
                             download={video.fileName?.split('/').pop() || 'video.mp4'}
                             onClick={(e) => e.stopPropagation()}
-                            className="flex-1 px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[11px] font-medium text-center cursor-pointer transition-colors duration-200 border-none"
+                            className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
                             title="Download video"
                           >
-                            ⬇️
+                            ↓
                           </a>
                         )}
                       </div>
@@ -458,23 +461,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
             </div>
           ))}
         </div>
-      )}
-
-      {/* Logs link - shared across all states */}
-      {showLogsLink && (
-        <a
-          href={constructStepLogUrl(
-            step.start,
-            step.end,
-            machineId,
-            organizationId
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block mt-2 text-blue-500 text-xs underline text-center"
-        >
-          View logs for this step
-        </a>
       )}
 
       <VideoModal selectedVideo={selectedVideo} onClose={closeVideoModal} />
