@@ -91,6 +91,8 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     }
   }, [])
 
+  // Register this step's fetch function with the polling manager when generating
+  // The polling manager will use the most recent fetchVideos function set
   const registerFetchForPolling = () => {
     pollingManager.setFetchData(() => fetchVideos(true))
   }
@@ -100,6 +102,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     pollingManager.forceVideoCheck()
   }, [videos])
 
+  // Stop polling if videos are now available (handles the case where video appears)
   useEffect(() => {
     if (hasFullVideoForStore && isPollingFull) {
       setIsPollingFull(false)
