@@ -247,6 +247,10 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
       {/* Generate/Display section for current video store */}
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          {/* Selected video store indicator */}
+          <div className="text-[9px] text-slate-500 font-semibold tracking-wide mb-1">
+            Selected video store
+          </div>
           {/* Video store label */}
           <div
             className="text-[8px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded uppercase tracking-wide flex items-center mb-3 overflow-hidden text-ellipsis whitespace-nowrap"
