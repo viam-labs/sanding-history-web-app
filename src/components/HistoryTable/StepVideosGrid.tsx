@@ -73,6 +73,13 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     )
   }, [last30sVideos, videoStoreClient])
 
+  // Check if there are videos from other stores (to show "selected" label)
+  const hasVideosFromOtherStores = useMemo(() => {
+    return Array.from(videosByStore.keys()).some(
+      (storeName) => storeName !== videoStoreClient?.name
+    )
+  }, [videosByStore, videoStoreClient])
+
   // Add CSS keyframes for spinner animation
   useEffect(() => {
     const style = document.createElement('style')
@@ -243,7 +250,10 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
       {/* Generate/Display section for current video store */}
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <VideoStoreHeader storeName={videoStoreClient.name} isSelected />
+          <VideoStoreHeader 
+            storeName={videoStoreClient.name} 
+            isSelected={hasVideosFromOtherStores} 
+          />
 
           {/* Two-column layout for generate/display */}
           <div className="grid grid-cols-2 gap-4">
