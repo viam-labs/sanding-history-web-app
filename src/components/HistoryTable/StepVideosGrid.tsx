@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import VideoModal from '../VideoModal'
 import { Step } from '../../lib/types'
 import { generateVideo, getVideoStoreName } from '../../lib/videoUtils'
 import { VideoPollingManager } from '../../lib/videoPollingManager'
 import { constructStepLogUrl } from '../../lib/uiUtils'
 import { useToast } from '../../lib/contexts/ToastContext'
-import { useMemo } from 'react'
 import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
 import { BinaryDataFile } from '../../lib/BinaryDataFile'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext'
 import { getStepVideos } from '../../lib/passUtils'
 import Spinner from '../Spinner'
+import { VideoStoreHeader } from './VideoStoreHeader'
+import { VideoColumn } from './VideoColumn'
 
 interface StepVideosGridProps {
   step: Step
@@ -247,130 +248,27 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
       {/* Generate/Display section for current video store */}
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-          {/* Selected video store indicator */}
-          <div className="text-[9px] text-slate-500 font-semibold tracking-wide mb-1">
-            Selected video store
-          </div>
-          {/* Video store label */}
-          <div
-            className="text-[8px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded uppercase tracking-wide flex items-center mb-3 overflow-hidden text-ellipsis whitespace-nowrap"
-            title={`Video store: ${videoStoreClient.name}`}
-          >
-            <span className="text-base shrink-0">🎬</span>
-            <span className="ml-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-              {videoStoreClient.name}
-            </span>
-          </div>
+          <VideoStoreHeader storeName={videoStoreClient.name} isSelected />
 
           {/* Two-column layout for generate/display */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Full video column */}
-            <div className="flex flex-col gap-1">
-              <div className="text-[10px] text-gray-500 font-medium">
-                Full video
-              </div>
-              {hasFullVideoForStore ? (
-                // Show existing full videos
-                videosByStore.get(videoStoreClient.name)?.fullVideos.map((video) => (
-                  <div key={video.fileName} className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleVideoClick(video)}
-                      className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                      title="Play video"
-                    >
-                      ▶
-                    </button>
-                    {video.uri && (
-                      <a
-                        href={video.uri}
-                        download={video.fileName?.split('/').pop() || 'video.mp4'}
-                        onClick={(e) => e.stopPropagation()}
-                        className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                        title="Download video"
-                      >
-                        ↓
-                      </a>
-                    )}
-                  </div>
-                ))
-              ) : (
-                // Show generate button for full video
-                <>
-                  <button
-                    type="button"
-                    className={`px-2 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center justify-center gap-1.5 ${
-                      isPollingFull
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
-                    }`}
-                    onClick={() => handleGenerateVideo(false)}
-                    disabled={isPollingFull}
-                  >
-                    {isPollingFull ? 'Generating...' : 'Generate'}
-                  </button>
-                  {isPollingFull && (
-                    <div className="text-[9px] text-gray-500 text-center">
-                      This can take a few minutes
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <VideoColumn
+              title="Full video"
+              videos={videosByStore.get(videoStoreClient.name)?.fullVideos || []}
+              isPolling={isPollingFull}
+              onGenerate={() => handleGenerateVideo(false)}
+              onPlayVideo={handleVideoClick}
+              canGenerate={!hasFullVideoForStore}
+            />
 
-            {/* Last 30s column */}
-            <div className="flex flex-col gap-1">
-              <div className="text-[10px] text-gray-500 font-medium">
-                {hasLast30sVideoForStore ? 'Last 30s' : 'Last 30s'}
-              </div>
-              {hasLast30sVideoForStore ? (
-                // Show existing last30s videos
-                videosByStore.get(videoStoreClient.name)?.last30sVideos.map((video) => (
-                  <div key={video.fileName} className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleVideoClick(video)}
-                      className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                      title="Play video"
-                    >
-                      ▶
-                    </button>
-                    {video.uri && (
-                      <a
-                        href={video.uri}
-                        download={video.fileName?.split('/').pop() || 'video.mp4'}
-                        onClick={(e) => e.stopPropagation()}
-                        className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                        title="Download video"
-                      >
-                        ↓
-                      </a>
-                    )}
-                  </div>
-                ))
-              ) : (
-                // Show generate button for last30s video
-                <>
-                  <button
-                    type="button"
-                    className={`px-2 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center justify-center gap-1.5 ${
-                      isPollingLast30s
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
-                    }`}
-                    onClick={() => handleGenerateVideo(true)}
-                    disabled={isPollingLast30s}
-                  >
-                    {isPollingLast30s ? 'Generating...' : 'Generate'}
-                  </button>
-                  {isPollingLast30s && (
-                    <div className="text-[9px] text-gray-500 text-center">
-                      This can take a few minutes
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            <VideoColumn
+              title="Last 30s"
+              videos={videosByStore.get(videoStoreClient.name)?.last30sVideos || []}
+              isPolling={isPollingLast30s}
+              onGenerate={() => handleGenerateVideo(true)}
+              onPlayVideo={handleVideoClick}
+              canGenerate={!hasLast30sVideoForStore}
+            />
           </div>
         </div>
       )}
@@ -385,82 +283,27 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
               key={storeName}
               className="p-3 bg-slate-50 rounded-lg border border-slate-200"
             >
-              {/* Video store label */}
-              <div
-                className="text-[8px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded uppercase tracking-wide flex items-center mb-3 overflow-hidden text-ellipsis whitespace-nowrap"
-                title={`Video from: ${storeName}`}
-              >
-                <span className="text-base shrink-0">🎬</span>
-                <span className="ml-1.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                  {storeName}
-                </span>
-              </div>
+              <VideoStoreHeader storeName={storeName} />
 
               {/* Two-column video display */}
               <div className="grid grid-cols-2 gap-4">
-                {/* Full video column */}
-                <div className="flex flex-col gap-1">
-                  <div className="text-[10px] text-gray-500 font-medium">Full video</div>
-                  {storeVideos.fullVideos.length > 0 ? (
-                    storeVideos.fullVideos.map((video) => (
-                      <div key={video.fileName} className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleVideoClick(video)}
-                          className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                          title="Play video"
-                        >
-                          ▶
-                        </button>
-                        {video.uri && (
-                          <a
-                            href={video.uri}
-                            download={video.fileName?.split('/').pop() || 'video.mp4'}
-                            onClick={(e) => e.stopPropagation()}
-                            className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                            title="Download video"
-                          >
-                            ↓
-                          </a>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-[10px] text-gray-400 italic py-2">No full video</div>
-                  )}
-                </div>
+                <VideoColumn
+                  title="Full video"
+                  videos={storeVideos.fullVideos}
+                  isPolling={false}
+                  onGenerate={() => {}}
+                  onPlayVideo={handleVideoClick}
+                  canGenerate={false}
+                />
 
-                {/* Last 30s column */}
-                <div className="flex flex-col gap-1">
-                  <div className="text-[10px] text-gray-500 font-medium">Last 30s</div>
-                  {storeVideos.last30sVideos.length > 0 ? (
-                    storeVideos.last30sVideos.map((video) => (
-                      <div key={video.fileName} className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleVideoClick(video)}
-                          className="max-h-7 flex-1 px-2 py-0 bg-blue-500 hover:bg-blue-600 text-white rounded text-[11px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                          title="Play video"
-                        >
-                          ▶
-                        </button>
-                        {video.uri && (
-                          <a
-                            href={video.uri}
-                            download={video.fileName?.split('/').pop() || 'video.mp4'}
-                            onClick={(e) => e.stopPropagation()}
-                            className="max-h-7 flex-1 flex items-center justify-center px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded no-underline text-[15px] font-medium cursor-pointer transition-colors duration-200 border-none"
-                            title="Download video"
-                          >
-                            ↓
-                          </a>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-[10px] text-gray-400 italic py-2">No last 30s video</div>
-                  )}
-                </div>
+                <VideoColumn
+                  title="Last 30s"
+                  videos={storeVideos.last30sVideos}
+                  isPolling={false}
+                  onGenerate={() => {}}
+                  onPlayVideo={handleVideoClick}
+                  canGenerate={false}
+                />
               </div>
             </div>
           ))}
