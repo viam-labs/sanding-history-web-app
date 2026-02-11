@@ -102,7 +102,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     pollingManager.forceVideoCheck()
   }, [videos])
 
-  // Stop polling if videos are now available (handles the case where video appears)
+  // Stop polling if full video is now available
   useEffect(() => {
     if (hasFullVideoForStore && isPollingFull) {
       setIsPollingFull(false)
@@ -111,6 +111,10 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         requestIdFullRef.current = null
       }
     }
+  }, [hasFullVideoForStore, isPollingFull])
+
+  // Stop polling if last30s video is now available
+  useEffect(() => {
     if (hasLast30sVideoForStore && isPollingLast30s) {
       setIsPollingLast30s(false)
       if (requestIdLast30sRef.current) {
@@ -118,7 +122,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         requestIdLast30sRef.current = null
       }
     }
-  }, [hasFullVideoForStore, hasLast30sVideoForStore, isPollingFull, isPollingLast30s])
+  }, [hasLast30sVideoForStore, isPollingLast30s])
 
   useEffect(() => {
     return () => {
