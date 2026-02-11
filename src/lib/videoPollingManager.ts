@@ -45,13 +45,9 @@ export class VideoPollingManager {
         file.fileName.includes(step.pass_id) &&
         file.fileName.includes(step.name)
       const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
-      
-      // If last30s is specified, also check for the last30s marker
-      const isMatchingType = last30s !== undefined
-        ? last30s
-          ? file.fileName.includes('_last30s_')
-          : !file.fileName.includes('_last30s_')
-        : true
+      const hasLast30sTag = file.fileName.includes('_last30s_')
+      const isMatchingType =
+        last30s === undefined || hasLast30sTag === last30s
       
       return isMatchingStep && isMatchingVideoStore && isMatchingType
     })
