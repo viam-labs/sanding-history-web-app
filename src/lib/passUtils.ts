@@ -64,6 +64,7 @@ export const getStepVideos = (
   videoFiles.forEach((file) => {
     if (!file.fileName) return
 
+    // TODO: add a tag for these 30 second videos when videoStore DoCommand is updaated
     const isLast30s = file.fileName.includes('_last30s_')
 
     // 1. Try matching by metadata in filename (pass_id and step name)
