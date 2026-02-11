@@ -141,12 +141,14 @@ export const generateVideo = async (
     'formatDateToVideoStoreFormat(step.start)',
     formatDateToVideoStoreFormat(videoStart)
   )
-  const metadataMarker = last30s ? '_last30s_' : '_'
+  const metadata = last30s
+    ? `${step.pass_id}_last30s_${step.name}`
+    : `${step.pass_id}${step.name}`
   const command = VIAM.Struct.fromJson({
     command: 'save',
     to: formatDateToVideoStoreFormat(videoEnd),
     from: formatDateToVideoStoreFormat(videoStart),
-    metadata: `${step.pass_id}${metadataMarker}${step.name}`,
+    metadata,
   })
 
   return await videoStoreClient.doCommand(command)
