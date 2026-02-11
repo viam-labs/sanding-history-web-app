@@ -70,11 +70,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     )
   }, [last30sVideos, videoStoreClient])
 
-  const hasVideosFromOtherStores = useMemo(() => {
-    return Array.from(videosByStore.keys()).some(
-      (storeName) => storeName !== videoStoreClient?.name
-    )
-  }, [videosByStore, videoStoreClient])
 
   useEffect(() => {
     const style = document.createElement('style')
@@ -240,10 +235,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
       {areVideosLoaded && videoStoreClient && (!hasFullVideoForStore || !hasLast30sVideoForStore || videosByStore.has(videoStoreClient.name)) && (
         <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <VideoStoreHeader 
-            storeName={videoStoreClient.name} 
-            isSelected={hasVideosFromOtherStores} 
-          />
+          <VideoStoreHeader storeName={videoStoreClient.name} />
 
           <div className="grid grid-cols-2 gap-4">
             <VideoColumn
