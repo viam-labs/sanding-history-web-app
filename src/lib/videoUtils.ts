@@ -124,9 +124,8 @@ export const generateVideo = async (
   let videoEnd: Date
 
   if (last30s) {
+    videoEnd = step.end
     // For last 30s: end at step.end, start 30 seconds before step.end
-    const now = new Date()
-    videoEnd = step.end > now ? now : step.end
     videoStart = new Date(videoEnd.getTime() - 30000)
   } else {
     // For full video: add 10 second buffers
