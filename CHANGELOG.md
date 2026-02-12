@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.10.0
+
+### Minor Changes
+
+- ecf9895: add 30s vids
+
 ## 1.9.1
 
 ### Patch Changes
