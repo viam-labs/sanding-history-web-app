@@ -15,6 +15,7 @@ interface PollingRequest {
   startTime: number
   onComplete: () => void
   onTimeout: () => void
+  last30s?: boolean
 }
 
 export class VideoPollingManager {
@@ -22,8 +23,8 @@ export class VideoPollingManager {
   private activeRequests: Map<string, PollingRequest> = new Map()
   private isPolling: boolean = false
   private pollTimeout: number | null = null
-  private fetchDataFn: (() => Promise<BinaryDataFile[]>) | null = null
-  private currentVideos: BinaryDataFile[] = []
+  private passFetchers: Map<string, () => Promise<BinaryDataFile[]>> = new Map()
+  private videosByPass: Map<string, BinaryDataFile[]> = new Map()
 
   static getInstance(): VideoPollingManager {
     if (!VideoPollingManager.instance) {
@@ -32,34 +33,41 @@ export class VideoPollingManager {
     return VideoPollingManager.instance
   }
 
-  setFetchData(fn: () => Promise<BinaryDataFile[]>) {
-    this.fetchDataFn = fn
+  registerPassFetcher(passId: string, fn: () => Promise<BinaryDataFile[]>) {
+    this.passFetchers.set(passId, fn)
   }
 
   // Method to check if videos are available for a specific step
-  checkVideoAvailability(step: Step, videoStoreName: string): boolean {
-    return this.currentVideos.some((file) => {
+  checkVideoAvailability(step: Step, videoStoreName: string, last30s?: boolean): boolean {
+    const passVideos = this.getVideosForPass(step.pass_id)
+    
+    return passVideos.some((file) => {
       if (!file.fileName) return false
       const isMatchingStep =
         file.fileName.includes(step.pass_id) &&
         file.fileName.includes(step.name)
       const isMatchingVideoStore = getVideoStoreName(file) === videoStoreName
-      return isMatchingStep && isMatchingVideoStore
+      const hasLast30sTag = file.fileName.includes('_last30s_')
+      const isMatchingType =
+        last30s === undefined || hasLast30sTag === last30s
+      
+      return isMatchingStep && isMatchingVideoStore && isMatchingType
     })
   }
 
   // Method to update current videos for availability checking
-  updateCurrentVideos(videos: BinaryDataFile[]) {
-    this.currentVideos = videos
+  updatePassVideos(passId: string, videos: BinaryDataFile[]) {
+    this.videosByPass.set(passId, videos)
   }
 
   addRequest(
     step: Step,
     videoStoreName: string,
     onComplete: () => void,
-    onTimeout: () => void
+    onTimeout: () => void,
+    last30s?: boolean
   ): string {
-    const requestId = `${step.pass_id}-${step.name}`
+    const requestId = `${step.pass_id}-${step.name}${last30s ? '-last30s' : '-full'}`
 
     if (this.activeRequests.has(requestId)) {
       // Request already exists, just update the callbacks
@@ -77,6 +85,7 @@ export class VideoPollingManager {
       videoStoreName: videoStoreName,
       onComplete,
       onTimeout,
+      last30s,
     }
 
     this.activeRequests.set(requestId, request)
@@ -99,7 +108,7 @@ export class VideoPollingManager {
   }
 
   private startPolling() {
-    if (this.isPolling || !this.fetchDataFn) return
+    if (this.isPolling) return
 
     this.isPolling = true
 
@@ -110,10 +119,25 @@ export class VideoPollingManager {
       }
 
       try {
-        // Single fetchData call for all active requests
-        if (this.fetchDataFn) {
-          await this.fetchDataFn()
+        // Collect unique pass IDs from active requests
+        const activePassIds = new Set<string>()
+        for (const request of this.activeRequests.values()) {
+          activePassIds.add(request.passId)
         }
+
+        // Fetch data for each active pass
+        await Promise.all(
+          Array.from(activePassIds).map(async (passId) => {
+            const fetcher = this.passFetchers.get(passId)
+            if (fetcher) {
+              try {
+                await fetcher()
+              } catch (err) {
+                console.error(`Error fetching videos for pass ${passId}:`, err)
+              }
+            }
+          })
+        )
 
         for (const [requestId, request] of this.activeRequests.entries()) {
           // Check if videos are available for this step
@@ -124,7 +148,7 @@ export class VideoPollingManager {
             end: new Date(),
           }
 
-          if (this.checkVideoAvailability(step, request.videoStoreName)) {
+          if (this.checkVideoAvailability(step, request.videoStoreName, request.last30s)) {
             console.log(
               `Videos found for ${requestId}, stopping polling for this request`
             )
@@ -170,6 +194,10 @@ export class VideoPollingManager {
     }
     this.isPolling = false
   }
+ 
+  private getVideosForPass(passId: string): BinaryDataFile[] {
+    return this.videosByPass.get(passId) || []
+  }
 
   getActiveRequestCount(): number {
     return this.activeRequests.size
@@ -181,7 +209,6 @@ export class VideoPollingManager {
     console.log(
       `Checking ${this.activeRequests.size} active requests for video availability`
     )
-    console.log(`Current videos count: ${this.currentVideos.length}`)
 
     for (const [requestId, request] of this.activeRequests.entries()) {
       const step: Step = {
@@ -194,8 +221,12 @@ export class VideoPollingManager {
       console.log(
         `Checking request ${requestId} for step ${request.stepName} with pass_id ${request.passId}`
       )
+      
+      // Log video count for this pass
+      const passVideos = this.getVideosForPass(request.passId)
+      console.log(`Videos count for pass ${request.passId}: ${passVideos.length}`)
 
-      if (this.checkVideoAvailability(step, request.videoStoreName)) {
+      if (this.checkVideoAvailability(step, request.videoStoreName, request.last30s)) {
         console.log(
           `Videos found for ${requestId}, marking request as complete`
         )
@@ -240,8 +271,10 @@ export class VideoPollingManager {
       this.pollTimeout = null
     }
 
-    // Clear all active requests
+    // Clear all active requests and state
     this.activeRequests.clear()
+    this.passFetchers.clear()
+    this.videosByPass.clear()
     this.isPolling = false
   }
 }

@@ -97,3 +97,5 @@ export interface RobotConfig {
   fragments?: any[]
   [key: string]: any
 }
+
+export type VideoType = 'LAST_30_S' | 'FULL'
