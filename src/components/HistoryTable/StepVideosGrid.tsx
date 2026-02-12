@@ -23,7 +23,6 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   const { videos, areVideosLoaded, fetchVideos } = useSinglePass()
   const { machineId, organizationId } = useViamClients()
   const { selectedVideo, setSelectedVideo } = useVideoModal()
-  const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null)
   const { addMessage } = useToast()
   const [isPollingFull, setIsPollingFull] = useState<boolean>(false)
   const [isPollingLast30s, setIsPollingLast30s] = useState<boolean>(false)
@@ -83,32 +82,14 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
     }
   }, [step, videos, videoStoreClient])
 
-
-  useEffect(() => {
-    const style = document.createElement('style')
-    style.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `
-    document.head.appendChild(style)
-
-    return () => {
-      document.head.removeChild(style)
-    }
-  }, [])
-
-  // Register this step's fetch function with the polling manager when generating
-  // The polling manager will use the most recent fetchVideos function set
   const registerFetchForPolling = () => {
-    pollingManager.setFetchData(() => fetchVideos(true))
+    pollingManager.registerPassFetcher(step.pass_id, () => fetchVideos(true))
   }
 
   useEffect(() => {
-    pollingManager.updateCurrentVideos(videos)
+    pollingManager.updatePassVideos(step.pass_id, videos)
     pollingManager.forceVideoCheck()
-  }, [videos])
+  }, [videos, step.pass_id])
 
   // Stop polling if full video is now available
   useEffect(() => {
@@ -144,11 +125,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   }, [])
 
   const closeVideoModal = () => {
-    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(modalVideoUrl)
-    }
     setSelectedVideo(null)
-    setModalVideoUrl(null)
   }
 
   const handleGenerateVideo = async (last30s: boolean = false) => {
