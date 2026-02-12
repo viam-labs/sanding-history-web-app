@@ -1,184 +1,27 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React from 'react'
 import VideoModal from '../VideoModal'
 import { Step } from '../../lib/types'
-import { generateVideo, getVideoStoreName } from '../../lib/videoUtils'
-import { VideoPollingManager } from '../../lib/videoPollingManager'
 import { constructStepLogUrl } from '../../lib/uiUtils'
-import { useToast } from '../../lib/contexts/ToastContext'
 import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
-import { BinaryDataFile } from '../../lib/BinaryDataFile'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
-import { useSinglePass } from '../../lib/contexts/SinglePassContext'
-import { getStepVideos } from '../../lib/passUtils'
 import Spinner from '../Spinner'
 import { VideoStoreHeader } from './VideoStoreHeader'
 import { VideoColumn } from './VideoColumn'
 import { VideoModalProvider, useVideoModal } from '../../lib/contexts/VideoModalContext'
+import { StepVideosProvider, useStepVideos } from '../../lib/contexts/StepVideosContext'
 
 interface StepVideosGridProps {
   step: Step
 }
 
-const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
-  const { videos, areVideosLoaded, fetchVideos } = useSinglePass()
+const StepVideosGridContent: React.FC = () => {
+  const { step, videosByStore, areVideosLoaded, hasVideos, hasVideoForStore } = useStepVideos()
   const { machineId, organizationId } = useViamClients()
   const { selectedVideo, setSelectedVideo } = useVideoModal()
-  const { addMessage } = useToast()
-  const [isPollingFull, setIsPollingFull] = useState<boolean>(false)
-  const [isPollingLast30s, setIsPollingLast30s] = useState<boolean>(false)
-  const requestIdFullRef = useRef<string | null>(null)
-  const requestIdLast30sRef = useRef<string | null>(null)
-  const pollingManager = VideoPollingManager.getInstance()
   const { videoStoreClient } = useVideoStore()
 
-  const { fullVideos, last30sVideos } = useMemo(() => {
-    return getStepVideos(step, videos)
-  }, [step, videos])
-
-  const videosByStore = useMemo(() => {
-    const stores = new Map<string, { fullVideos: BinaryDataFile[]; last30sVideos: BinaryDataFile[] }>()
-    
-    fullVideos.forEach((video) => {
-      const storeName = getVideoStoreName(video)
-      if (!stores.has(storeName)) {
-        stores.set(storeName, { fullVideos: [], last30sVideos: [] })
-      }
-      stores.get(storeName)!.fullVideos.push(video)
-    })
-    
-    last30sVideos.forEach((video) => {
-      const storeName = getVideoStoreName(video)
-      if (!stores.has(storeName)) {
-        stores.set(storeName, { fullVideos: [], last30sVideos: [] })
-      }
-      stores.get(storeName)!.last30sVideos.push(video)
-    })
-    
-    return stores
-  }, [fullVideos, last30sVideos])
-
-  const hasFullVideoForStore = useMemo(() => {
-    return fullVideos.some(
-      (video) => getVideoStoreName(video) === videoStoreClient?.name
-    )
-  }, [fullVideos, videoStoreClient])
-
-  const hasLast30sVideoForStore = useMemo(() => {
-    return last30sVideos.some(
-      (video) => getVideoStoreName(video) === videoStoreClient?.name
-    )
-  }, [last30sVideos, videoStoreClient])
-
-  const registerFetchForPolling = () => {
-    pollingManager.registerPassFetcher(step.pass_id, () => fetchVideos(true))
-  }
-
-  useEffect(() => {
-    pollingManager.updatePassVideos(step.pass_id, videos)
-    pollingManager.forceVideoCheck()
-  }, [videos, step.pass_id])
-
-  // Stop polling if full video is now available
-  useEffect(() => {
-    if (hasFullVideoForStore && isPollingFull) {
-      setIsPollingFull(false)
-      if (requestIdFullRef.current) {
-        pollingManager.removeRequest(requestIdFullRef.current)
-        requestIdFullRef.current = null
-      }
-    }
-  }, [hasFullVideoForStore, isPollingFull])
-
-  // Stop polling if last30s video is now available
-  useEffect(() => {
-    if (hasLast30sVideoForStore && isPollingLast30s) {
-      setIsPollingLast30s(false)
-      if (requestIdLast30sRef.current) {
-        pollingManager.removeRequest(requestIdLast30sRef.current)
-        requestIdLast30sRef.current = null
-      }
-    }
-  }, [hasLast30sVideoForStore, isPollingLast30s])
-
-  useEffect(() => {
-    return () => {
-      if (requestIdFullRef.current) {
-        pollingManager.removeRequest(requestIdFullRef.current)
-      }
-      if (requestIdLast30sRef.current) {
-        pollingManager.removeRequest(requestIdLast30sRef.current)
-      }
-    }
-  }, [])
-
-  const closeVideoModal = () => {
-    setSelectedVideo(null)
-  }
-
-  const handleGenerateVideo = async (last30s: boolean = false) => {
-    if (!videoStoreClient) {
-      console.error('No video store client available')
-      return
-    }
-
-    registerFetchForPolling()
-    
-    if (last30s) {
-      setIsPollingLast30s(true)
-    } else {
-      setIsPollingFull(true)
-    }
-
-    try {
-      await generateVideo(videoStoreClient, step, last30s)
-
-      if (!videoStoreClient.name) {
-        const errorMessage = 'No video store name available'
-        console.error(errorMessage)
-        addMessage({ message: errorMessage, type: 'error' })
-        throw new Error(errorMessage)
-      }
-
-      const requestId = pollingManager.addRequest(
-        step,
-        videoStoreClient.name,
-        () => {
-          if (last30s) {
-            setIsPollingLast30s(false)
-          } else {
-            setIsPollingFull(false)
-          }
-        },
-        () => {
-          if (last30s) {
-            setIsPollingLast30s(false)
-          } else {
-            setIsPollingFull(false)
-          }
-          addMessage({
-            message:
-              'Video generation timed out. The video may still be processing.',
-            type: 'warning',
-          })
-        },
-        last30s
-      )
-      
-      if (last30s) {
-        requestIdLast30sRef.current = requestId
-      } else {
-        requestIdFullRef.current = requestId
-      }
-    } catch (error) {
-      console.error('Error generating video:', error)
-      addMessage({ message: `Error generating video: ${error}`, type: 'error' })
-      if (last30s) {
-        setIsPollingLast30s(false)
-      } else {
-        setIsPollingFull(false)
-      }
-    }
-  }
+  const hasFullVideoForStore = hasVideoForStore('FULL')
+  const hasLast30sVideoForStore = hasVideoForStore('LAST_30_S')
 
   const showLogsLink =
     machineId &&
@@ -187,7 +30,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
   return (
     <>
-      {fullVideos.length === 0 && last30sVideos.length === 0 && !areVideosLoaded && (
+      {!hasVideos && !areVideosLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
           <Spinner size="24px" />
           <div className="text-sm">Loading videos...</div>
@@ -216,19 +59,15 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <VideoColumn
-              title="Full video"
+              videoType="FULL"
               videos={videosByStore.get(videoStoreClient.name)?.fullVideos || []}
-              isPolling={isPollingFull}
-              onGenerate={() => handleGenerateVideo(false)}
-              canGenerate={!hasFullVideoForStore}
+              isActiveStore
             />
 
             <VideoColumn
-              title="Last 30s"
+              videoType="LAST_30_S"
               videos={videosByStore.get(videoStoreClient.name)?.last30sVideos || []}
-              isPolling={isPollingLast30s}
-              onGenerate={() => handleGenerateVideo(true)}
-              canGenerate={!hasLast30sVideoForStore}
+              isActiveStore
             />
           </div>
         </div>
@@ -247,19 +86,13 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <VideoColumn
-                  title="Full video"
+                  videoType="FULL"
                   videos={storeVideos.fullVideos}
-                  isPolling={false}
-                  onGenerate={() => {}}
-                  canGenerate={false}
                 />
 
                 <VideoColumn
-                  title="Last 30s"
+                  videoType="LAST_30_S"
                   videos={storeVideos.last30sVideos}
-                  isPolling={false}
-                  onGenerate={() => {}}
-                  canGenerate={false}
                 />
               </div>
             </div>
@@ -267,7 +100,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
         </div>
       )}
 
-      <VideoModal selectedVideo={selectedVideo} onClose={closeVideoModal} />
+      <VideoModal selectedVideo={selectedVideo} onClose={() => setSelectedVideo(null)} />
     </>
   )
 }
@@ -275,7 +108,9 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({ step }) => {
   return (
     <VideoModalProvider>
-      <StepVideosGridContent step={step} />
+      <StepVideosProvider step={step}>
+        <StepVideosGridContent />
+      </StepVideosProvider>
     </VideoModalProvider>
   )
 }
