@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import VideoModal from '../VideoModal'
-import { Step, VideoBinaryDataFile } from '../../lib/types'
+import { Step } from '../../lib/types'
 import { generateVideo, getVideoStoreName } from '../../lib/videoUtils'
 import { VideoPollingManager } from '../../lib/videoPollingManager'
 import { constructStepLogUrl } from '../../lib/uiUtils'
@@ -31,56 +31,43 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
   const pollingManager = VideoPollingManager.getInstance()
   const { videoStoreClient } = useVideoStore()
 
-  const {
-    videosByStore,
-    hasFullVideoForStore,
-    hasLast30sVideoForStore,
-    hasVideos,
-  } = useMemo(() => {
-    const { fullVideos: rawFull, last30sVideos: rawLast30s } = getStepVideos(
-      step,
-      videos
-    )
+  const { fullVideos, last30sVideos } = useMemo(() => {
+    return getStepVideos(step, videos)
+  }, [step, videos])
 
-    const allVideos: VideoBinaryDataFile[] = [
-      ...rawFull.map((file) => ({ file, type: 'FULL' as const })),
-      ...rawLast30s.map((file) => ({ file, type: 'LAST_30_S' as const })),
-    ]
-
-    const stores = new Map<
-      string,
-      { fullVideos: BinaryDataFile[]; last30sVideos: BinaryDataFile[] }
-    >()
-    let hasFull = false
-    let hasLast30 = false
-
-    allVideos.forEach(({ file, type }) => {
-      const storeName = getVideoStoreName(file)
+  const videosByStore = useMemo(() => {
+    const stores = new Map<string, { fullVideos: BinaryDataFile[]; last30sVideos: BinaryDataFile[] }>()
+    
+    fullVideos.forEach((video) => {
+      const storeName = getVideoStoreName(video)
       if (!stores.has(storeName)) {
         stores.set(storeName, { fullVideos: [], last30sVideos: [] })
       }
-      const store = stores.get(storeName)!
-
-      if (type === 'FULL') {
-        store.fullVideos.push(file)
-        if (storeName === videoStoreClient?.name) {
-          hasFull = true
-        }
-      } else {
-        store.last30sVideos.push(file)
-        if (storeName === videoStoreClient?.name) {
-          hasLast30 = true
-        }
-      }
+      stores.get(storeName)!.fullVideos.push(video)
     })
+    
+    last30sVideos.forEach((video) => {
+      const storeName = getVideoStoreName(video)
+      if (!stores.has(storeName)) {
+        stores.set(storeName, { fullVideos: [], last30sVideos: [] })
+      }
+      stores.get(storeName)!.last30sVideos.push(video)
+    })
+    
+    return stores
+  }, [fullVideos, last30sVideos])
 
-    return {
-      videosByStore: stores,
-      hasFullVideoForStore: hasFull,
-      hasLast30sVideoForStore: hasLast30,
-      hasVideos: allVideos.length > 0,
-    }
-  }, [step, videos, videoStoreClient])
+  const hasFullVideoForStore = useMemo(() => {
+    return fullVideos.some(
+      (video) => getVideoStoreName(video) === videoStoreClient?.name
+    )
+  }, [fullVideos, videoStoreClient])
+
+  const hasLast30sVideoForStore = useMemo(() => {
+    return last30sVideos.some(
+      (video) => getVideoStoreName(video) === videoStoreClient?.name
+    )
+  }, [last30sVideos, videoStoreClient])
 
   const registerFetchForPolling = () => {
     pollingManager.registerPassFetcher(step.pass_id, () => fetchVideos(true))
@@ -200,7 +187,7 @@ const StepVideosGridContent: React.FC<StepVideosGridProps> = ({ step }) => {
 
   return (
     <>
-      {!hasVideos && !areVideosLoaded && (
+      {fullVideos.length === 0 && last30sVideos.length === 0 && !areVideosLoaded && (
         <div className="loading-state flex flex-col items-center justify-center p-5 text-gray-500">
           <Spinner size="24px" />
           <div className="text-sm">Loading videos...</div>

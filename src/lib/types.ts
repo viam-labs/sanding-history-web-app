@@ -1,5 +1,3 @@
-import { BinaryDataFile } from './BinaryDataFile'
-
 export interface Step {
   name: string
   start: Date
@@ -98,9 +96,4 @@ export interface RobotConfig {
   fragment_mods?: FragmentMod[]
   fragments?: any[]
   [key: string]: any
-}
-
-export interface VideoBinaryDataFile {
-  file: BinaryDataFile
-  type: 'LAST_30_S' | 'FULL'
 }
