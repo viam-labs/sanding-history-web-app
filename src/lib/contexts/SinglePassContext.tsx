@@ -170,7 +170,7 @@ export function SinglePassProvider({
         )
         if (newSnapshots.length === 0) return
 
-        setSnapshots((prev) => [...prev, ...newSnapshots])
+        setSnapshots((prev) => deduplicateFiles(prev, newSnapshots))
         setPassFiles((prev) => deduplicateFiles(prev, nextFiles))
       },
       controller.signal
