@@ -141,6 +141,42 @@ export class FileQueryManager {
     }
   }
 
+  public async queryPassFilesByTags(params: FileQueryParams): Promise<void> {
+    if (params.signal?.aborted) return
+
+    const cacheKey = `tags-${params.passId}`
+
+    if (this._loadedPassFiles.has(cacheKey)) {
+      const cachedFiles = this._passFiles.get(cacheKey)
+      if (cachedFiles) {
+        params.onQuery(cachedFiles)
+        return
+      }
+    }
+
+    const queryKey = `allfiles-tags-${params.passId}`
+    const existingQuery = this._queries.get(queryKey)
+    if (existingQuery) {
+      await existingQuery
+      if (params.signal?.aborted) return
+      const cachedFiles = this._passFiles.get(cacheKey)
+      if (cachedFiles) params.onQuery(cachedFiles)
+      return
+    }
+
+    const queryPromise = this.makePassFilesByTagsQuery(params)
+    this._queries.set(queryKey, queryPromise)
+
+    try {
+      await queryPromise
+      if (!params.signal?.aborted) {
+        this._loadedPassFiles.add(cacheKey)
+      }
+    } finally {
+      this._queries.delete(queryKey)
+    }
+  }
+
   public async queryMostRecentFile(params: FileQueryParams): Promise<void> {
     if (params.signal?.aborted) return
 
@@ -372,6 +408,80 @@ export class FileQueryManager {
     await this.makePassFilesQuery(params)
   }
 
+
+  private async makePassFilesByTagsQuery(params: FileQueryParams): Promise<void> {
+    const {
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient,
+      passId,
+      onQuery,
+      signal,
+    } = params
+
+    if (signal?.aborted) return
+
+    const cacheKey = `tags-${passId}`
+    const paginationKey = `allfiles-tags-${passId}`
+    const paginationToken = this._paginationTokens.get(paginationKey)
+
+    const filter = new VIAM.dataApi.Filter({
+      organizationIds: [organizationId],
+      locationIds: [locationId],
+      robotId: machineId,
+      partId: partId,
+      tagsFilter: new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags: [passId],
+      }),
+    })
+
+    const binaryData = await viamClient.dataClient.binaryDataByFilter(
+      filter,
+      BINARY_DATA_BATCH_SIZE,
+      VIAM.dataApi.Order.DESCENDING,
+      paginationToken,
+      false,
+      false,
+      false
+    )
+
+    if (signal?.aborted) return
+
+    const nextFiles: BinaryDataFile[] = []
+    for (const file of binaryData.data) {
+      if (!file.metadata?.binaryDataId) continue
+      nextFiles.push(new BinaryDataFile(file))
+    }
+
+    const existingFiles = this._passFiles.get(cacheKey) || []
+    const existingIds = new Set(existingFiles.map((f) => f.binaryDataId))
+    const newFiles = []
+    for (const file of nextFiles) {
+      if (existingIds.has(file.binaryDataId)) continue
+      newFiles.push(file)
+    }
+
+    this._passFiles.set(cacheKey, [...existingFiles, ...newFiles])
+
+    const hasMorePages = !!binaryData.last
+    console.log(
+      `Fetched files by tags batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+    )
+
+    if (newFiles.length > 0 && !signal?.aborted) onQuery(newFiles)
+    if (!binaryData.last) {
+      this._paginationTokens.delete(paginationKey)
+      return
+    }
+
+    if (signal?.aborted) return
+
+    this._paginationTokens.set(paginationKey, binaryData.last)
+    await this.makePassFilesByTagsQuery(params)
+  }
 
   private async makeMostRecentFileQuery(params: FileQueryParams): Promise<void> {
     const {

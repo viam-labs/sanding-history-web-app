@@ -131,7 +131,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
     async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
       console.log(`Fetching all files for pass ${pass.pass_id}`)
 
-      await queryManager.current.queryPassFiles({
+      const sharedParams = {
         organizationId,
         locationId,
         machineId,
@@ -140,11 +140,17 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passId: pass.pass_id,
         passStart: pass.start,
         passEnd: pass.end,
-        onQuery: (files) => {
+        onQuery: (files: Parameters<FileQueryCallback>[0]) => {
           onQuery(files)
         },
         signal,
-      })
+      }
+
+      // TODO: Remove queryPassFiles call on March 20 2026
+      await Promise.all([
+        queryManager.current.queryPassFiles(sharedParams),
+        queryManager.current.queryPassFilesByTags(sharedParams),
+      ])
     },
     [
       organizationId,
