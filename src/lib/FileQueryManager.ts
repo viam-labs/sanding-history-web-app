@@ -462,10 +462,10 @@ export class FileQueryManager {
       (f) => !tagbasedBinaryDataFilesSet.has(f.binaryDataId)
     )
 
-    console.log(
+    console.warn(
       `Difference between timebased and tagbased files: ${difference.length}`
     )
-    console.log(difference.map((f) => f.fileName))
+    console.warn(difference.map((f) => f.fileName))
   }
 
   private async makeMostRecentFileQuery(
