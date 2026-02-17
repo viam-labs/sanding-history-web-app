@@ -146,10 +146,10 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         signal,
       }
 
-      // TODO: Remove queryPassFiles call on March 20 2026
+      // TODO: Remove time-based queryPassFiles call on March 20 2026
       await Promise.all([
         queryManager.current.queryPassFiles(sharedParams),
-        queryManager.current.queryPassFilesByTags(sharedParams),
+        queryManager.current.queryPassFiles({ ...sharedParams, tags: [pass.pass_id] }),
       ])
     },
     [

@@ -19,6 +19,7 @@ interface FileQueryParams {
   passEnd: Date
   onQuery: FileQueryCallback
   signal?: AbortSignal
+  tags?: string[]
 }
 interface VideoQueryParams extends FileQueryParams {
   forceRefresh?: boolean
@@ -110,41 +111,8 @@ export class FileQueryManager {
   public async queryPassFiles(params: FileQueryParams): Promise<void> {
     if (params.signal?.aborted) return
 
-    if (this._loadedPassFiles.has(params.passId)) {
-      const cachedFiles = this._passFiles.get(params.passId)
-      if (cachedFiles) {
-        params.onQuery(cachedFiles)
-        return
-      }
-    }
-
-    const queryKey = `allfiles-${params.passId}`
-    const existingQuery = this._queries.get(queryKey)
-    if (existingQuery) {
-      await existingQuery
-      if (params.signal?.aborted) return
-      const cachedFiles = this._passFiles.get(params.passId)
-      if (cachedFiles) params.onQuery(cachedFiles)
-      return
-    }
-
-    const queryPromise = this.makePassFilesQuery(params)
-    this._queries.set(queryKey, queryPromise)
-
-    try {
-      await queryPromise
-      if (!params.signal?.aborted) {
-        this._loadedPassFiles.add(params.passId)
-      }
-    } finally {
-      this._queries.delete(queryKey)
-    }
-  }
-
-  public async queryPassFilesByTags(params: FileQueryParams): Promise<void> {
-    if (params.signal?.aborted) return
-
-    const cacheKey = `tags-${params.passId}`
+    const cacheKey = params.tags ? `tags-${params.passId}` : params.passId
+    const queryKey = params.tags ? `allfiles-tags-${params.passId}` : `allfiles-${params.passId}`
 
     if (this._loadedPassFiles.has(cacheKey)) {
       const cachedFiles = this._passFiles.get(cacheKey)
@@ -154,7 +122,6 @@ export class FileQueryManager {
       }
     }
 
-    const queryKey = `allfiles-tags-${params.passId}`
     const existingQuery = this._queries.get(queryKey)
     if (existingQuery) {
       await existingQuery
@@ -164,7 +131,7 @@ export class FileQueryManager {
       return
     }
 
-    const queryPromise = this.makePassFilesByTagsQuery(params)
+    const queryPromise = this.makePassFilesQuery(params)
     this._queries.set(queryKey, queryPromise)
 
     try {
@@ -339,104 +306,39 @@ export class FileQueryManager {
       passEnd,
       onQuery,
       signal,
+      tags,
     } = params
 
     if (signal?.aborted) return
 
-    const paginationKey = `allfiles-${passId}`
+    const cacheKey = tags ? `tags-${passId}` : passId
+    const paginationKey = tags ? `allfiles-tags-${passId}` : `allfiles-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
 
-    // Add buffer to end time to account for sync delays
-    const bufferedEndTime = new Date(
-      passEnd.getTime() + PASS_END_TIME_BUFFER_MS
-    )
-
-    const filter = new VIAM.dataApi.Filter({
+    const filterParams: ConstructorParameters<typeof VIAM.dataApi.Filter>[0] = {
       organizationIds: [organizationId],
       locationIds: [locationId],
       robotId: machineId,
       partId: partId,
-      interval: new VIAM.dataApi.CaptureInterval({
+    }
+
+    if (tags) {
+      filterParams.tagsFilter = new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags,
+      })
+    } else {
+      // Add buffer to end time to account for sync delays
+      const bufferedEndTime = new Date(
+        passEnd.getTime() + PASS_END_TIME_BUFFER_MS
+      )
+      filterParams.interval = new VIAM.dataApi.CaptureInterval({
         start: VIAM.Timestamp.fromDate(passStart),
         end: VIAM.Timestamp.fromDate(bufferedEndTime),
-      }),
-    })
-
-    const binaryData = await viamClient.dataClient.binaryDataByFilter(
-      filter,
-      BINARY_DATA_BATCH_SIZE,
-      VIAM.dataApi.Order.DESCENDING,
-      paginationToken,
-      false,
-      false,
-      false
-    )
-
-    if (signal?.aborted) return
-
-    const nextFiles: BinaryDataFile[] = []
-    for (const file of binaryData.data) {
-      if (!file.metadata?.binaryDataId) continue
-      nextFiles.push(new BinaryDataFile(file))
+      })
     }
 
-    const existingFiles = this._passFiles.get(passId) || []
-    const existingIds = new Set(existingFiles.map((f) => f.binaryDataId))
-    const newFiles = []
-    for (const file of nextFiles) {
-      if (existingIds.has(file.binaryDataId)) continue
-      if (!file.isPartOfPass(passId)) continue
-      newFiles.push(file)
-    }
-
-    this._passFiles.set(passId, [...existingFiles, ...newFiles])
-
-    const hasMorePages = !!binaryData.last
-    console.log(
-      `Fetched files batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
-    )
-
-    if (newFiles.length > 0 && !signal?.aborted) onQuery(newFiles)
-    if (!binaryData.last) {
-      this._paginationTokens.delete(paginationKey)
-      return
-    }
-
-    if (signal?.aborted) return
-
-    this._paginationTokens.set(paginationKey, binaryData.last)
-    await this.makePassFilesQuery(params)
-  }
-
-
-  private async makePassFilesByTagsQuery(params: FileQueryParams): Promise<void> {
-    const {
-      organizationId,
-      locationId,
-      machineId,
-      partId,
-      viamClient,
-      passId,
-      onQuery,
-      signal,
-    } = params
-
-    if (signal?.aborted) return
-
-    const cacheKey = `tags-${passId}`
-    const paginationKey = `allfiles-tags-${passId}`
-    const paginationToken = this._paginationTokens.get(paginationKey)
-
-    const filter = new VIAM.dataApi.Filter({
-      organizationIds: [organizationId],
-      locationIds: [locationId],
-      robotId: machineId,
-      partId: partId,
-      tagsFilter: new VIAM.dataApi.TagsFilter({
-        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
-        tags: [passId],
-      }),
-    })
+    const filter = new VIAM.dataApi.Filter(filterParams)
 
     const binaryData = await viamClient.dataClient.binaryDataByFilter(
       filter,
@@ -461,6 +363,7 @@ export class FileQueryManager {
     const newFiles = []
     for (const file of nextFiles) {
       if (existingIds.has(file.binaryDataId)) continue
+      if (!tags && !file.isPartOfPass(passId)) continue
       newFiles.push(file)
     }
 
@@ -468,7 +371,7 @@ export class FileQueryManager {
 
     const hasMorePages = !!binaryData.last
     console.log(
-      `Fetched files by tags batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+      `Fetched files${tags ? ' by tags' : ''} batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
     )
 
     if (newFiles.length > 0 && !signal?.aborted) onQuery(newFiles)
@@ -480,7 +383,7 @@ export class FileQueryManager {
     if (signal?.aborted) return
 
     this._paginationTokens.set(paginationKey, binaryData.last)
-    await this.makePassFilesByTagsQuery(params)
+    await this.makePassFilesQuery(params)
   }
 
   private async makeMostRecentFileQuery(params: FileQueryParams): Promise<void> {
