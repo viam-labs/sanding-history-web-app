@@ -112,7 +112,9 @@ export class FileQueryManager {
     if (params.signal?.aborted) return
 
     const cacheKey = params.tags ? `tags-${params.passId}` : params.passId
-    const queryKey = params.tags ? `allfiles-tags-${params.passId}` : `allfiles-${params.passId}`
+    const queryKey = params.tags
+      ? `allfiles-tags-${params.passId}`
+      : `allfiles-${params.passId}`
 
     if (this._loadedPassFiles.has(cacheKey)) {
       const cachedFiles = this._passFiles.get(cacheKey)
@@ -153,7 +155,7 @@ export class FileQueryManager {
       await existingQuery
       return
     }
-    
+
     const queryPromise = this.makeMostRecentFileQuery(params)
     this._queries.set(queryKey, queryPromise)
 
@@ -312,7 +314,9 @@ export class FileQueryManager {
     if (signal?.aborted) return
 
     const cacheKey = tags ? `tags-${passId}` : passId
-    const paginationKey = tags ? `allfiles-tags-${passId}` : `allfiles-${passId}`
+    const paginationKey = tags
+      ? `allfiles-tags-${passId}`
+      : `allfiles-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
 
     const filterParams: ConstructorParameters<typeof VIAM.dataApi.Filter>[0] = {
@@ -386,7 +390,87 @@ export class FileQueryManager {
     await this.makePassFilesQuery(params)
   }
 
-  private async makeMostRecentFileQuery(params: FileQueryParams): Promise<void> {
+  //TODO: this is a tempory call while we migrate to tag all binary data files with the pass_id to ensure all files are tagged, remove once we have migrated to tag all files
+  public async getDifferenceBetweenPassFiles(
+    params: FileQueryParams
+  ): Promise<void> {
+    console.log(
+      `Getting difference between time based and tag based files for pass ${params.passId}`
+    )
+    const timebasedFilter = new VIAM.dataApi.Filter({
+      organizationIds: [params.organizationId],
+      locationIds: [params.locationId],
+      robotId: params.machineId,
+      partId: params.partId,
+      interval: new VIAM.dataApi.CaptureInterval({
+        start: VIAM.Timestamp.fromDate(params.passStart),
+        end: VIAM.Timestamp.fromDate(params.passEnd),
+      }),
+    })
+
+    const tagbasedFilter = new VIAM.dataApi.Filter({
+      organizationIds: [params.organizationId],
+      locationIds: [params.locationId],
+      robotId: params.machineId,
+      partId: params.partId,
+      tagsFilter: new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags: params.tags,
+      }),
+    })
+
+    const timebasedBinaryData =
+      await params.viamClient.dataClient.binaryDataByFilter(
+        timebasedFilter,
+        BINARY_DATA_BATCH_SIZE,
+        VIAM.dataApi.Order.DESCENDING,
+        undefined,
+        false,
+        false,
+        false
+      )
+
+    const tagbasedBinaryData =
+      await params.viamClient.dataClient.binaryDataByFilter(
+        tagbasedFilter,
+        BINARY_DATA_BATCH_SIZE,
+        VIAM.dataApi.Order.DESCENDING,
+        undefined,
+        false,
+        false,
+        false
+      )
+
+    const tagbasedBinaryDataFiles = tagbasedBinaryData.data.map(
+      (f) => new BinaryDataFile(f)
+    )
+
+    const timebasedBinaryDataFiles = timebasedBinaryData.data.map(
+      (f) => new BinaryDataFile(f)
+    )
+    const newFiles = []
+    for (const file of timebasedBinaryDataFiles) {
+      if (!file.isPartOfPass(params.passId)) continue
+      newFiles.push(file)
+    }
+
+    const tagbasedBinaryDataFilesSet = new Set(
+      tagbasedBinaryDataFiles.map((f) => f.binaryDataId)
+    )
+
+    const difference = newFiles.filter(
+      (f) => !tagbasedBinaryDataFilesSet.has(f.binaryDataId)
+    )
+
+    console.log(
+      `Difference between timebased and tagbased files: ${difference.length}`
+    )
+    console.log(difference.map((f) => f.fileName))
+  }
+
+  private async makeMostRecentFileQuery(
+    params: FileQueryParams
+  ): Promise<void> {
     const {
       organizationId,
       locationId,
@@ -399,7 +483,6 @@ export class FileQueryManager {
     } = params
 
     if (signal?.aborted) return
-
 
     const filter = new VIAM.dataApi.Filter({
       organizationIds: [organizationId],
@@ -425,7 +508,9 @@ export class FileQueryManager {
     if (binaryData.data.length === 0) return
 
     const mostRecentFile = new BinaryDataFile(binaryData.data[0])
-    console.log(`Most recent file ID: ${mostRecentFile.binaryDataId} with time received: ${mostRecentFile.timeReceived?.toISOString()}`)
+    console.log(
+      `Most recent file ID: ${mostRecentFile.binaryDataId} with time received: ${mostRecentFile.timeReceived?.toISOString()}`
+    )
     onQuery([mostRecentFile])
   }
 }
