@@ -419,8 +419,8 @@ export class FileQueryManager {
       }),
     })
 
-    const timebasedBinaryData =
-      await params.viamClient.dataClient.binaryDataByFilter(
+    const [timebasedBinaryData, tagbasedBinaryData] = await Promise.all([
+      params.viamClient.dataClient.binaryDataByFilter(
         timebasedFilter,
         BINARY_DATA_BATCH_SIZE,
         VIAM.dataApi.Order.DESCENDING,
@@ -428,10 +428,8 @@ export class FileQueryManager {
         false,
         false,
         false
-      )
-
-    const tagbasedBinaryData =
-      await params.viamClient.dataClient.binaryDataByFilter(
+      ),
+      params.viamClient.dataClient.binaryDataByFilter(
         tagbasedFilter,
         BINARY_DATA_BATCH_SIZE,
         VIAM.dataApi.Order.DESCENDING,
@@ -439,7 +437,8 @@ export class FileQueryManager {
         false,
         false,
         false
-      )
+      ),
+    ])
 
     const tagbasedBinaryDataFiles = tagbasedBinaryData.data.map(
       (f) => new BinaryDataFile(f)
