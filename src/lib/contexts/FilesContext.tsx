@@ -44,7 +44,11 @@ export function FilesProvider({ children }: { children: ReactNode }) {
   const queryManager = useRef<FileQueryManager>(new FileQueryManager())
 
   const fetchMostRecentFile = useCallback(
-    async (mostRecentPass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
+    async (
+      mostRecentPass: Pass,
+      onQuery: FileQueryCallback,
+      signal?: AbortSignal
+    ) => {
       return await queryManager.current.queryMostRecentFile({
         organizationId,
         locationId,
@@ -60,13 +64,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         signal,
       })
     },
-    [
-      organizationId,
-      locationId,
-      machineId,
-      partId,
-      viamClient
-    ]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   const fetchImages = useCallback(
@@ -88,13 +86,7 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         signal,
       })
     },
-    [
-      organizationId,
-      locationId,
-      machineId,
-      partId,
-      viamClient
-    ]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   const fetchVideos = useCallback(
@@ -118,20 +110,14 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         forceRefresh,
       })
     },
-    [
-      organizationId,
-      locationId,
-      machineId,
-      partId,
-      viamClient
-    ]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   const fetchAllPassFiles = useCallback(
     async (pass: Pass, onQuery: FileQueryCallback, signal?: AbortSignal) => {
       console.log(`Fetching all files for pass ${pass.pass_id}`)
 
-      await queryManager.current.queryPassFiles({
+      const sharedParams = {
         organizationId,
         locationId,
         machineId,
@@ -140,19 +126,26 @@ export function FilesProvider({ children }: { children: ReactNode }) {
         passId: pass.pass_id,
         passStart: pass.start,
         passEnd: pass.end,
-        onQuery: (files) => {
+        onQuery: (files: Parameters<FileQueryCallback>[0]) => {
           onQuery(files)
         },
         signal,
-      })
+      }
+
+      // TODO: Remove time-based queryPassFiles call on March 20 2026
+      await Promise.all([
+        queryManager.current.queryPassFiles(sharedParams),
+        queryManager.current.queryPassFiles({
+          ...sharedParams,
+          tags: [pass.pass_id],
+        }),
+        queryManager.current.getDifferenceBetweenPassFiles({
+          ...sharedParams,
+          tags: [pass.pass_id],
+        }),
+      ])
     },
-    [
-      organizationId,
-      locationId,
-      machineId,
-      partId,
-      viamClient
-    ]
+    [organizationId, locationId, machineId, partId, viamClient]
   )
 
   return (
