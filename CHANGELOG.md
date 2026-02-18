@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.11.0
+
+### Minor Changes
+
+- 4896962: send query for pass files using pass_id tag
+
 ## 1.10.0
 
 ### Minor Changes
