@@ -136,10 +136,10 @@ const HistoryTable: React.FC = () => {
               <React.Fragment key={dateKey}>
                 <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={13} />
                 {passes.map((pass: Pass, passIndex: number) => {
-                  const rowKey = `${dayIndex}-${passIndex}`
+                  const globalIndex = `${dayIndex}-${passIndex}`
 
                   return (
-                    <React.Fragment key={rowKey}>
+                    <React.Fragment key={globalIndex}>
                       <SinglePassProvider pass={pass}>
                         <Suspense
                           fallback={
@@ -148,7 +148,7 @@ const HistoryTable: React.FC = () => {
                             </tr>
                           }
                         >
-                          <Row />
+                          <Row globalIndex={globalIndex} />
                         </Suspense>
                       </SinglePassProvider>
                     </React.Fragment>
