@@ -38,8 +38,11 @@ const Row = ({ globalIndex }: RowProps) => {
 
     if (!newExpandedState) {
       cancelFetch()
+      window.history.replaceState(null, '', '#/')
       return
     }
+
+    window.history.replaceState(null, '', `#/passes/${pass.pass_id}`)
 
     const [dayIndexStr, passIndexStr] = globalIndex.split('-')
     const dayIndex = parseInt(dayIndexStr)

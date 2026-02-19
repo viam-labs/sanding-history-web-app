@@ -8,6 +8,7 @@ import { ToastProvider } from './lib/contexts/ToastContext'
 import { FilesProvider } from './lib/contexts/FilesContext'
 import { lazy } from 'react'
 const VideoDetailPage = lazy(() => import('./VideoDetailPage'))
+const SinglePassPage = lazy(() => import('./SinglePassPage'))
 
 function Root() {
   return (
@@ -26,6 +27,12 @@ function Root() {
                     <Route
                       path="/videos/:videoId"
                       element={<VideoDetailPage />}
+                    />
+
+                    {/* Single pass view - served at /machine/:machineInfo#/passes/:passId */}
+                    <Route
+                      path="/passes/:passId"
+                      element={<SinglePassPage />}
                     />
                   </Routes>
                 </HashRouter>
