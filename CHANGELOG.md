@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.12.0
+
+### Minor Changes
+
+- 7e304c9: add single pass page
+
 ## 1.11.0
 
 ### Minor Changes
