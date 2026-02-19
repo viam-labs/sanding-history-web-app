@@ -20,6 +20,7 @@ import {
   getPassConfigComparison,
 } from './lib/configUtils'
 import { Pass, RobotConfigMetadata } from './lib/types'
+import { ResourceSelection } from './components/ResouceSelection'
 
 function SinglePassPageContent() {
   const { pass, fetchStepFiles, fetchAllPassFiles } = useSinglePass()
@@ -33,6 +34,7 @@ function SinglePassPageContent() {
     Set<string>
   >(new Set())
 
+  //TODO: move fetching config metadata into a context so the function can be used by the Row and SinglePassPage components
   const fetchConfigMetadata = useCallback(
     async (currentPass: Pass, prevPass: Pass | null) => {
       if (!partId) return
@@ -87,7 +89,11 @@ function SinglePassPageContent() {
     fetchAllPassFiles()
 
     if (partId) {
-      const { prevPass } = getPassConfigComparison(pass, passSummaries, new Map())
+      const { prevPass } = getPassConfigComparison(
+        pass,
+        passSummaries,
+        new Map()
+      )
       fetchConfigMetadata(pass, prevPass)
     }
     // Run once when the pass or partId changes
@@ -145,10 +151,7 @@ function SinglePassPage() {
   return (
     <div className="appInterface">
       <header className="flex items-center gap-4 sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 md:shadow-xs flex-wrap">
-        <Link
-          to="/"
-          className="text-blue-500 hover:underline text-sm shrink-0"
-        >
+        <Link to="/" className="text-blue-500 hover:underline text-sm shrink-0">
           ← Back to sanding history
         </Link>
         <div className="font-semibold text-zinc-900 text-sm">
@@ -164,6 +167,7 @@ function SinglePassPage() {
         <CameraProvider>
           <VideoStoreProvider>
             <SinglePassProvider pass={pass}>
+              <ResourceSelection />
               <SinglePassPageContent />
             </SinglePassProvider>
           </VideoStoreProvider>
