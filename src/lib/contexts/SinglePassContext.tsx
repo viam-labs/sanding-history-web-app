@@ -168,9 +168,9 @@ export function SinglePassProvider({
         const newSnapshots = nextFiles.filter((file) =>
           file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
         )
-        if (newSnapshots.length === 0) return
-
-        setSnapshots((prev) => deduplicateFiles(prev, newSnapshots))
+        if (newSnapshots.length !== 0) {
+          setSnapshots((prev) => deduplicateFiles(prev, newSnapshots))
+        }
         setPassFiles((prev) => deduplicateFiles(prev, nextFiles))
       },
       controller.signal
