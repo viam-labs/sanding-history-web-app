@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.12.1
+
+### Patch Changes
+
+- 04d4ecb: do not early return file updates on empty snapshots predicate
+
 ## 1.12.0
 
 ### Minor Changes
