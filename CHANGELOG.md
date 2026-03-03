@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.12.2
+
+### Patch Changes
+
+- c3ed24e: add more info on notes and diagnosis icon hover
+
 ## 1.12.1
 
 ### Patch Changes
