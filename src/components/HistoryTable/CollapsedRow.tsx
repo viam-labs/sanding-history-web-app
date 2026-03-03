@@ -109,16 +109,32 @@ export const CollapsedRow = ({
                 diagnosisData && (diagnosisData.symptom || diagnosisData.cause)
 
               if (hasNotes || hasDiagnosis) {
+                const titleParts: string[] = []
+
+                if (hasNotes) {
+                  const noteTexts = passNotesData
+                    .filter((n) => n.note_text.trim())
+                    .map((n) => n.note_text.trim())
+                  titleParts.push(
+                    noteTexts.length === 1
+                      ? `Note: ${noteTexts[0]}`
+                      : `Notes:\n${noteTexts.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
+                  )
+                }
+
+                if (hasDiagnosis) {
+                  const diagParts: string[] = ['Diagnosis:']
+                  if (diagnosisData.symptom)
+                    diagParts.push(`  Symptom: ${diagnosisData.symptom}`)
+                  if (diagnosisData.cause)
+                    diagParts.push(`  Cause: ${diagnosisData.cause}`)
+                  titleParts.push(diagParts.join('\n'))
+                }
+
                 return (
                   <span
                     className="text-lg flex items-center"
-                    title={
-                      hasNotes && hasDiagnosis
-                        ? 'This pass has notes and diagnosis'
-                        : hasNotes
-                          ? 'This pass has notes'
-                          : 'This pass has diagnosis'
-                    }
+                    title={titleParts.join('\n\n')}
                   >
                     📝
                   </span>
