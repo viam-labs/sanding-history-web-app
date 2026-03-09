@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pass, RobotConfigMetadata } from '../../lib/types'
+import { getExecutionTimeMs } from '../../lib/passUtils'
 import {
   downloadRobotConfig,
   getPassConfigComparison,
@@ -9,6 +10,7 @@ import { usePass } from '../../lib/contexts/PassContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { SandingSpeed } from './SandingSpeed'
 
 export interface PassInfoProps {
   configMetadata: Map<string, RobotConfigMetadata>
@@ -29,8 +31,7 @@ export const PassInfo: React.FC<PassInfoProps> = ({
   const { groupedPasses } = usePagination()
   const {
     build_info: buildInfo,
-    blue_point_count: bluePointCount,
-    blue_point_diff_percent: bluePointDiffPercent,
+    pass_mode: passMode,
     sanding_distance_mm: sandingDistanceMm,
   } = pass
   const { partId } = usePass()
@@ -106,24 +107,13 @@ export const PassInfo: React.FC<PassInfoProps> = ({
     <div className="flex gap-8">
       <div className="info-section">
         <div className="flex items-center mb-3">
-          <h4 className="m-0">Blue points</h4>
+          <h4 className="m-0">Pass details</h4>
         </div>
         <div className="info-grid">
-          {bluePointCount !== undefined && (
+          {passMode !== undefined && (
             <div className="info-item">
-              <span className="info-label">
-                Blue Points
-                {bluePointDiffPercent !== undefined && (
-                  <span className="ml-2 text-xs text-gray-500 font-medium">
-                    ({bluePointDiffPercent > 0 ? '+' : ''}
-                    {bluePointDiffPercent.toFixed(1)}
-                    %)
-                  </span>
-                )}
-              </span>
-              <span className="info-value">
-                {bluePointCount.toLocaleString()}
-              </span>
+              <span className="info-label">Mode</span>
+              <span className="info-value">{passMode}</span>
             </div>
           )}
 
@@ -137,6 +127,8 @@ export const PassInfo: React.FC<PassInfoProps> = ({
               </span>
             </div>
           )}
+
+          <SandingSpeed execMs={getExecutionTimeMs(pass)} sandingDistanceMm={sandingDistanceMm} />
         </div>
       </div>
       <div className="info-section">

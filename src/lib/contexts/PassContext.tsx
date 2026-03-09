@@ -37,47 +37,24 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
       pass_id: pass.pass_id,
       err_string: pass.err_string || null,
       build_info: buildInfo,
-      blue_point_count:
-        pass.target_points_count !== undefined &&
-        pass.target_points_count !== null
-          ? Number(pass.target_points_count)
+      pass_mode:
+        pass.pass_mode != null
+          ? String(pass.pass_mode)
           : undefined,
       sanding_distance_mm:
-        pass.sanding_distance_mm !== undefined &&
-        pass.sanding_distance_mm !== null
+        pass.sanding_distance_mm != null
           ? Number(pass.sanding_distance_mm)
           : undefined,
       selected_zones:
-        pass.selected_zones !== undefined && pass.selected_zones !== null
+        pass.selected_zones != null
           ? pass.selected_zones
           : undefined,
       selected_num_rounds:
-        pass.selected_num_rounds !== undefined &&
-        pass.selected_num_rounds !== null
+        pass.selected_num_rounds != null
           ? Number(pass.selected_num_rounds)
           : undefined,
     }
   })
-}
-
-/**
- * Calculates blue point percentage differences between consecutive passes.
- * Mutates the passes array in place.
- */
-function calculateBluePointDiffs(passes: Pass[]): void {
-  for (let i = 0; i < passes.length - 1; i++) {
-    const current = passes[i]
-    const previous = passes[i + 1]
-
-    if (
-      current.blue_point_count !== undefined &&
-      previous.blue_point_count !== undefined &&
-      previous.blue_point_count !== 0
-    ) {
-      const diff = current.blue_point_count - previous.blue_point_count
-      current.blue_point_diff_percent = (diff / previous.blue_point_count) * 100
-    }
-  }
 }
 
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
@@ -165,7 +142,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
     }
 
     const processedPasses = processTabularDataToPasses(hotDataStoreResults)
-    calculateBluePointDiffs(processedPasses)
     setPassSummaries(processedPasses)
 
     await fetchPassMetadata(processedPasses, extractedPartId)
@@ -255,7 +231,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
     }
 
     const processedPasses = processTabularDataToPasses(allTabularData)
-    calculateBluePointDiffs(processedPasses)
     setPassSummaries(processedPasses)
 
     await fetchPassMetadata(processedPasses, extractedPartId)

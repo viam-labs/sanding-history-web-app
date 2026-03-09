@@ -159,9 +159,11 @@ export const CollapsedRow = ({
         {formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
       </td>
       <td className="text-zinc-700">
-        {pass.blue_point_count !== undefined
-          ? pass.blue_point_count.toLocaleString()
-          : '—'}
+        {pass.pass_mode ? (
+          <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-zinc-700 rounded-full border border-gray-200">
+            {pass.pass_mode}
+          </span>
+        ) : '—'}
       </td>
       <td className="text-zinc-700">
         {pass.steps ? `${pass.steps.length} steps` : '—'}

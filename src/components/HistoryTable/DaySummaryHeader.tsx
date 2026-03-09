@@ -8,7 +8,6 @@ export interface DayAggregateData {
   totalPassCount: number
   executionPercentage: number
   formattedDate: string
-  totalBluePoints: number
   symptomCounts: Map<string, number>
   causeCounts: Map<string, number>
 }
