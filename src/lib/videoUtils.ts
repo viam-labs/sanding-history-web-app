@@ -71,14 +71,6 @@ export const formatDurationToMinutesSeconds = (
   return `${minutes}m ${seconds}s`
 }
 
-// export const formatTimestamp = (timestamp: string): string => {
-//   return new Date(timestamp).toLocaleString();
-// };
-
-// export const formatShortTimestamp = (timestamp: string): string => {
-//   return new Date(timestamp).toLocaleTimeString();
-// };
-
 export const extractCameraName = (filename: string): string => {
   const match = filename.match(/video_([^/]+)/)
   return match ? `${match[1]}` : 'Unknown Camera'
@@ -141,6 +133,13 @@ export const generateVideo = async (
     'formatDateToVideoStoreFormat(step.start)',
     formatDateToVideoStoreFormat(videoStart)
   )
+
+  const tags = [step.pass_id, step.name]
+  if (last30s) {
+    tags.push('last30s')
+  } else {
+    tags.push('full')
+  }
   const metadata = last30s
     ? `${step.pass_id}_last30s_${step.name}`
     : `${step.pass_id}${step.name}`
@@ -148,6 +147,7 @@ export const generateVideo = async (
     command: 'save',
     to: formatDateToVideoStoreFormat(videoEnd),
     from: formatDateToVideoStoreFormat(videoStart),
+    tags,
     metadata,
   })
 
