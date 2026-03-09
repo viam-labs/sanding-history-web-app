@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.12.3
+
+### Patch Changes
+
+- af644c3: Replace blue point count with pass mode and add sanding speed
+
 ## 1.12.2
 
 ### Patch Changes
