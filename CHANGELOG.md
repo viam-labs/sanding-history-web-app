@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.13.0
+
+### Minor Changes
+
+- 632e163: tag generated videos with pass id
+
 ## 1.12.3
 
 ### Patch Changes
