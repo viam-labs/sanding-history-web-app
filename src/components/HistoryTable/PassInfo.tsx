@@ -10,6 +10,7 @@ import { usePass } from '../../lib/contexts/PassContext'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { SandingSpeed } from './SandingSpeed'
 
 export interface PassInfoProps {
   configMetadata: Map<string, RobotConfigMetadata>
@@ -127,23 +128,7 @@ export const PassInfo: React.FC<PassInfoProps> = ({
             </div>
           )}
 
-          {sandingDistanceMm !== undefined && (() => {
-            const execMs = getExecutionTimeMs(pass)
-            if (execMs <= 0) return null
-            const speedMs = (sandingDistanceMm / 1000) / (execMs / 1000)
-            const speedKmh = speedMs * 3.6
-            return (
-              <div className="info-item">
-                <span className="info-label">Sanding Speed</span>
-                <span className="info-value relative group cursor-default">
-                  {speedKmh.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} km/h
-                  <span className="absolute left-0 -bottom-7 hidden group-hover:block text-xs text-white bg-zinc-800 px-2 py-1 rounded whitespace-nowrap">
-                    {speedMs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} m/s
-                  </span>
-                </span>
-              </div>
-            )
-          })()}
+          <SandingSpeed execMs={getExecutionTimeMs(pass)} sandingDistanceMm={sandingDistanceMm} />
         </div>
       </div>
       <div className="info-section">

@@ -38,21 +38,19 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
       err_string: pass.err_string || null,
       build_info: buildInfo,
       pass_mode:
-        pass.pass_mode !== undefined && pass.pass_mode !== null
+        pass.pass_mode != null
           ? String(pass.pass_mode)
           : undefined,
       sanding_distance_mm:
-        pass.sanding_distance_mm !== undefined &&
-        pass.sanding_distance_mm !== null
+        pass.sanding_distance_mm != null
           ? Number(pass.sanding_distance_mm)
           : undefined,
       selected_zones:
-        pass.selected_zones !== undefined && pass.selected_zones !== null
+        pass.selected_zones != null
           ? pass.selected_zones
           : undefined,
       selected_num_rounds:
-        pass.selected_num_rounds !== undefined &&
-        pass.selected_num_rounds !== null
+        pass.selected_num_rounds != null
           ? Number(pass.selected_num_rounds)
           : undefined,
     }
