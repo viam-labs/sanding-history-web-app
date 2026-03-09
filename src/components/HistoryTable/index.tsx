@@ -30,7 +30,6 @@ const HistoryTable: React.FC = () => {
         let totalFactoryTime = 0
         let totalExecutionTime = 0
         let totalOtherStepsTime = 0
-        let totalBluePoints = 0
         const symptomCounts = new Map<string, number>()
         const causeCounts = new Map<string, number>()
 
@@ -52,11 +51,6 @@ const HistoryTable: React.FC = () => {
                 totalOtherStepsTime += stepDuration
               }
             })
-          }
-
-          // Sum up blue points
-          if (pass.blue_point_count !== undefined) {
-            totalBluePoints += pass.blue_point_count
           }
 
           // Count diagnoses for failed passes
@@ -99,7 +93,6 @@ const HistoryTable: React.FC = () => {
           totalPassCount: passes.length,
           executionPercentage,
           formattedDate,
-          totalBluePoints,
           symptomCounts,
           causeCounts,
         }
@@ -123,7 +116,7 @@ const HistoryTable: React.FC = () => {
             <th>End time</th>
             <th>Total duration</th>
             <th>Execution time</th>
-            <th>Blue points</th>
+            <th>Mode</th>
             <th>Steps</th>
             <th>Selected zones</th>
             <th>Selected rounds</th>
