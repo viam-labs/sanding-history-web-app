@@ -220,7 +220,13 @@ export const StepVideosProvider: React.FC<StepVideosProviderProps> = ({
         }
       }
     },
-    [videoStoreClient, step, registerFetchForPolling, addMessage, pollingManager]
+    [
+      videoStoreClient,
+      step,
+      registerFetchForPolling,
+      addMessage,
+      pollingManager,
+    ]
   )
 
   const value = useMemo(

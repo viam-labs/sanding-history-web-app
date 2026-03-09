@@ -178,6 +178,7 @@ export class FileQueryManager {
       mimeType: ['video/mp4'],
     })
 
+    // TODO(APP-15373): after video backfill, wire through the pass id and use a tag filter to retrieve videos by tag
     const binaryData = await viamClient.dataClient.binaryDataByFilter(
       filter,
       BINARY_DATA_BATCH_SIZE,
