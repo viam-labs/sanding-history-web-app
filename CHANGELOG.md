@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.13.1
+
+### Patch Changes
+
+- 560bbf1: Fix unit conversion
+
 ## 1.13.0
 
 ### Minor Changes
