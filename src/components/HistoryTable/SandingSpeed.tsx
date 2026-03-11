@@ -11,7 +11,7 @@ export const SandingSpeed: React.FC<SandingSpeedProps> = ({
 }) => {
   if (sandingDistanceMm === undefined || execMs <= 0) return null
   const speedMps = (sandingDistanceMm / 1000) / (execMs / 1000)
-  const speedKmh = (speedMps * 1000 * 60) / 1000
+  const speedKmh = (speedMps / 1000) * (60 * 60)
   const fmt = (v: number) =>
     v.toLocaleString(undefined, {
       minimumFractionDigits: 2,
