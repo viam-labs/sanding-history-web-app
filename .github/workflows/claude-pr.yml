@@ -12,9 +12,11 @@ jobs:
       github.repository_owner == 'viam-labs' &&
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '@claude-fix')
-    uses: viamrobotics/claude-ci-workflows/.github/workflows/claude-pr-fix.yml@main
+    # viamrobotics/claude-ci-workflows@v1.14.0
+    uses: viamrobotics/claude-ci-workflows/.github/workflows/claude-pr-fix.yml@0a9af2603e5218af7448f59536a9f698b35d235f
     with:
-      install_command: npm ci # your install command
+      repository_owner: viam-labs
+      install_command: make setup-linux && npm ci
       allowed_tools: 'Edit,Read,Write,Glob,Grep,Bash(npm run build*),Bash(npm run lint*),Bash(npm run test*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)'
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
