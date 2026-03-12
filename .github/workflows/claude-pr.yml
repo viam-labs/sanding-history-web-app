@@ -17,7 +17,7 @@ jobs:
     with:
       repository_owner: viam-labs
       install_command: make setup-linux && npm ci
-      allowed_tools: 'Edit,Read,Write,Glob,Grep,Bash(npm run build*),Bash(npm run lint*),Bash(npm run test*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)'
+      allowed_tools: 'Edit,Read,Write,Glob,Grep,Bash(make *),Bash(npm run build*),Bash(npm run lint*),Bash(npm run test*),Bash(npm run sanity*),Bash(npm run typecheck*),Bash(npm run prettier*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)'
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GIT_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
