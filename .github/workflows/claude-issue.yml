@@ -1,0 +1,23 @@
+name: Claude Issue Implementation
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  implement:
+    if: >-
+      github.repository_owner == 'viam-labs' &&
+      contains(github.event.issue.labels.*.name, 'claude') &&
+      contains(github.event.issue.body, '@claude')
+    # viamrobotics/claude-ci-workflows@v1.14.0
+    uses: viamrobotics/claude-ci-workflows/.github/workflows/claude-github-issue.yml@0a9af2603e5218af7448f59536a9f698b35d235f
+    with:
+      issue_number: ${{ github.event.issue.number }}
+      title: ${{ github.event.issue.title }}
+      body: ${{ github.event.issue.body }}
+      repository_owner: viam-labs
+      install_command: make setup-linux && npm ci
+      allowed_tools: 'Edit,Read,Write,Glob,Grep,Bash(npm run build*),Bash(npm run lint*),Bash(npm run test*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)'
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
