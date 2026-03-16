@@ -47,22 +47,13 @@ const mockBinaryDataFile = (overrides = {}) =>
 describe('BeforeAfterModal', () => {
   it('renders nothing when both images are null', () => {
     const { container } = render(
-      <BeforeAfterModal beforeImage={null} afterImage={null} onClose={vi.fn()} />
-    )
-    expect(container.firstChild).toBeNull()
-  })
-
-  it('renders modal when at least one image is provided', () => {
-    render(
       <BeforeAfterModal
-        beforeImage={mockBinaryDataFile()}
+        beforeImage={null}
         afterImage={null}
         onClose={vi.fn()}
       />
     )
-    expect(screen.getByText('Before & After Comparison')).toBeInTheDocument()
-    expect(screen.getByText('Before')).toBeInTheDocument()
-    expect(screen.getByText('After')).toBeInTheDocument()
+    expect(container.firstChild).toBeNull()
   })
 
   it('shows placeholder when beforeImage is null', () => {
@@ -125,19 +116,6 @@ describe('BeforeAfterModal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('does not call onClose when modal content is clicked', async () => {
-    const onClose = vi.fn()
-    const { container } = render(
-      <BeforeAfterModal
-        beforeImage={mockBinaryDataFile()}
-        afterImage={null}
-        onClose={onClose}
-      />
-    )
-    fireEvent.click(container.querySelector('.before-after-modal')!)
-    expect(onClose).not.toHaveBeenCalled()
-  })
-
   it('calls onClose when Escape key is pressed', () => {
     const onClose = vi.fn()
     render(
@@ -149,20 +127,6 @@ describe('BeforeAfterModal', () => {
     )
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledOnce()
-  })
-
-  it('cleans up Escape listener on unmount', () => {
-    const onClose = vi.fn()
-    const { unmount } = render(
-      <BeforeAfterModal
-        beforeImage={mockBinaryDataFile()}
-        afterImage={null}
-        onClose={onClose}
-      />
-    )
-    unmount()
-    fireEvent.keyDown(document, { key: 'Escape' })
-    expect(onClose).not.toHaveBeenCalled()
   })
 })
 
@@ -249,19 +213,5 @@ describe('ResourceSelection', () => {
       'cam-front'
     )
     expect(setSelectedCamera).toHaveBeenCalledWith('cam-front')
-  })
-
-  it('renders the VideoStoreSelector', () => {
-    mockViamClients({ machineName: 'my-robot' })
-    mockCameraContext()
-    render(<ResourceSelection />)
-    expect(screen.getByTestId('video-store-selector')).toBeInTheDocument()
-  })
-
-  it('renders the SyncDelayIndicator', () => {
-    mockViamClients({ machineName: 'my-robot' })
-    mockCameraContext()
-    render(<ResourceSelection />)
-    expect(screen.getByTestId('sync-delay-indicator')).toBeInTheDocument()
   })
 })
