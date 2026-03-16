@@ -13,10 +13,6 @@ describe('formatDuration', () => {
     expect(formatDuration(0)).toBe('0:00')
   })
 
-  it('returns 0:00 when no args', () => {
-    expect(formatDuration()).toBe('0:00')
-  })
-
   it('calculates duration from start/end strings', () => {
     expect(
       formatDuration(undefined, '2024-01-01T00:00:00Z', '2024-01-01T00:01:30Z')

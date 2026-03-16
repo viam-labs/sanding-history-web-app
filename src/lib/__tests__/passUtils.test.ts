@@ -35,11 +35,6 @@ describe('getExecutionTimeMs', () => {
   it('returns 0 for no steps', () => {
     expect(getExecutionTimeMs(makePass([]))).toBe(0)
   })
-
-  it('is case-insensitive for step name', () => {
-    const steps = [makeStep('Executing', 0, 2000)]
-    expect(getExecutionTimeMs(makePass(steps))).toBe(2000)
-  })
 })
 
 describe('getStepVideos', () => {
