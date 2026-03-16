@@ -1,104 +1,267 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { StatusBadge } from '../../components/StatusBadge'
-import Button from '../../components/Button'
-import RenderIf from '../../components/RenderIf'
-import Spinner from '../../components/Spinner'
-import { LoadingIndicator } from '../../components/LoadingIndicator'
+import BeforeAfterModal from '../../components/BeforeAfterModal'
+import { ResourceSelection } from '../../components/ResouceSelection'
 
-describe('StatusBadge', () => {
-  it('shows Success when success=true', () => {
-    render(<StatusBadge success={true} />)
-    expect(screen.getByText('Success')).toBeInTheDocument()
+// Mock child components with heavy dependencies
+vi.mock('../../components/VideoStoreSelector', () => ({
+  default: () => <div data-testid="video-store-selector" />,
+}))
+
+vi.mock('../../components/SyncDelayIndicator', () => ({
+  SyncDelayIndicator: () => <div data-testid="sync-delay-indicator" />,
+}))
+
+vi.mock('../../components/ImageDisplay', () => ({
+  default: ({ alt }: { alt?: string }) => (
+    <img alt={alt} data-testid="image-display" />
+  ),
+}))
+
+// Mock context hooks
+vi.mock('../../lib/contexts/ViamClientContext', () => ({
+  useViamClients: vi.fn(),
+}))
+
+vi.mock('../../lib/contexts/CameraContext', () => ({
+  useCamera: vi.fn(),
+}))
+
+vi.mock('../../lib/contexts/VideoStoreContext', () => ({
+  useVideoStore: vi.fn(),
+}))
+
+import { useViamClients } from '../../lib/contexts/ViamClientContext'
+import { useCamera } from '../../lib/contexts/CameraContext'
+import { useVideoStore } from '../../lib/contexts/VideoStoreContext'
+
+const mockBinaryDataFile = (overrides = {}) =>
+  ({
+    binaryDataId: 'test-id',
+    fileName: 'test-file.jpg',
+    timeRequested: new Date('2024-01-01T10:00:00Z'),
+    ...overrides,
+  }) as any
+
+describe('BeforeAfterModal', () => {
+  it('renders nothing when both images are null', () => {
+    const { container } = render(
+      <BeforeAfterModal beforeImage={null} afterImage={null} onClose={vi.fn()} />
+    )
+    expect(container.firstChild).toBeNull()
   })
 
-  it('shows Failed when success=false', () => {
-    render(<StatusBadge success={false} />)
-    expect(screen.getByText('Failed')).toBeInTheDocument()
+  it('renders modal when at least one image is provided', () => {
+    render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Before & After Comparison')).toBeInTheDocument()
+    expect(screen.getByText('Before')).toBeInTheDocument()
+    expect(screen.getByText('After')).toBeInTheDocument()
   })
 
-  it('applies green styling for success', () => {
-    render(<StatusBadge success={true} />)
-    const badge = screen.getByText('Success')
-    expect(badge.className).toContain('green')
+  it('shows placeholder when beforeImage is null', () => {
+    render(
+      <BeforeAfterModal
+        beforeImage={null}
+        afterImage={mockBinaryDataFile()}
+        onClose={vi.fn()}
+      />
+    )
+    expect(screen.getByText('No before image available')).toBeInTheDocument()
   })
 
-  it('applies red styling for failure', () => {
-    render(<StatusBadge success={false} />)
-    const badge = screen.getByText('Failed')
-    expect(badge.className).toContain('red')
-  })
-})
-
-describe('Button', () => {
-  it('renders children', () => {
-    render(<Button>Click me</Button>)
-    expect(screen.getByText('Click me')).toBeInTheDocument()
+  it('shows placeholder when afterImage is null', () => {
+    render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={vi.fn()}
+      />
+    )
+    expect(screen.getByText('No after image available')).toBeInTheDocument()
   })
 
-  it('shows loading text when loading=true', () => {
-    render(<Button loading loadingText="Saving...">Save</Button>)
-    expect(screen.getByText('Saving...')).toBeInTheDocument()
-    expect(screen.queryByText('Save')).not.toBeInTheDocument()
+  it('renders both images when both are provided', () => {
+    render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={mockBinaryDataFile()}
+        onClose={vi.fn()}
+      />
+    )
+    const images = screen.getAllByTestId('image-display')
+    expect(images).toHaveLength(2)
   })
 
-  it('is disabled when loading', () => {
-    render(<Button loading>Save</Button>)
-    expect(screen.getByRole('button')).toBeDisabled()
-  })
-
-  it('is disabled when disabled=true', () => {
-    render(<Button disabled>Save</Button>)
-    expect(screen.getByRole('button')).toBeDisabled()
-  })
-
-  it('calls onClick when clicked', async () => {
-    const onClick = vi.fn()
-    render(<Button onClick={onClick}>Click</Button>)
+  it('calls onClose when close button is clicked', async () => {
+    const onClose = vi.fn()
+    render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={onClose}
+      />
+    )
     await userEvent.click(screen.getByRole('button'))
-    expect(onClick).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('does not call onClick when disabled', async () => {
-    const onClick = vi.fn()
-    render(<Button disabled onClick={onClick}>Click</Button>)
-    await userEvent.click(screen.getByRole('button'))
-    expect(onClick).not.toHaveBeenCalled()
+  it('calls onClose when overlay is clicked', () => {
+    const onClose = vi.fn()
+    const { container } = render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(container.querySelector('.before-after-modal-overlay')!)
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('does not call onClose when modal content is clicked', async () => {
+    const onClose = vi.fn()
+    const { container } = render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(container.querySelector('.before-after-modal')!)
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('calls onClose when Escape key is pressed', () => {
+    const onClose = vi.fn()
+    render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={onClose}
+      />
+    )
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('cleans up Escape listener on unmount', () => {
+    const onClose = vi.fn()
+    const { unmount } = render(
+      <BeforeAfterModal
+        beforeImage={mockBinaryDataFile()}
+        afterImage={null}
+        onClose={onClose}
+      />
+    )
+    unmount()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
   })
 })
 
-describe('RenderIf', () => {
-  it('renders children when condition is true', () => {
-    render(<RenderIf condition={true}><span>visible</span></RenderIf>)
-    expect(screen.getByText('visible')).toBeInTheDocument()
+describe('ResourceSelection', () => {
+  beforeEach(() => {
+    vi.mocked(useVideoStore).mockReturnValue({
+      videoStoreClient: null,
+      setVideoStoreClient: vi.fn(),
+    })
   })
 
-  it('renders nothing when condition is false', () => {
-    render(<RenderIf condition={false}><span>hidden</span></RenderIf>)
-    expect(screen.queryByText('hidden')).not.toBeInTheDocument()
-  })
-})
+  const mockViamClients = (overrides = {}) =>
+    vi.mocked(useViamClients).mockReturnValue({
+      robotClient: null,
+      machineName: '',
+      viamClient: {} as any,
+      locationId: 'loc1',
+      machineId: 'machine1',
+      organizationId: 'org1',
+      partId: 'part1',
+      ...overrides,
+    })
 
-describe('Spinner', () => {
-  it('renders with default size', () => {
-    const { container } = render(<Spinner />)
-    const span = container.firstChild as HTMLElement
-    expect(span.style.width).toBe('28px')
-    expect(span.style.height).toBe('28px')
+  const mockCameraContext = (overrides = {}) =>
+    vi.mocked(useCamera).mockReturnValue({
+      selectedCamera: '',
+      setSelectedCamera: vi.fn(),
+      cameraComponentNames: [],
+      registerCameraNames: vi.fn(),
+      ...overrides,
+    })
+
+  it('displays machine name when provided', () => {
+    mockViamClients({ machineName: 'my-robot' })
+    mockCameraContext()
+    render(<ResourceSelection />)
+    expect(screen.getByText('my-robot')).toBeInTheDocument()
+    expect(screen.getByText('Machine name')).toBeInTheDocument()
   })
 
-  it('renders with custom size', () => {
-    const { container } = render(<Spinner size="48px" />)
-    const span = container.firstChild as HTMLElement
-    expect(span.style.width).toBe('48px')
-    expect(span.style.height).toBe('48px')
+  it('hides machine name section when machineName is empty', () => {
+    mockViamClients({ machineName: '' })
+    mockCameraContext()
+    render(<ResourceSelection />)
+    expect(screen.queryByText('Machine name')).not.toBeInTheDocument()
   })
-})
 
-describe('LoadingIndicator', () => {
-  it('displays loading text', () => {
-    render(<LoadingIndicator loadingText="Fetching data..." />)
-    expect(screen.getByText('Fetching data...')).toBeInTheDocument()
+  it('shows connect message when not connected to a robot', () => {
+    mockViamClients({ robotClient: null, machineName: 'my-robot' })
+    mockCameraContext()
+    render(<ResourceSelection />)
+    expect(
+      screen.getByText('Connect to a robot to select a camera')
+    ).toBeInTheDocument()
+  })
+
+  it('shows no cameras message when connected but no camera resources exist', () => {
+    mockViamClients({ robotClient: {} as any, machineName: 'my-robot' })
+    mockCameraContext({ cameraComponentNames: [] })
+    render(<ResourceSelection />)
+    expect(screen.getByText('No camera resources found')).toBeInTheDocument()
+  })
+
+  it('renders camera dropdown with available cameras', () => {
+    mockViamClients({ robotClient: {} as any, machineName: 'my-robot' })
+    mockCameraContext({ cameraComponentNames: ['cam-front', 'cam-rear'] })
+    render(<ResourceSelection />)
+    const select = screen.getByRole('combobox', { name: /camera resource/i })
+    expect(select).toBeInTheDocument()
+    expect(screen.getByText('cam-front')).toBeInTheDocument()
+    expect(screen.getByText('cam-rear')).toBeInTheDocument()
+  })
+
+  it('calls setSelectedCamera when a camera option is selected', async () => {
+    const setSelectedCamera = vi.fn()
+    mockViamClients({ robotClient: {} as any, machineName: 'my-robot' })
+    mockCameraContext({
+      cameraComponentNames: ['cam-front', 'cam-rear'],
+      setSelectedCamera,
+    })
+    render(<ResourceSelection />)
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: /camera resource/i }),
+      'cam-front'
+    )
+    expect(setSelectedCamera).toHaveBeenCalledWith('cam-front')
+  })
+
+  it('renders the VideoStoreSelector', () => {
+    mockViamClients({ machineName: 'my-robot' })
+    mockCameraContext()
+    render(<ResourceSelection />)
+    expect(screen.getByTestId('video-store-selector')).toBeInTheDocument()
+  })
+
+  it('renders the SyncDelayIndicator', () => {
+    mockViamClients({ machineName: 'my-robot' })
+    mockCameraContext()
+    render(<ResourceSelection />)
+    expect(screen.getByTestId('sync-delay-indicator')).toBeInTheDocument()
   })
 })
