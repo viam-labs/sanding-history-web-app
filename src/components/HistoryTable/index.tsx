@@ -5,6 +5,7 @@ import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { lazy } from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
+import { computePieceColors } from '../../lib/pieceColorUtils'
 const Row = lazy(() => import('./Row.tsx'))
 
 const HistoryTable: React.FC = () => {
@@ -103,6 +104,15 @@ const HistoryTable: React.FC = () => {
     )
   }, [groupedPasses, passDiagnoses])
 
+  const pieceColors = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(groupedPasses).map(([dateKey, passes]) => [
+        dateKey,
+        computePieceColors(passes),
+      ])
+    )
+  }, [groupedPasses])
+
   return (
     <div className="viam-table-container">
       <table className="viam-table">
@@ -111,6 +121,7 @@ const HistoryTable: React.FC = () => {
             <th className="w-5"></th>
             <th>Day</th>
             <th>Pass ID</th>
+            <th>Piece ID</th>
             <th>Status</th>
             <th>Start time</th>
             <th>End time</th>
@@ -127,21 +138,23 @@ const HistoryTable: React.FC = () => {
           {Object.entries(groupedPasses).map(([dateKey, passes], dayIndex) => {
             return (
               <React.Fragment key={dateKey}>
-                <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={13} />
+                <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={14} />
                 {passes.map((pass: Pass, passIndex: number) => {
                   const globalIndex = `${dayIndex}-${passIndex}`
-
                   return (
                     <React.Fragment key={globalIndex}>
                       <SinglePassProvider pass={pass}>
                         <Suspense
                           fallback={
                             <tr>
-                              <td colSpan={13}>Loading...</td>
+                              <td colSpan={14}>Loading...</td>
                             </tr>
                           }
                         >
-                          <Row globalIndex={globalIndex} />
+                          <Row
+                            globalIndex={globalIndex}
+                            pieceColor={pieceColors[dateKey][passIndex]}
+                          />
                         </Suspense>
                       </SinglePassProvider>
                     </React.Fragment>

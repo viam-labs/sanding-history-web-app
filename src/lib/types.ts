@@ -21,6 +21,7 @@ export interface Pass {
   sanding_distance_mm?: number
   selected_zones?: string | string[]
   selected_num_rounds?: number
+  piece_id?: string
 }
 
 export interface PassNote {

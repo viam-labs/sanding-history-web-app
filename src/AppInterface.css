@@ -3,6 +3,14 @@
 
 @import '@viamrobotics/prime-core/prime.css';
 
+/* Safelist piece-color badge classes generated dynamically in pieceColorUtils.ts. */
+@source inline("bg-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-50");
+@source inline("bg-{violet,amber,pink,green,indigo,teal,sky,red}-100");
+@source inline("text-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-600");
+@source inline("text-{violet,amber,pink,green,indigo,teal,sky,red}-700");
+@source inline("hover:bg-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-100");
+@source inline("hover:bg-{violet,amber,pink,green,indigo,teal,sky,red}-200");
+
 /* Reset and base styles */
 * {
   box-sizing: border-box;

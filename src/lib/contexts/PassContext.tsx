@@ -53,6 +53,10 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
         pass.selected_num_rounds != null
           ? Number(pass.selected_num_rounds)
           : undefined,
+      piece_id:
+        pass.piece_id != null
+          ? String(pass.piece_id)
+          : undefined,
     }
   })
 }

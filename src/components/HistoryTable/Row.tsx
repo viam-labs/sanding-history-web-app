@@ -12,12 +12,14 @@ import { getPassConfigComparison } from '../../lib/configUtils'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 import { StepsGrid } from './StepsGrid'
+import { PieceColor } from '../../lib/pieceColorUtils.ts'
 
 interface RowProps {
   globalIndex: string
+  pieceColor?: PieceColor
 }
 
-const Row = ({ globalIndex }: RowProps) => {
+const Row = ({ globalIndex, pieceColor }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
@@ -113,10 +115,11 @@ const Row = ({ globalIndex }: RowProps) => {
       <CollapsedRow
         isExpanded={isExpanded}
         toggleRowExpansion={toggleRowExpansion}
+        pieceColor={pieceColor}
       />
       {isExpanded && (
         <tr className="expanded-content">
-          <td colSpan={13}>
+          <td colSpan={14}>
             <div className="pass-details">
               {/* Build information section moved inside expanded row */}
               <RenderIf condition={pass.build_info !== undefined}>
