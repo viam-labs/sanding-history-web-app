@@ -4,6 +4,12 @@ on:
   issues:
     types: [opened, labeled]
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
 jobs:
   implement:
     if: >-
@@ -18,7 +24,7 @@ jobs:
       body: ${{ github.event.issue.body }}
       repository_owner: viam-labs
       install_command: npm ci
-      allowed_tools: 'Edit,Read,Write,Glob,Grep,Bash(make *),Bash(npm run build*),Bash(gh pr *),Bash(npm run lint*),Bash(npm run test*),Bash(npm run sanity*),Bash(npm run typecheck*),Bash(npm run prettier*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)'
+      allowed_tools: "Edit,Read,Write,Glob,Grep,Bash(make *),Bash(npm run build*),Bash(gh pr *),Bash(npm run lint*),Bash(npm run test*),Bash(npm run sanity*),Bash(npm run typecheck*),Bash(npm run prettier*),Bash(git config *),Bash(git add *),Bash(git commit *),Bash(git push *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git checkout *),Bash(git branch *),Bash(git rev-parse *),Bash(git fetch *)"
       extra_prompt: |
         - use git push to push your changes to the remote repository and gh pr create to create a pull request. It is very important to do this.
         - Run `npm run sanity` (typecheck + lint) and `npm run test` before committing.
