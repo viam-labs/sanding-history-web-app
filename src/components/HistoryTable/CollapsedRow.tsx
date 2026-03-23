@@ -9,11 +9,13 @@ import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
 interface CollapsedRowProps {
   isExpanded: boolean
   toggleRowExpansion: () => void
+  prevPieceId?: string
 }
 
 export const CollapsedRow = ({
   isExpanded,
   toggleRowExpansion,
+  prevPieceId,
 }: CollapsedRowProps) => {
   const { passNotes, passDiagnoses } = usePass()
   const { pass } = useSinglePass()
@@ -22,6 +24,10 @@ export const CollapsedRow = ({
   const execMs = useMemo(() => {
     return getExecutionTimeMs(pass)
   }, [pass])
+  const avoidColor = prevPieceId ? getPieceColor(prevPieceId) : undefined
+  const pieceColor = pass.piece_id
+    ? getPieceColor(pass.piece_id, avoidColor)
+    : undefined
 
   return (
     <tr
@@ -180,10 +186,10 @@ export const CollapsedRow = ({
                 }
               }, 1500)
             }}
-            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${getPieceColor(pass.piece_id).bg} ${getPieceColor(pass.piece_id).hoverBg}`}
+            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${pieceColor!.bg} ${pieceColor!.hoverBg}`}
             title={`Copy piece ID: ${pass.piece_id}`}
           >
-            <span className={`font-mono text-[11px] ${getPieceColor(pass.piece_id).text}`}>
+            <span className={`font-mono text-[11px] ${pieceColor!.text}`}>
               {pass.piece_id.substring(0, 8)}
             </span>
             <svg

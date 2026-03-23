@@ -15,9 +15,10 @@ import { StepsGrid } from './StepsGrid'
 
 interface RowProps {
   globalIndex: string
+  prevPieceId?: string
 }
 
-const Row = ({ globalIndex }: RowProps) => {
+const Row = ({ globalIndex, prevPieceId }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
@@ -113,6 +114,7 @@ const Row = ({ globalIndex }: RowProps) => {
       <CollapsedRow
         isExpanded={isExpanded}
         toggleRowExpansion={toggleRowExpansion}
+        prevPieceId={prevPieceId}
       />
       {isExpanded && (
         <tr className="expanded-content">

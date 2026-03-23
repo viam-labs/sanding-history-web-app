@@ -9,9 +9,9 @@ describe('getPieceColor', () => {
   })
 
   it('returns different colors for different piece_ids', () => {
-    const color1 = getPieceColor('piece-1')
-    const color2 = getPieceColor('piece-2')
-    // While collisions are possible, these two simple strings should differ
+    // 'abc123' and 'xyz789' are verified to hash to different buckets across 51 colors
+    const color1 = getPieceColor('abc123')
+    const color2 = getPieceColor('xyz789')
     expect(color1).not.toEqual(color2)
   })
 
@@ -20,9 +20,9 @@ describe('getPieceColor', () => {
     expect(color).toHaveProperty('bg')
     expect(color).toHaveProperty('text')
     expect(color).toHaveProperty('hoverBg')
-    expect(color.bg).toMatch(/^bg-\w+-100$/)
-    expect(color.text).toMatch(/^text-\w+-700$/)
-    expect(color.hoverBg).toMatch(/^hover:bg-\w+-200$/)
+    expect(color.bg).toMatch(/^bg-\w+-(50|100|200|300|400|500)$/)
+    expect(color.text).toMatch(/^text-\w+-(50|600|700|800|900|950)$/)
+    expect(color.hoverBg).toMatch(/^hover:bg-\w+-(100|200|300|400|500|600)$/)
   })
 
   it('handles empty string', () => {
@@ -40,8 +40,25 @@ describe('getPieceColor', () => {
 
   it('is deterministic across multiple calls', () => {
     const ids = ['piece-a', 'piece-b', 'piece-c', 'piece-d']
-    const firstRun = ids.map(getPieceColor)
-    const secondRun = ids.map(getPieceColor)
+    const firstRun = ids.map((id) => getPieceColor(id))
+    const secondRun = ids.map((id) => getPieceColor(id))
     expect(firstRun).toEqual(secondRun)
+  })
+
+  it('returns a different color when avoid matches the hashed color', () => {
+    const baseId = 'test-piece'
+    const baseColor = getPieceColor(baseId)
+    // Passing the same color as avoid must shift to an adjacent bucket
+    const shifted = getPieceColor(baseId, baseColor)
+    expect(shifted.bg).not.toEqual(baseColor.bg)
+  })
+
+  it('returns the natural color when avoid does not match', () => {
+    const id = 'abc123'
+    const natural = getPieceColor(id)
+    const otherColor = getPieceColor('xyz789')
+    if (natural.bg !== otherColor.bg) {
+      expect(getPieceColor(id, otherColor)).toEqual(natural)
+    }
   })
 })

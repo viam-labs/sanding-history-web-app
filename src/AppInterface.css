@@ -3,6 +3,16 @@
 
 @import '@viamrobotics/prime-core/prime.css';
 
+/* Safelist piece-color badge classes generated dynamically in pieceColorUtils.ts.
+   Group A families use shades 50/200/400 (bg), 600/800/950 (text), 100/300/500 (hover).
+   Group B families use shades 100/300/500 (bg), 700/900/950 (text), 200/400/600 (hover). */
+@source inline("bg-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-{50,200,400}");
+@source inline("bg-{violet,amber,pink,green,indigo,teal,sky,red}-{100,300,500}");
+@source inline("text-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-{600,800,950}");
+@source inline("text-{violet,amber,pink,green,indigo,teal,sky,red}-{50,700,900}");
+@source inline("hover:bg-{blue,orange,emerald,rose,cyan,yellow,fuchsia,lime,purple}-{100,300,500}");
+@source inline("hover:bg-{violet,amber,pink,green,indigo,teal,sky,red}-{200,400,600}");
+
 /* Reset and base styles */
 * {
   box-sizing: border-box;

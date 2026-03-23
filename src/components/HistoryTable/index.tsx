@@ -131,6 +131,7 @@ const HistoryTable: React.FC = () => {
                 <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={14} />
                 {passes.map((pass: Pass, passIndex: number) => {
                   const globalIndex = `${dayIndex}-${passIndex}`
+                  const prevPieceId = passes[passIndex - 1]?.piece_id
 
                   return (
                     <React.Fragment key={globalIndex}>
@@ -142,7 +143,7 @@ const HistoryTable: React.FC = () => {
                             </tr>
                           }
                         >
-                          <Row globalIndex={globalIndex} />
+                          <Row globalIndex={globalIndex} prevPieceId={prevPieceId} />
                         </Suspense>
                       </SinglePassProvider>
                     </React.Fragment>
