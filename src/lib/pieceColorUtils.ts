@@ -2,76 +2,88 @@
  * Deterministic color assignment for piece IDs.
  * Each unique piece_id gets a consistent color based on a hash of the string.
  *
- * 17 chromatic Tailwind families x 3 shade tiers = 51 colors.
- * Families are ordered to maximize visual distance between adjacent indices
- * (warm/cool interleaved). Tiers cycle through the families before repeating,
- * so index N and N+17 are the same family but different shades.
- *
- * Similar-looking families (amber/yellow, teal/cyan, green/emerald, pink/rose,
- * violet/purple, indigo/blue, red/orange, fuchsia/pink, sky/cyan, lime/green)
- * use offset shade tiers so they remain distinguishable even at the same tier:
- *
- * Group A: bg 50/200/400   text 600/800/950   hover 100/300/500
- * Group B: bg 100/300/500  text 700/900/50    hover 200/400/600
+ * The avoid check (used for adjacent rows) also skips visually similar
+ * families (e.g. avoiding yellow also avoids amber).
  */
 
-type ShadeGroup = 'A' | 'B'
-
-const COLOR_FAMILIES: ReadonlyArray<{ name: string; group: ShadeGroup }> = [
-  { name: 'blue', group: 'A' },
-  { name: 'orange', group: 'A' },
-  { name: 'emerald', group: 'A' },
-  { name: 'rose', group: 'A' },
-  { name: 'violet', group: 'B' },
-  { name: 'amber', group: 'B' },
-  { name: 'cyan', group: 'A' },
-  { name: 'pink', group: 'B' },
-  { name: 'green', group: 'B' },
-  { name: 'indigo', group: 'B' },
-  { name: 'yellow', group: 'A' },
-  { name: 'teal', group: 'B' },
-  { name: 'fuchsia', group: 'A' },
-  { name: 'lime', group: 'A' },
-  { name: 'sky', group: 'B' },
-  { name: 'red', group: 'B' },
-  { name: 'purple', group: 'A' },
-]
-
-const SHADE_TIERS: Record<
-  ShadeGroup,
-  ReadonlyArray<{ bg: string; text: string; hover: string }>
-> = {
-  A: [
-    { bg: '50', text: '600', hover: '100' },
-    { bg: '200', text: '800', hover: '300' },
-    { bg: '400', text: '950', hover: '500' },
-  ],
-  B: [
-    { bg: '100', text: '700', hover: '200' },
-    { bg: '300', text: '900', hover: '400' },
-    { bg: '500', text: '50', hover: '600' },
-  ],
-}
-
-// Build tiers-first: all 17 families at tier 0, then tier 1, then tier 2.
-// Each family uses the shade tiers for its group, so similar families
-// (e.g. amber-B vs yellow-A) land on different shade levels at every tier.
-const PIECE_COLORS: ReadonlyArray<{
-  bg: string
-  text: string
-  hoverBg: string
-}> = [0, 1, 2].flatMap((tierIndex) =>
-  COLOR_FAMILIES.map((family) => {
-    const tier = SHADE_TIERS[family.group][tierIndex]
-    return {
-      bg: `bg-${family.name}-${tier.bg}`,
-      text: `text-${family.name}-${tier.text}`,
-      hoverBg: `hover:bg-${family.name}-${tier.hover}`,
-    }
-  })
-)
+const PIECE_COLORS = [
+  { bg: 'bg-blue-50', text: 'text-blue-600', hoverBg: 'hover:bg-blue-100' },
+  {
+    bg: 'bg-orange-50',
+    text: 'text-orange-600',
+    hoverBg: 'hover:bg-orange-100',
+  },
+  {
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    hoverBg: 'hover:bg-emerald-100',
+  },
+  { bg: 'bg-rose-50', text: 'text-rose-600', hoverBg: 'hover:bg-rose-100' },
+  {
+    bg: 'bg-violet-100',
+    text: 'text-violet-700',
+    hoverBg: 'hover:bg-violet-200',
+  },
+  { bg: 'bg-amber-100', text: 'text-amber-700', hoverBg: 'hover:bg-amber-200' },
+  { bg: 'bg-cyan-50', text: 'text-cyan-600', hoverBg: 'hover:bg-cyan-100' },
+  { bg: 'bg-pink-100', text: 'text-pink-700', hoverBg: 'hover:bg-pink-200' },
+  { bg: 'bg-green-100', text: 'text-green-700', hoverBg: 'hover:bg-green-200' },
+  {
+    bg: 'bg-indigo-100',
+    text: 'text-indigo-700',
+    hoverBg: 'hover:bg-indigo-200',
+  },
+  {
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-600',
+    hoverBg: 'hover:bg-yellow-100',
+  },
+  { bg: 'bg-teal-100', text: 'text-teal-700', hoverBg: 'hover:bg-teal-200' },
+  {
+    bg: 'bg-fuchsia-50',
+    text: 'text-fuchsia-600',
+    hoverBg: 'hover:bg-fuchsia-100',
+  },
+  { bg: 'bg-lime-50', text: 'text-lime-600', hoverBg: 'hover:bg-lime-100' },
+  { bg: 'bg-sky-100', text: 'text-sky-700', hoverBg: 'hover:bg-sky-200' },
+  { bg: 'bg-red-100', text: 'text-red-700', hoverBg: 'hover:bg-red-200' },
+  {
+    bg: 'bg-purple-50',
+    text: 'text-purple-600',
+    hoverBg: 'hover:bg-purple-100',
+  },
+] as const
 
 export type PieceColor = (typeof PIECE_COLORS)[number]
+
+/**
+ * Families that look visually similar to each other.
+ * When avoiding a color, we also avoid its similar siblings.
+ */
+const SIMILAR_FAMILIES: Record<string, string[]> = {
+  yellow: ['amber'],
+  amber: ['yellow'],
+  teal: ['cyan', 'sky'],
+  cyan: ['teal', 'sky'],
+  sky: ['cyan', 'teal'],
+  green: ['emerald', 'lime'],
+  emerald: ['green'],
+  lime: ['green'],
+  pink: ['rose', 'fuchsia'],
+  rose: ['pink'],
+  fuchsia: ['pink'],
+  violet: ['purple'],
+  purple: ['violet'],
+  indigo: ['blue'],
+  blue: ['indigo'],
+  red: ['orange'],
+  orange: ['red'],
+}
+
+function extractFamily(bgClass: string): string {
+  const match = bgClass.match(/^bg-(\w+)-\d+$/)
+  return match?.[1] ?? ''
+}
 
 /**
  * Simple string hash function (djb2) to produce a deterministic index.
@@ -85,17 +97,53 @@ function hashString(str: string): number {
 }
 
 /**
+ * Computes the sequentially-adjusted displayed colors for a list of passes.
+ * Each color avoids the previous row's displayed color (and visually similar
+ * families). If adjacent passes share the same piece_id, avoidance is skipped
+ * so the same ID always renders the same color when it repeats consecutively.
+ */
+export function computeDisplayedColors(
+  passes: ReadonlyArray<{ piece_id?: string }>
+): (PieceColor | undefined)[] {
+  const colors: (PieceColor | undefined)[] = []
+  for (let i = 0; i < passes.length; i++) {
+    const pieceId = passes[i].piece_id
+    if (!pieceId) {
+      colors.push(undefined)
+      continue
+    }
+    const samePieceAsPrev = i > 0 && passes[i - 1].piece_id === pieceId
+    const avoidColor = samePieceAsPrev ? undefined : colors[i - 1]
+    colors.push(getPieceColor(pieceId, avoidColor))
+  }
+  return colors
+}
+
+/**
  * Returns a consistent color for a given piece_id based on its hash.
  *
  * Pass `avoid` (the color of the previous row's piece) to guarantee the
- * returned color is visually distinct from its immediate neighbor, preventing
- * adjacent rows from sharing the same badge color.
+ * returned color is visually distinct from its immediate neighbor. This also
+ * skips colors that are visually similar to the avoided color (e.g. avoiding
+ * yellow also skips amber).
  */
 export function getPieceColor(pieceId: string, avoid?: PieceColor): PieceColor {
   const index = hashString(pieceId) % PIECE_COLORS.length
   const color = PIECE_COLORS[index]
-  if (avoid && color.bg === avoid.bg) {
-    return PIECE_COLORS[(index + 1) % PIECE_COLORS.length]
+  if (!avoid) return color
+
+  const avoidFamily = extractFamily(avoid.bg)
+  const avoidSet = new Set([
+    avoidFamily,
+    ...(SIMILAR_FAMILIES[avoidFamily] ?? []),
+  ])
+  const colorFamily = extractFamily(color.bg)
+
+  if (avoidSet.has(colorFamily)) {
+    for (let offset = 1; offset < PIECE_COLORS.length; offset++) {
+      const candidate = PIECE_COLORS[(index + offset) % PIECE_COLORS.length]
+      if (!avoidSet.has(extractFamily(candidate.bg))) return candidate
+    }
   }
   return color
 }

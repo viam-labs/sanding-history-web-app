@@ -5,6 +5,7 @@ import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { lazy } from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
+import { computeDisplayedColors } from '../../lib/pieceColorUtils'
 const Row = lazy(() => import('./Row.tsx'))
 
 const HistoryTable: React.FC = () => {
@@ -103,6 +104,15 @@ const HistoryTable: React.FC = () => {
     )
   }, [groupedPasses, passDiagnoses])
 
+  const dayDisplayedColors = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(groupedPasses).map(([dateKey, passes]) => [
+        dateKey,
+        computeDisplayedColors(passes),
+      ])
+    )
+  }, [groupedPasses])
+
   return (
     <div className="viam-table-container">
       <table className="viam-table">
@@ -131,8 +141,6 @@ const HistoryTable: React.FC = () => {
                 <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={14} />
                 {passes.map((pass: Pass, passIndex: number) => {
                   const globalIndex = `${dayIndex}-${passIndex}`
-                  const prevPieceId = passes[passIndex - 1]?.piece_id
-
                   return (
                     <React.Fragment key={globalIndex}>
                       <SinglePassProvider pass={pass}>
@@ -143,7 +151,12 @@ const HistoryTable: React.FC = () => {
                             </tr>
                           }
                         >
-                          <Row globalIndex={globalIndex} prevPieceId={prevPieceId} />
+                          <Row
+                            globalIndex={globalIndex}
+                            pieceDisplayedColor={
+                              dayDisplayedColors[dateKey][passIndex]
+                            }
+                          />
                         </Suspense>
                       </SinglePassProvider>
                     </React.Fragment>

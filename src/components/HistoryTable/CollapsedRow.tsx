@@ -1,21 +1,21 @@
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { getExecutionTimeMs } from '../../lib/passUtils'
-import { getPieceColor } from '../../lib/pieceColorUtils'
 import { StatusBadge } from '../StatusBadge'
 import { useMemo, useState } from 'react'
 import { usePass } from '../../lib/contexts/PassContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
+import { PieceColor } from '../../lib/pieceColorUtils.ts'
 
 interface CollapsedRowProps {
   isExpanded: boolean
   toggleRowExpansion: () => void
-  prevPieceId?: string
+  pieceDisplayedColor?: PieceColor
 }
 
 export const CollapsedRow = ({
   isExpanded,
   toggleRowExpansion,
-  prevPieceId,
+  pieceDisplayedColor,
 }: CollapsedRowProps) => {
   const { passNotes, passDiagnoses } = usePass()
   const { pass } = useSinglePass()
@@ -24,10 +24,7 @@ export const CollapsedRow = ({
   const execMs = useMemo(() => {
     return getExecutionTimeMs(pass)
   }, [pass])
-  const avoidColor = prevPieceId ? getPieceColor(prevPieceId) : undefined
-  const pieceColor = pass.piece_id
-    ? getPieceColor(pass.piece_id, avoidColor)
-    : undefined
+  const pieceColor = pieceDisplayedColor
 
   return (
     <tr
@@ -125,7 +122,7 @@ export const CollapsedRow = ({
                   titleParts.push(
                     noteTexts.length === 1
                       ? `Note: ${noteTexts[0]}`
-                      : `Notes:\n${noteTexts.map((t, i) => `${i + 1}. ${t}`).join('\n')}`,
+                      : `Notes:\n${noteTexts.map((t, i) => `${i + 1}. ${t}`).join('\n')}`
                   )
                 }
 
@@ -220,7 +217,9 @@ export const CollapsedRow = ({
           <span className="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 text-zinc-700 rounded-full border border-gray-200">
             {pass.pass_mode}
           </span>
-        ) : '—'}
+        ) : (
+          '—'
+        )}
       </td>
       <td className="text-zinc-700">
         {pass.steps ? `${pass.steps.length} steps` : '—'}
