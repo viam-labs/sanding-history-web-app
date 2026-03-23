@@ -111,6 +111,7 @@ const HistoryTable: React.FC = () => {
             <th className="w-5"></th>
             <th>Day</th>
             <th>Pass ID</th>
+            <th>Piece ID</th>
             <th>Status</th>
             <th>Start time</th>
             <th>End time</th>
@@ -127,7 +128,7 @@ const HistoryTable: React.FC = () => {
           {Object.entries(groupedPasses).map(([dateKey, passes], dayIndex) => {
             return (
               <React.Fragment key={dateKey}>
-                <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={13} />
+                <DaySummaryHeader data={dayAggregates[dateKey]} colSpan={14} />
                 {passes.map((pass: Pass, passIndex: number) => {
                   const globalIndex = `${dayIndex}-${passIndex}`
 
@@ -137,7 +138,7 @@ const HistoryTable: React.FC = () => {
                         <Suspense
                           fallback={
                             <tr>
-                              <td colSpan={13}>Loading...</td>
+                              <td colSpan={14}>Loading...</td>
                             </tr>
                           }
                         >

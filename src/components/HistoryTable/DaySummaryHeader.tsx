@@ -19,7 +19,7 @@ interface DaySummaryHeaderProps {
 
 export const DaySummaryHeader: React.FC<DaySummaryHeaderProps> = ({
   data,
-  colSpan = 13,
+  colSpan = 14,
 }) => {
   const {
     totalFactoryTime,

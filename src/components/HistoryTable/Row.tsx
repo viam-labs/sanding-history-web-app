@@ -116,7 +116,7 @@ const Row = ({ globalIndex }: RowProps) => {
       />
       {isExpanded && (
         <tr className="expanded-content">
-          <td colSpan={13}>
+          <td colSpan={14}>
             <div className="pass-details">
               {/* Build information section moved inside expanded row */}
               <RenderIf condition={pass.build_info !== undefined}>

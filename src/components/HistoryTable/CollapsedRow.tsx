@@ -1,5 +1,6 @@
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
 import { getExecutionTimeMs } from '../../lib/passUtils'
+import { getPieceColor } from '../../lib/pieceColorUtils'
 import { StatusBadge } from '../StatusBadge'
 import { useMemo, useState } from 'react'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -143,6 +144,56 @@ export const CollapsedRow = ({
               return null
             })()}
           </div>
+        ) : (
+          '—'
+        )}
+      </td>
+      <td className="text-zinc-700 text-xs">
+        {pass.piece_id ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              navigator.clipboard.writeText(pass.piece_id!)
+              const btn = e.currentTarget
+              const svg = btn.querySelector('svg')
+              const textSpan = btn.querySelector('span')
+              btn.classList.add('bg-green-100')
+              if (svg) {
+                svg.innerHTML =
+                  '<path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />'
+                svg.classList.remove('fill-gray-400')
+                svg.classList.add('fill-green-700')
+              }
+              if (textSpan) {
+                textSpan.classList.add('text-green-700')
+              }
+              setTimeout(() => {
+                btn.classList.remove('bg-green-100')
+                if (svg) {
+                  svg.innerHTML =
+                    '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />'
+                  svg.classList.remove('fill-green-700')
+                  svg.classList.add('fill-gray-400')
+                }
+                if (textSpan) {
+                  textSpan.classList.remove('text-green-700')
+                }
+              }, 1500)
+            }}
+            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${getPieceColor(pass.piece_id).bg} ${getPieceColor(pass.piece_id).hoverBg}`}
+            title={`Copy piece ID: ${pass.piece_id}`}
+          >
+            <span className={`font-mono text-[11px] ${getPieceColor(pass.piece_id).text}`}>
+              {pass.piece_id.substring(0, 8)}
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              className="w-3 h-3 fill-gray-400 transition-colors duration-150"
+            >
+              <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+            </svg>
+          </button>
         ) : (
           '—'
         )}
