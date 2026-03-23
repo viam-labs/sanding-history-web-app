@@ -5,7 +5,7 @@ import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { lazy } from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
-import { computeDisplayedColors } from '../../lib/pieceColorUtils'
+import { computePieceColors } from '../../lib/pieceColorUtils'
 const Row = lazy(() => import('./Row.tsx'))
 
 const HistoryTable: React.FC = () => {
@@ -104,11 +104,11 @@ const HistoryTable: React.FC = () => {
     )
   }, [groupedPasses, passDiagnoses])
 
-  const dayDisplayedColors = useMemo(() => {
+  const pieceColors = useMemo(() => {
     return Object.fromEntries(
       Object.entries(groupedPasses).map(([dateKey, passes]) => [
         dateKey,
-        computeDisplayedColors(passes),
+        computePieceColors(passes),
       ])
     )
   }, [groupedPasses])
@@ -153,9 +153,7 @@ const HistoryTable: React.FC = () => {
                         >
                           <Row
                             globalIndex={globalIndex}
-                            pieceDisplayedColor={
-                              dayDisplayedColors[dateKey][passIndex]
-                            }
+                            pieceColor={pieceColors[dateKey][passIndex]}
                           />
                         </Suspense>
                       </SinglePassProvider>

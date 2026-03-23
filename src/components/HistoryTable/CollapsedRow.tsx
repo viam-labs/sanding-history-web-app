@@ -9,13 +9,13 @@ import { PieceColor } from '../../lib/pieceColorUtils.ts'
 interface CollapsedRowProps {
   isExpanded: boolean
   toggleRowExpansion: () => void
-  pieceDisplayedColor?: PieceColor
+  pieceColor?: PieceColor
 }
 
 export const CollapsedRow = ({
   isExpanded,
   toggleRowExpansion,
-  pieceDisplayedColor,
+  pieceColor,
 }: CollapsedRowProps) => {
   const { passNotes, passDiagnoses } = usePass()
   const { pass } = useSinglePass()
@@ -24,7 +24,6 @@ export const CollapsedRow = ({
   const execMs = useMemo(() => {
     return getExecutionTimeMs(pass)
   }, [pass])
-  const pieceColor = pieceDisplayedColor
 
   return (
     <tr
@@ -183,10 +182,12 @@ export const CollapsedRow = ({
                 }
               }, 1500)
             }}
-            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${pieceColor!.bg} ${pieceColor!.hoverBg}`}
+            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${pieceColor?.bg ?? 'bg-gray-100'} ${pieceColor?.hoverBg ?? 'hover:bg-gray-200'}`}
             title={`Copy piece ID: ${pass.piece_id}`}
           >
-            <span className={`font-mono text-[11px] ${pieceColor!.text}`}>
+            <span
+              className={`font-mono text-[11px] ${pieceColor?.text ?? 'text-zinc-600 hover:text-zinc-700 '}`}
+            >
               {pass.piece_id.substring(0, 8)}
             </span>
             <svg

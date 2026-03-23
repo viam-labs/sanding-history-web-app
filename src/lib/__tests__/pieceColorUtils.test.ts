@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getPieceColor, computeDisplayedColors } from '../pieceColorUtils'
+import { getPieceColor, computePieceColors } from '../pieceColorUtils'
 
 describe('getPieceColor', () => {
   it('returns the same color for the same piece_id', () => {
@@ -74,14 +74,14 @@ describe('getPieceColor', () => {
 describe('computeDisplayedColors', () => {
   it('returns the natural color for each pass when there are no conflicts', () => {
     const passes = [{ piece_id: 'piece-12' }, { piece_id: 'piece-25' }]
-    const colors = computeDisplayedColors(passes)
+    const colors = computePieceColors(passes)
     expect(colors[0]?.bg).toBe('bg-orange-50')
     expect(colors[1]?.bg).toBe('bg-violet-100')
   })
 
   it('returns undefined for passes without a piece_id', () => {
     const passes = [{ piece_id: undefined }, { piece_id: 'piece-1' }]
-    const colors = computeDisplayedColors(passes)
+    const colors = computePieceColors(passes)
     expect(colors[0]).toBeUndefined()
     expect(colors[1]?.bg).toBe('bg-yellow-50')
   })
@@ -92,7 +92,7 @@ describe('computeDisplayedColors', () => {
       { piece_id: 'piece-7' },
       { piece_id: 'piece-7' },
     ]
-    const colors = computeDisplayedColors(passes)
+    const colors = computePieceColors(passes)
     expect(colors[0]?.bg).toBe('bg-green-100')
     expect(colors[1]?.bg).toBe('bg-green-100')
     expect(colors[2]?.bg).toBe('bg-green-100')
@@ -104,18 +104,18 @@ describe('computeDisplayedColors', () => {
       { piece_id: 'piece-7' }, // green (same, no avoid)
       { piece_id: 'piece-0' }, // teal (natural) - avoid = green
     ]
-    const colors = computeDisplayedColors(passes)
+    const colors = computePieceColors(passes)
     expect(colors[0]?.bg).toBe('bg-green-100')
     expect(colors[1]?.bg).toBe('bg-green-100')
     expect(colors[2]?.bg).toBe('bg-teal-100')
   })
 
   it('handles an empty array', () => {
-    expect(computeDisplayedColors([])).toEqual([])
+    expect(computePieceColors([])).toEqual([])
   })
 
   it('handles a single pass', () => {
-    const colors = computeDisplayedColors([{ piece_id: 'piece-1' }])
+    const colors = computePieceColors([{ piece_id: 'piece-1' }])
     expect(colors).toHaveLength(1)
     expect(colors[0]?.bg).toBe('bg-yellow-50')
   })

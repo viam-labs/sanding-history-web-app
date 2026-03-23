@@ -97,12 +97,12 @@ function hashString(str: string): number {
 }
 
 /**
- * Computes the sequentially-adjusted displayed colors for a list of passes.
- * Each color avoids the previous row's displayed color (and visually similar
+ * Computes the sequentially-adjusted piece colors for a list of passes.
+ * Each color avoids the previous row's piece color (and visually similar
  * families). If adjacent passes share the same piece_id, avoidance is skipped
  * so the same ID always renders the same color when it repeats consecutively.
  */
-export function computeDisplayedColors(
+export function computePieceColors(
   passes: ReadonlyArray<{ piece_id?: string }>
 ): (PieceColor | undefined)[] {
   const colors: (PieceColor | undefined)[] = []

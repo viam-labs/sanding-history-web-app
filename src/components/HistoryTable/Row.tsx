@@ -16,10 +16,10 @@ import { PieceColor } from '../../lib/pieceColorUtils.ts'
 
 interface RowProps {
   globalIndex: string
-  pieceDisplayedColor?: PieceColor
+  pieceColor?: PieceColor
 }
 
-const Row = ({ globalIndex, pieceDisplayedColor }: RowProps) => {
+const Row = ({ globalIndex, pieceColor }: RowProps) => {
   const { partId } = usePass()
   const { viamClient } = useViamClients()
   const { groupedPasses } = usePagination()
@@ -115,7 +115,7 @@ const Row = ({ globalIndex, pieceDisplayedColor }: RowProps) => {
       <CollapsedRow
         isExpanded={isExpanded}
         toggleRowExpansion={toggleRowExpansion}
-        pieceDisplayedColor={pieceDisplayedColor}
+        pieceColor={pieceColor}
       />
       {isExpanded && (
         <tr className="expanded-content">
