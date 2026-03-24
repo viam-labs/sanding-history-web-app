@@ -1,5 +1,15 @@
 # sanding-monitoring-web-app
 
+## 1.14.0
+
+### Minor Changes
+
+- d1e2c8b: Add piece_id column with color-coded IDs
+
+### Patch Changes
+
+- 33076af: remove heurstic query for videos and files
+
 ## 1.13.1
 
 ### Patch Changes
