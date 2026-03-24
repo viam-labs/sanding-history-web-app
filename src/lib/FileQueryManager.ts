@@ -6,7 +6,6 @@ export type FileQueryCallback = (files: BinaryDataFile[]) => void
 const BINARY_DATA_BATCH_SIZE = 1500
 
 const IMAGES_PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000
-const PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000 * 3
 
 interface FileQueryParams {
   organizationId: string
@@ -19,7 +18,6 @@ interface FileQueryParams {
   passEnd: Date
   onQuery: FileQueryCallback
   signal?: AbortSignal
-  tags?: string[]
 }
 interface VideoQueryParams extends FileQueryParams {
   forceRefresh?: boolean
@@ -111,10 +109,8 @@ export class FileQueryManager {
   public async queryPassFiles(params: FileQueryParams): Promise<void> {
     if (params.signal?.aborted) return
 
-    const cacheKey = params.tags ? `tags-${params.passId}` : params.passId
-    const queryKey = params.tags
-      ? `allfiles-tags-${params.passId}`
-      : `allfiles-${params.passId}`
+    const cacheKey = params.passId
+    const queryKey = `allfiles-${params.passId}`
 
     if (this._loadedPassFiles.has(cacheKey)) {
       const cachedFiles = this._passFiles.get(cacheKey)
@@ -167,18 +163,28 @@ export class FileQueryManager {
   }
 
   private async makeVideoQuery(params: VideoQueryParams): Promise<void> {
-    const { organizationId, locationId, machineId, partId, viamClient } = params
+    const {
+      organizationId,
+      locationId,
+      machineId,
+      partId,
+      viamClient,
+      passId,
+    } = params
     const paginationKey = `videos-${machineId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
     const filter = new VIAM.dataApi.Filter({
       organizationIds: [organizationId],
       locationIds: [locationId],
       robotId: machineId,
+      tagsFilter: new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags: [passId],
+      }),
       partId: partId,
       mimeType: ['video/mp4'],
     })
 
-    // TODO(APP-15373): after video backfill, wire through the pass id and use a tag filter to retrieve videos by tag
     const binaryData = await viamClient.dataClient.binaryDataByFilter(
       filter,
       BINARY_DATA_BATCH_SIZE,
@@ -238,6 +244,7 @@ export class FileQueryManager {
       passEnd.getTime() + IMAGES_PASS_END_TIME_BUFFER_MS
     )
 
+    // TODO: we still need to add dynamic data capture tagging for camera images and backfill before we can rely on pass id
     const filter = new VIAM.dataApi.Filter({
       organizationIds: [organizationId],
       locationIds: [locationId],
@@ -305,42 +312,25 @@ export class FileQueryManager {
       partId,
       viamClient,
       passId,
-      passStart,
-      passEnd,
       onQuery,
       signal,
-      tags,
     } = params
 
     if (signal?.aborted) return
 
-    const cacheKey = tags ? `tags-${passId}` : passId
-    const paginationKey = tags
-      ? `allfiles-tags-${passId}`
-      : `allfiles-${passId}`
+    const cacheKey = passId
+    const paginationKey = `allfiles-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
 
     const filterParams: ConstructorParameters<typeof VIAM.dataApi.Filter>[0] = {
       organizationIds: [organizationId],
       locationIds: [locationId],
+      tagsFilter: new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags: [passId],
+      }),
       robotId: machineId,
       partId: partId,
-    }
-
-    if (tags) {
-      filterParams.tagsFilter = new VIAM.dataApi.TagsFilter({
-        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
-        tags,
-      })
-    } else {
-      // Add buffer to end time to account for sync delays
-      const bufferedEndTime = new Date(
-        passEnd.getTime() + PASS_END_TIME_BUFFER_MS
-      )
-      filterParams.interval = new VIAM.dataApi.CaptureInterval({
-        start: VIAM.Timestamp.fromDate(passStart),
-        end: VIAM.Timestamp.fromDate(bufferedEndTime),
-      })
     }
 
     const filter = new VIAM.dataApi.Filter(filterParams)
@@ -368,7 +358,6 @@ export class FileQueryManager {
     const newFiles = []
     for (const file of nextFiles) {
       if (existingIds.has(file.binaryDataId)) continue
-      if (!tags && !file.isPartOfPass(passId)) continue
       newFiles.push(file)
     }
 
@@ -376,7 +365,7 @@ export class FileQueryManager {
 
     const hasMorePages = !!binaryData.last
     console.log(
-      `Fetched files${tags ? ' by tags' : ''} batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
+      `Fetched files batch for pass ${passId}: ${binaryData.data.length} in batch, ${newFiles.length} new, ${hasMorePages ? 'more pages available' : 'no more pages'}`
     )
 
     if (newFiles.length > 0 && !signal?.aborted) onQuery(newFiles)
@@ -389,83 +378,6 @@ export class FileQueryManager {
 
     this._paginationTokens.set(paginationKey, binaryData.last)
     await this.makePassFilesQuery(params)
-  }
-
-  //TODO: this is a tempory call while we migrate to tag all binary data files with the pass_id to ensure all files are tagged, remove once we have migrated to tag all files
-  public async getDifferenceBetweenPassFiles(
-    params: FileQueryParams
-  ): Promise<void> {
-    console.log(
-      `Getting difference between time based and tag based files for pass ${params.passId}`
-    )
-    const timebasedFilter = new VIAM.dataApi.Filter({
-      organizationIds: [params.organizationId],
-      locationIds: [params.locationId],
-      robotId: params.machineId,
-      partId: params.partId,
-      interval: new VIAM.dataApi.CaptureInterval({
-        start: VIAM.Timestamp.fromDate(params.passStart),
-        end: VIAM.Timestamp.fromDate(params.passEnd),
-      }),
-    })
-
-    const tagbasedFilter = new VIAM.dataApi.Filter({
-      organizationIds: [params.organizationId],
-      locationIds: [params.locationId],
-      robotId: params.machineId,
-      partId: params.partId,
-      tagsFilter: new VIAM.dataApi.TagsFilter({
-        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
-        tags: params.tags,
-      }),
-    })
-
-    const [timebasedBinaryData, tagbasedBinaryData] = await Promise.all([
-      params.viamClient.dataClient.binaryDataByFilter(
-        timebasedFilter,
-        BINARY_DATA_BATCH_SIZE,
-        VIAM.dataApi.Order.DESCENDING,
-        undefined,
-        false,
-        false,
-        false
-      ),
-      params.viamClient.dataClient.binaryDataByFilter(
-        tagbasedFilter,
-        BINARY_DATA_BATCH_SIZE,
-        VIAM.dataApi.Order.DESCENDING,
-        undefined,
-        false,
-        false,
-        false
-      ),
-    ])
-
-    const tagbasedBinaryDataFiles = tagbasedBinaryData.data.map(
-      (f) => new BinaryDataFile(f)
-    )
-
-    const timebasedBinaryDataFiles = timebasedBinaryData.data.map(
-      (f) => new BinaryDataFile(f)
-    )
-    const newFiles = []
-    for (const file of timebasedBinaryDataFiles) {
-      if (!file.isPartOfPass(params.passId)) continue
-      newFiles.push(file)
-    }
-
-    const tagbasedBinaryDataFilesSet = new Set(
-      tagbasedBinaryDataFiles.map((f) => f.binaryDataId)
-    )
-
-    const difference = newFiles.filter(
-      (f) => !tagbasedBinaryDataFilesSet.has(f.binaryDataId)
-    )
-
-    console.warn(
-      `Difference between timebased and tagbased files: ${difference.length}`
-    )
-    console.warn(difference.map((f) => f.fileName))
   }
 
   private async makeMostRecentFileQuery(
