@@ -1,6 +1,9 @@
 import { ModalType, useModal } from '../../lib/contexts/ModalContext'
 import { BinaryDataFile } from '../../lib/BinaryDataFile'
-import { SNAPSHOT_FILE_NAME_PREFIX } from '../../lib/constants'
+import {
+  DENSITY_SNAPSHOT_FILE_NAME_PREFIX,
+  SNAPSHOT_FILE_NAME_PREFIX,
+} from '../../lib/constants'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useToast } from '../../lib/contexts/ToastContext.tsx'
 import { getSnapshotFromGzipBinaryData } from '../../lib/snapshotUtils'
@@ -13,19 +16,18 @@ import Spinner from '../Spinner.tsx'
 export const StepsVizSnapshotCard = () => {
   const { openModal } = useModal()
   const { viamClient } = useViamClients()
-  const { snapshots, isFetchingSnapshots } = useSinglePass()
+  const { snapshots, densitySnapshots, isFetchingSnapshots } = useSinglePass()
   const { addMessage } = useToast()
   const [loadingSnapshot, setLoadingSnapshot] = useState(false)
 
-  const cleanSnapshotFileName = (fileName: string) => {
+  const cleanSnapshotFileName = (fileName: string, prefix: string) => {
     const base = fileName.split('/').pop() || ''
-    const idx = base.indexOf(SNAPSHOT_FILE_NAME_PREFIX)
+    const idx = base.indexOf(prefix)
     if (idx < 0) return base
 
-    const noPrefix = base.slice(idx + SNAPSHOT_FILE_NAME_PREFIX.length)
+    const noPrefix = base.slice(idx + prefix.length)
     const extension = base.slice(base.indexOf('.'))
-    const noExtension = noPrefix.slice(0, -extension.length)
-    return noExtension
+    return noPrefix.slice(0, -extension.length)
   }
 
   const handleViewSnapshotClick = async (
@@ -51,6 +53,32 @@ export const StepsVizSnapshotCard = () => {
     })
   }
 
+  const renderSnapshotLinks = (files: BinaryDataFile[], prefix: string) => (
+    <div className="flex flex-col items-center gap-1 w-full">
+      {files.map((snapshotFile) => {
+        const snapshotName = cleanSnapshotFileName(snapshotFile.fileName, prefix)
+        return (
+          <div
+            key={snapshotFile.fileName}
+            className="relative group max-w-full"
+          >
+            <a
+              href="#"
+              onClick={(e) => handleViewSnapshotClick(e, snapshotFile)}
+              className="underline text-blue-600 cursor-pointer hover:text-blue-800 truncate max-w-full text-center block"
+            >
+              View {snapshotName}
+            </a>
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+              {snapshotName}
+              <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-900" />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+
   return (
     <div className="step-card">
       <div className="step-name">View Snapshot</div>
@@ -65,29 +93,19 @@ export const StepsVizSnapshotCard = () => {
         <LoadingIndicator loadingText="Loading snapshot..." />
       </RenderIf>
       <RenderIf condition={!loadingSnapshot}>
-        <div className="flex flex-col items-center gap-1 w-full">
-          {snapshots.map((snapshotFile) => {
-            const snapshotName = cleanSnapshotFileName(snapshotFile.fileName)
-            return (
-              <div
-                key={snapshotFile.fileName}
-                className="relative group max-w-full"
-              >
-                <a
-                  href="#"
-                  onClick={(e) => handleViewSnapshotClick(e, snapshotFile)}
-                  className="underline text-blue-600 cursor-pointer hover:text-blue-800 truncate max-w-full text-center block"
-                >
-                  View {snapshotName}
-                </a>
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
-                  {snapshotName}
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-900" />
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <RenderIf condition={snapshots.length > 0}>
+          <p className="text-sm font-medium text-gray-700 mt-1">Trajectories</p>
+          {renderSnapshotLinks(snapshots, SNAPSHOT_FILE_NAME_PREFIX)}
+        </RenderIf>
+        <RenderIf condition={densitySnapshots.length > 0}>
+          <p className="text-sm font-medium text-gray-700 mt-1">
+            Density Heatmaps
+          </p>
+          {renderSnapshotLinks(
+            densitySnapshots,
+            DENSITY_SNAPSHOT_FILE_NAME_PREFIX
+          )}
+        </RenderIf>
       </RenderIf>
     </div>
   )
