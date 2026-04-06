@@ -29,7 +29,7 @@ interface SinglePassContextType {
 
   isFetchingSnapshots: boolean
   areSnapshotsLoaded: boolean
-  snapshots: BinaryDataFile[]
+  trajectorySnapshots: BinaryDataFile[]
   densitySnapshots: BinaryDataFile[]
 
   isFetchingPassFiles: boolean
@@ -70,7 +70,7 @@ export function SinglePassProvider({
 
   const [isFetchingSnapshots, setIsFetchingSnapshots] = useState<boolean>(false)
   const [areSnapshotsLoaded, setAreSnapshotsLoaded] = useState<boolean>(false)
-  const [snapshots, setSnapshots] = useState<BinaryDataFile[]>([])
+  const [trajectorySnapshots, setTrajectorySnapshots] = useState<BinaryDataFile[]>([])
   const [densitySnapshots, setDensitySnapshots] = useState<BinaryDataFile[]>(
     []
   )
@@ -186,7 +186,7 @@ export function SinglePassProvider({
             !file.fileName.includes(DENSITY_SNAPSHOT_FILE_NAME_PREFIX)
         )
         if (newSnapshots.length !== 0) {
-          setSnapshots((prev) => deduplicateFiles(prev, newSnapshots))
+          setTrajectorySnapshots((prev) => deduplicateFiles(prev, newSnapshots))
         }
         setPassFiles((prev) => deduplicateFiles(prev, nextFiles))
       },
@@ -223,7 +223,7 @@ export function SinglePassProvider({
 
         isFetchingSnapshots,
         areSnapshotsLoaded,
-        snapshots,
+        trajectorySnapshots,
         densitySnapshots,
 
         isFetchingPassFiles,
