@@ -11,7 +11,10 @@ import { Pass } from '../types'
 import { useCamera } from './CameraContext'
 import { useFiles } from './FilesContext'
 import { BinaryDataFile } from '../BinaryDataFile'
-import { SNAPSHOT_FILE_NAME_PREFIX } from '../constants'
+import {
+  DENSITY_SNAPSHOT_FILE_NAME_PREFIX,
+  SNAPSHOT_FILE_NAME_PREFIX,
+} from '../constants'
 
 interface SinglePassContextType {
   pass: Pass
@@ -26,7 +29,8 @@ interface SinglePassContextType {
 
   isFetchingSnapshots: boolean
   areSnapshotsLoaded: boolean
-  snapshots: BinaryDataFile[]
+  trajectorySnapshots: BinaryDataFile[]
+  densitySnapshots: BinaryDataFile[]
 
   isFetchingPassFiles: boolean
   arePassFilesLoaded: boolean
@@ -66,7 +70,10 @@ export function SinglePassProvider({
 
   const [isFetchingSnapshots, setIsFetchingSnapshots] = useState<boolean>(false)
   const [areSnapshotsLoaded, setAreSnapshotsLoaded] = useState<boolean>(false)
-  const [snapshots, setSnapshots] = useState<BinaryDataFile[]>([])
+  const [trajectorySnapshots, setTrajectorySnapshots] = useState<BinaryDataFile[]>([])
+  const [densitySnapshots, setDensitySnapshots] = useState<BinaryDataFile[]>(
+    []
+  )
 
   const [isFetchingPassFiles, setIsFetchingPassFiles] = useState<boolean>(false)
   const [arePassFilesLoaded, setArePassFilesLoaded] = useState<boolean>(false)
@@ -165,11 +172,21 @@ export function SinglePassProvider({
         if (controller.signal.aborted) return
         if (nextFiles.length === 0) return
 
-        const newSnapshots = nextFiles.filter((file) =>
-          file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX)
+        const newDensitySnapshots = nextFiles.filter((file) =>
+          file.fileName.includes(DENSITY_SNAPSHOT_FILE_NAME_PREFIX)
+        )
+        if (newDensitySnapshots.length !== 0) {
+          setDensitySnapshots((prev) =>
+            deduplicateFiles(prev, newDensitySnapshots)
+          )
+        }
+        const newSnapshots = nextFiles.filter(
+          (file) =>
+            file.fileName.includes(SNAPSHOT_FILE_NAME_PREFIX) &&
+            !file.fileName.includes(DENSITY_SNAPSHOT_FILE_NAME_PREFIX)
         )
         if (newSnapshots.length !== 0) {
-          setSnapshots((prev) => deduplicateFiles(prev, newSnapshots))
+          setTrajectorySnapshots((prev) => deduplicateFiles(prev, newSnapshots))
         }
         setPassFiles((prev) => deduplicateFiles(prev, nextFiles))
       },
@@ -206,7 +223,8 @@ export function SinglePassProvider({
 
         isFetchingSnapshots,
         areSnapshotsLoaded,
-        snapshots,
+        trajectorySnapshots,
+        densitySnapshots,
 
         isFetchingPassFiles,
         arePassFilesLoaded,
