@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.15.0
+
+### Minor Changes
+
+- 4d5f2a2: Add display of density visualization snapshots in pass history, alongside trajectory snapshots
+
 ## 1.14.0
 
 ### Minor Changes
