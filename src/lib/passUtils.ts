@@ -1,4 +1,20 @@
 import { Pass, Step } from './types'
+
+/**
+ * For each pass_id, keeps only the record with the highest version.
+ * Records without a version field are treated as version 0.
+ * Input order is preserved — only lower-version duplicates are removed.
+ */
+export const deduplicatePassesByVersion = (passes: Pass[]): Pass[] => {
+  const best = new Map<string, Pass>()
+  for (const pass of passes) {
+    const existing = best.get(pass.pass_id)
+    if (!existing || (pass.version ?? 0) > (existing.version ?? 0)) {
+      best.set(pass.pass_id, pass)
+    }
+  }
+  return passes.filter((pass) => best.get(pass.pass_id) === pass)
+}
 import { BinaryDataFile } from './BinaryDataFile'
 
 /**

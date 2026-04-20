@@ -9,6 +9,7 @@ import { Pass, PassNote, PassDiagnosis } from '../types'
 import { JsonValue } from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
 import { getPassMetadataManager } from '../passMetadataManager'
+import { deduplicatePassesByVersion } from '../passUtils'
 
 const sandingSummaryName = 'sanding-summary'
 const sandingSummaryComponentType = 'rdk:component:sensor'
@@ -18,7 +19,7 @@ const BATCH_SIZE = 1000
  * Transforms raw tabular data from MQL query into Pass objects
  */
 function processTabularDataToPasses(tabularData: any[]): Pass[] {
-  return tabularData.map((item: any) => {
+  const mapped = tabularData.map((item: any) => {
     const pass = item.data!.readings!
     const buildInfo = pass.build_info ? pass.build_info : {}
 
@@ -57,8 +58,13 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
         pass.piece_id != null
           ? String(pass.piece_id)
           : undefined,
+      version:
+        pass.version != null
+          ? Number(pass.version)
+          : undefined,
     }
   })
+  return deduplicatePassesByVersion(mapped)
 }
 
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
