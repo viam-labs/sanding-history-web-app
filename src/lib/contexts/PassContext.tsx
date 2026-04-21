@@ -133,7 +133,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
       { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
       { $sort: { time_received: -1 } },
-      { $limit: BATCH_SIZE },
     ]
 
     const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
