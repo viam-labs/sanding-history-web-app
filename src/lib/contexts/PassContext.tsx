@@ -12,6 +12,7 @@ import { getPassMetadataManager } from '../passMetadataManager'
 
 const sandingSummaryName = 'sanding-summary'
 const sandingSummaryComponentType = 'rdk:component:sensor'
+const BATCH_SIZE = 1000
 
 /**
  * Transforms raw tabular data from MQL query into Pass objects
@@ -133,6 +134,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
       { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
       { $sort: { time_received: -1 } },
+      { $limit: BATCH_SIZE },
     ]
 
     const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
@@ -171,6 +173,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
       { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
       { $sort: { time_received: -1 } },
+      { $limit: BATCH_SIZE },
     ]
 
     console.log('Fetching pass summaries')
