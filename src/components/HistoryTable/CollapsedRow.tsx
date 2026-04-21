@@ -203,7 +203,7 @@ export const CollapsedRow = ({
         )}
       </td>
       <td>
-        <StatusBadge success={pass.success} />
+        <StatusBadge pass={pass} />
       </td>
       <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
       <td className="text-zinc-700">{pass.end.toLocaleTimeString()}</td>

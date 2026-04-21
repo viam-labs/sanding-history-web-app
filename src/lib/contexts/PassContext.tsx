@@ -61,6 +61,10 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
         pass.version != null
           ? Number(pass.version)
           : undefined,
+      current_state:
+        pass.current_state != null
+          ? String(pass.current_state)
+          : undefined,
     }
   })
 }
