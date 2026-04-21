@@ -1,6 +1,4 @@
 import { Pass, Step } from './types'
-
-
 import { BinaryDataFile } from './BinaryDataFile'
 
 /**

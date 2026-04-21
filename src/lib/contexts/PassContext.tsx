@@ -18,7 +18,7 @@ const BATCH_SIZE = 1000
  * Transforms raw tabular data from MQL query into Pass objects
  */
 function processTabularDataToPasses(tabularData: any[]): Pass[] {
-  const mapped = tabularData.map((item: any) => {
+  return tabularData.map((item: any) => {
     const pass = item.data!.readings!
     const buildInfo = pass.build_info ? pass.build_info : {}
 
@@ -63,7 +63,6 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
           : undefined,
     }
   })
-  return mapped
 }
 
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
