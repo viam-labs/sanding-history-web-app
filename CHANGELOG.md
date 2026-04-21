@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.16.0
+
+### Minor Changes
+
+- c49cfba: deduplicate pass summaries by version
+
 ## 1.15.0
 
 ### Minor Changes
