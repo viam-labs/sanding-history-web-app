@@ -156,9 +156,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchPasses = async () => {
-    // Server-side deduplication: group by pass_id and keep only the highest-version
-    // record per pass. This avoids the O(N) client-side dedup that would grow with
-    // the number of incremental snapshots published per pass.
     const mqlQuery: Record<string, JsonValue>[] = [
       {
         $match: {
