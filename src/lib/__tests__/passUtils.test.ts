@@ -22,7 +22,6 @@ const makePass = (steps: Step[]): Pass => ({
   steps,
 })
 
-
 describe('getExecutionTimeMs', () => {
   it('sums executing step durations', () => {
     const steps = [
