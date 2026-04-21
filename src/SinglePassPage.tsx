@@ -157,7 +157,7 @@ function SinglePassPage() {
         <div className="font-semibold text-zinc-900 text-sm">
           Pass {pass.pass_id.substring(0, 8)}
         </div>
-        <StatusBadge success={pass.success} />
+        <StatusBadge pass={pass} />
         <div className="text-sm text-zinc-600">
           {pass.start.toLocaleString()} – {pass.end.toLocaleTimeString()}
         </div>

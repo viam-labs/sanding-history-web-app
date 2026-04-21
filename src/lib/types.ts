@@ -23,6 +23,7 @@ export interface Pass {
   selected_num_rounds?: number
   piece_id?: string
   version?: number
+  current_state?: string
 }
 
 export interface PassNote {
