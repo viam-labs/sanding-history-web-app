@@ -158,37 +158,90 @@ export function PassProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchPasses = async () => {
-    const mqlQuery: Record<string, JsonValue>[] = [
-      {
-        $match: {
-          organization_id: organizationId,
-          location_id: locationId,
-          component_name: sandingSummaryName,
-          robot_id: machineId,
-          component_type: sandingSummaryComponentType,
-        },
-      },
-      { $sort: { 'data.readings.version': -1 } },
-      { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
-      { $replaceRoot: { newRoot: '$doc' } },
-      { $sort: { time_received: -1 } },
-      { $limit: BATCH_SIZE },
-    ]
+    // batched fetching of pass summaries
+    let allTabularData: any[] = []
+    let hasMoreData = true
+    let oldestTimeReceived: string | null = null
 
-    console.log('Fetching pass summaries')
-    const tabularData = await viamClient.dataClient.tabularDataByMQL(
-      organizationId,
-      mqlQuery
-    )
-    console.log(`Received ${tabularData.length} pass records`)
+    while (hasMoreData) {
+      const baseQuery: Record<string, JsonValue>[] = [
+        {
+          $match: {
+            organization_id: organizationId,
+            location_id: locationId,
+            component_name: sandingSummaryName,
+            robot_id: machineId,
+            component_type: sandingSummaryComponentType,
+          },
+        },
+        // Sort by version descending so $first in $group picks the highest-version record per pass
+        { $sort: { 'data.readings.version': -1 } },
+        { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
+        { $replaceRoot: { newRoot: '$doc' } },
+        { $sort: { time_received: -1 } },
+      ]
+
+      // Add time filter for pagination after grouping, so the cursor operates on
+      // unique passes rather than raw version records
+      if (oldestTimeReceived) {
+        baseQuery.push({
+          $match: { time_received: { $lt: oldestTimeReceived } },
+        })
+      }
+
+      // Add limit
+      const mqlQuery = [
+        ...baseQuery,
+        {
+          $limit: BATCH_SIZE,
+        },
+      ]
+
+      console.log(
+        `Fetching batch of sanding summaries${oldestTimeReceived ? ' older than ' + new Date(oldestTimeReceived).toISOString() : ''}`
+      )
+      const batchData = await viamClient.dataClient.tabularDataByMQL(
+        organizationId,
+        mqlQuery
+      )
+      console.log(`Received ${batchData.length} records in batch`)
+
+      // If we have data, process it
+      if (batchData.length > 0) {
+        // Get the oldest time_received from this batch for next query
+        const lastItem = batchData[batchData.length - 1]
+
+        if ('time_received' in lastItem) {
+          oldestTimeReceived = lastItem.time_received as string
+        } else {
+          console.error(
+            "Cannot find 'time_received' field for pagination in tabular data response:",
+            lastItem
+          )
+          hasMoreData = false
+        }
+
+        allTabularData = [...allTabularData, ...batchData]
+
+        // If we have fewer records than the batch size, we're done
+        if (batchData.length < BATCH_SIZE) {
+          hasMoreData = false
+        }
+      } else {
+        // No more data
+        hasMoreData = false
+      }
+    }
+
+    console.log(`Total tabular data records fetched: ${allTabularData.length}`)
 
     let extractedPartId = ''
-    if (tabularData.length > 0) {
-      extractedPartId = (tabularData[0] as any).part_id || ''
+    if (allTabularData && allTabularData.length > 0) {
+      extractedPartId = (allTabularData[0] as any).part_id || ''
       setPartId(extractedPartId)
     }
 
-    const processedPasses = processTabularDataToPasses(tabularData)
+    const processedPasses = processTabularDataToPasses(allTabularData)
     setPassSummaries(processedPasses)
 
     await fetchPassMetadata(processedPasses, extractedPartId)
