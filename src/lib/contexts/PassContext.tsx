@@ -168,7 +168,6 @@ export function PassProvider({ children }: { children: ReactNode }) {
           component_type: sandingSummaryComponentType,
         },
       },
-      // Sort by version descending so $first in $group picks the highest-version record per pass
       { $sort: { 'data.readings.version': -1 } },
       { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
       { $replaceRoot: { newRoot: '$doc' } },
