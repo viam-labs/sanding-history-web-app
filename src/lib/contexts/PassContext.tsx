@@ -10,7 +10,6 @@ import { JsonValue } from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
 import { getPassMetadataManager } from '../passMetadataManager'
 
-
 const sandingSummaryName = 'sanding-summary'
 const sandingSummaryComponentType = 'rdk:component:sensor'
 
