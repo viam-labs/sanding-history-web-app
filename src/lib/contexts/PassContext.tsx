@@ -57,6 +57,10 @@ function processTabularDataToPasses(tabularData: any[]): Pass[] {
         pass.piece_id != null
           ? String(pass.piece_id)
           : undefined,
+      version:
+        pass.version != null
+          ? Number(pass.version)
+          : undefined,
     }
   })
 }
@@ -124,11 +128,11 @@ export function PassProvider({ children }: { children: ReactNode }) {
           },
         },
       },
-      {
-        $sort: {
-          time_received: -1,
-        },
-      },
+      // Sort by version descending so $first in $group picks the highest-version record per pass
+      { $sort: { 'data.readings.version': -1 } },
+      { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
+      { $replaceRoot: { newRoot: '$doc' } },
+      { $sort: { time_received: -1 } },
     ]
 
     const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
@@ -168,18 +172,19 @@ export function PassProvider({ children }: { children: ReactNode }) {
             component_type: sandingSummaryComponentType,
           },
         },
-        {
-          $sort: {
-            time_received: -1,
-          },
-        },
+        // Sort by version descending so $first in $group picks the highest-version record per pass
+        { $sort: { 'data.readings.version': -1 } },
+        { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
+        { $replaceRoot: { newRoot: '$doc' } },
+        { $sort: { time_received: -1 } },
       ]
 
-      // Add time filter for pagination if we have a previous batch
+      // Add time filter for pagination after grouping, so the cursor operates on
+      // unique passes rather than raw version records
       if (oldestTimeReceived) {
-        ;(baseQuery[0].$match as Record<string, JsonValue>).time_received = {
-          $lt: oldestTimeReceived,
-        }
+        baseQuery.push({
+          $match: { time_received: { $lt: oldestTimeReceived } },
+        })
       }
 
       // Add limit

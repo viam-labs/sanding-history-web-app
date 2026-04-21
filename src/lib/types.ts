@@ -22,6 +22,7 @@ export interface Pass {
   selected_zones?: string | string[]
   selected_num_rounds?: number
   piece_id?: string
+  version?: number
 }
 
 export interface PassNote {
