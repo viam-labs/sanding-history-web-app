@@ -9,8 +9,11 @@ const getStatus = (pass: Pass): { label: string; className: string } => {
     if (pass.current_state === 'Failed') {
       return { label: 'Failed', className: 'bg-red-100 text-red-800' }
     }
+    if (pass.current_state === 'Cancelled') {
+      return { label: 'Cancelled', className: 'bg-orange-100 text-orange-800' }
+    }
     // Any other state (e.g. Executing, GeneratingMesh) is in progress
-    return { label: pass.current_state, className: 'bg-blue-100 text-blue-800' }
+    return { label: 'In Progress', className: 'bg-blue-100 text-blue-800' }
   }
 
   // Legacy fallback for records without current_state
@@ -24,7 +27,7 @@ export const StatusBadge = (props: { pass: Pass }) => {
   const { label, className } = getStatus(props.pass)
   return (
     <span
-      className={`moveleft inline-flex items-center justify-center py-1 rounded-full text-xs font-medium status-badge-width ${className}`}
+      className={`moveleft inline-flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-medium status-badge-width ${className}`}
     >
       {label}
     </span>
