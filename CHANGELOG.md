@@ -1,5 +1,12 @@
 # sanding-monitoring-web-app
 
+## 1.17.0
+
+### Minor Changes
+
+- 9e152a1: Use current_state field as primary status signal in StatusBadge
+- fc52fc6: Add Cancelled badge to StatusBadge
+
 ## 1.16.0
 
 ### Minor Changes
