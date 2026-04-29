@@ -18,6 +18,7 @@ import {
 
 interface SinglePassContextType {
   pass: Pass
+  isIncomplete: boolean  // true when this pass was cut out and a newer pass exists
 
   isFetchingImages: boolean
   areImagesLoaded: boolean
@@ -48,9 +49,11 @@ const SinglePassContext = createContext<SinglePassContextType | undefined>(
 
 export function SinglePassProvider({
   pass,
+  isIncomplete = false,
   children,
 }: {
   pass: Pass
+  isIncomplete?: boolean
   children: ReactNode
 }) {
   const { registerCameraNames } = useCamera()
@@ -213,6 +216,7 @@ export function SinglePassProvider({
     <SinglePassContext.Provider
       value={{
         pass,
+        isIncomplete,
         isFetchingImages,
         areImagesLoaded,
         images,

@@ -6,6 +6,7 @@ import { usePagination } from '../../lib/contexts/PaginationContext'
 import { lazy } from 'react'
 import { SinglePassProvider } from '../../lib/contexts/SinglePassContext.tsx'
 import { computePieceColors } from '../../lib/pieceColorUtils'
+import { isInProgress } from '../../lib/passUtils'
 const Row = lazy(() => import('./Row.tsx'))
 
 const HistoryTable: React.FC = () => {
@@ -24,9 +25,41 @@ const HistoryTable: React.FC = () => {
     }, {})
   }, [currentPassSummaries])
 
-  // Memoize day aggregates calculation - calculate both execution percentage AND total time
-  const dayAggregates = useMemo(() => {
-    return Object.entries(groupedPasses).reduce(
+  // Memoize day aggregates and incomplete pass IDs together.
+  // "Incomplete" is determined globally: an in-progress pass is incomplete whenever
+  // any later pass (of any status, on any day) exists. Only an in-progress pass with
+  // the globally latest start time is treated as actively running.
+  const { dayAggregates, incompletePassIds } = useMemo(() => {
+    // Sort all visible passes ascending by start time so we can:
+    // 1. Find the global latest start time
+    // 2. Look up each pass's immediate successor across day boundaries
+    const allSortedPasses = Object.values(groupedPasses)
+      .flat()
+      .sort((a, b) => a.start.getTime() - b.start.getTime())
+
+    const globalMaxStartTime =
+      allSortedPasses.length > 0
+        ? allSortedPasses[allSortedPasses.length - 1].start.getTime()
+        : 0
+
+    // Map each pass to its global successor's start time (used for incomplete end inference)
+    const nextPassStartByPassId = new Map<string, Date>()
+    for (let i = 0; i < allSortedPasses.length - 1; i++) {
+      nextPassStartByPassId.set(
+        allSortedPasses[i].pass_id,
+        allSortedPasses[i + 1].start
+      )
+    }
+
+    // An in-progress pass is incomplete if any pass (of any status) started after it
+    const incompletePassIds = new Set<string>()
+    for (const pass of allSortedPasses) {
+      if (isInProgress(pass) && pass.start.getTime() < globalMaxStartTime) {
+        incompletePassIds.add(pass.pass_id)
+      }
+    }
+
+    const dayAggregates = Object.entries(groupedPasses).reduce(
       (acc: Record<string, DayAggregateData>, [dateKey, passes]) => {
         let totalFactoryTime = 0
         let totalExecutionTime = 0
@@ -34,18 +67,26 @@ const HistoryTable: React.FC = () => {
         const symptomCounts = new Map<string, number>()
         const causeCounts = new Map<string, number>()
 
-        // Calculate both time and execution metrics
         passes.forEach((pass) => {
-          // Add pass duration to total time
-          const passDuration = pass.end.getTime() - pass.start.getTime()
-          totalFactoryTime += passDuration
+          // For in-progress passes the backend sends zeros for end time.
+          // Infer a meaningful end: use the globally next pass's start for incomplete
+          // passes (works across day boundaries), or current time for the active pass.
+          let inferredEnd: Date
+          if (!isInProgress(pass)) {
+            inferredEnd = pass.end
+          } else if (incompletePassIds.has(pass.pass_id)) {
+            inferredEnd = nextPassStartByPassId.get(pass.pass_id) ?? new Date()
+          } else {
+            inferredEnd = new Date()
+          }
 
-          // Calculate execution time for percentage
-          if (pass.steps && Array.isArray(pass.steps)) {
+          totalFactoryTime += inferredEnd.getTime() - pass.start.getTime()
+
+          // Only count step times for completed passes — in-progress step end
+          // times are also unreliable (zeros from the backend).
+          if (!isInProgress(pass) && pass.steps && Array.isArray(pass.steps)) {
             pass.steps.forEach((step) => {
               const stepDuration = step.end.getTime() - step.start.getTime()
-
-              // Look for the specific "executing" step (exact match or case-insensitive)
               if (step.name.toLowerCase() === 'executing') {
                 totalExecutionTime += stepDuration
               } else {
@@ -102,6 +143,8 @@ const HistoryTable: React.FC = () => {
       },
       {}
     )
+
+    return { dayAggregates, incompletePassIds }
   }, [groupedPasses, passDiagnoses])
 
   const pieceColors = useMemo(() => {
@@ -143,7 +186,7 @@ const HistoryTable: React.FC = () => {
                   const globalIndex = `${dayIndex}-${passIndex}`
                   return (
                     <React.Fragment key={globalIndex}>
-                      <SinglePassProvider pass={pass}>
+                      <SinglePassProvider pass={pass} isIncomplete={incompletePassIds.has(pass.pass_id)}>
                         <Suspense
                           fallback={
                             <tr>
