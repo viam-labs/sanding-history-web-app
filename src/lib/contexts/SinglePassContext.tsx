@@ -49,11 +49,11 @@ const SinglePassContext = createContext<SinglePassContextType | undefined>(
 
 export function SinglePassProvider({
   pass,
-  isIncomplete = false,
+  isIncomplete,
   children,
 }: {
   pass: Pass
-  isIncomplete?: boolean
+  isIncomplete: boolean
   children: ReactNode
 }) {
   const { registerCameraNames } = useCamera()

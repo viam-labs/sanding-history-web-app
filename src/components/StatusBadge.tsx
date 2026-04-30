@@ -2,7 +2,7 @@ import { Pass } from '../lib/types'
 
 const getStatus = (
   pass: Pass,
-  isIncomplete = false
+  isIncomplete: boolean
 ): { label: string; className: string } => {
   // Use current_state as the primary signal (set by backend on all new records)
   if (pass.current_state) {
@@ -30,7 +30,7 @@ const getStatus = (
   return { label: 'Failed', className: 'bg-red-100 text-red-800' }
 }
 
-export const StatusBadge = (props: { pass: Pass; isIncomplete?: boolean }) => {
+export const StatusBadge = (props: { pass: Pass; isIncomplete: boolean }) => {
   const { label, className } = getStatus(props.pass, props.isIncomplete)
   return (
     <span

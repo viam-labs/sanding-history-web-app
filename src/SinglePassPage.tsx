@@ -157,7 +157,7 @@ function SinglePassPage() {
         <div className="font-semibold text-zinc-900 text-sm">
           Pass {pass.pass_id.substring(0, 8)}
         </div>
-        <StatusBadge pass={pass} />
+        <StatusBadge pass={pass} isIncomplete={false} />
         <div className="text-sm text-zinc-600">
           {pass.start.toLocaleString()} – {pass.end.toLocaleTimeString()}
         </div>
@@ -166,7 +166,7 @@ function SinglePassPage() {
       <main className="mainContent">
         <CameraProvider>
           <VideoStoreProvider>
-            <SinglePassProvider pass={pass}>
+            <SinglePassProvider pass={pass} isIncomplete={false}>
               <ResourceSelection />
               <SinglePassPageContent />
             </SinglePassProvider>
