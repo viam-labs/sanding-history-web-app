@@ -99,6 +99,12 @@ export const getStepVideos = (
   return { fullVideos, last30sVideos }
 }
 
+// Returns true if the pass has not yet completed (end time is unreliable)
+export const isInProgress = (pass: Pass): boolean => {
+  if (!pass.current_state) return false
+  return !['Succeeded', 'Failed', 'Cancelled'].includes(pass.current_state)
+}
+
 // Compute total execution time (ms) for a pass by summing 'executing' steps
 export const getExecutionTimeMs = (pass: Pass): number => {
   if (!pass.steps || pass.steps.length === 0) return 0

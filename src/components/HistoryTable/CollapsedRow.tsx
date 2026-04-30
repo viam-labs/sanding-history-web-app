@@ -1,5 +1,5 @@
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
-import { getExecutionTimeMs } from '../../lib/passUtils'
+import { getExecutionTimeMs, isInProgress } from '../../lib/passUtils'
 import { StatusBadge } from '../StatusBadge'
 import { useMemo, useState } from 'react'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -18,7 +18,7 @@ export const CollapsedRow = ({
   pieceColor,
 }: CollapsedRowProps) => {
   const { passNotes, passDiagnoses } = usePass()
-  const { pass } = useSinglePass()
+  const { pass, isIncomplete } = useSinglePass()
   const [errorsExpanded, setErrorsExpanded] = useState<boolean>(false)
   const passNotesData = passNotes.get(pass.pass_id) || []
   const execMs = useMemo(() => {
@@ -203,15 +203,17 @@ export const CollapsedRow = ({
         )}
       </td>
       <td>
-        <StatusBadge pass={pass} />
+        <StatusBadge pass={pass} isIncomplete={isIncomplete} />
       </td>
       <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
-      <td className="text-zinc-700">{pass.end.toLocaleTimeString()}</td>
       <td className="text-zinc-700">
-        {formatDurationToMinutesSeconds(pass.start, pass.end)}
+        {isInProgress(pass) ? '—' : pass.end.toLocaleTimeString()}
       </td>
       <td className="text-zinc-700">
-        {formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
+        {isInProgress(pass) ? '—' : formatDurationToMinutesSeconds(pass.start, pass.end)}
+      </td>
+      <td className="text-zinc-700">
+        {isInProgress(pass) ? '—' : formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
       </td>
       <td className="text-zinc-700">
         {pass.pass_mode ? (
