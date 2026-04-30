@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.18.0
+
+### Minor Changes
+
+- 5621319: Show dashes for unset end times; label abandoned in-progress passes as Incomplete
+
 ## 1.17.0
 
 ### Minor Changes
