@@ -112,13 +112,6 @@ export class BinaryDataFile {
     return data[0]
   }
 
-  public isInTimeRange(start: Date, end: Date): boolean {
-    const fileTimestamp = this.getFileTimestamp()
-    const timeRequested = fileTimestamp || this.timeRequested
-    if (!timeRequested) return false
-    return timeRequested >= start && timeRequested <= end
-  }
-
   public isPartOfPass(passId: string): boolean {
     return this.fileName.includes(passId)
   }

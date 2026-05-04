@@ -5,8 +5,6 @@ export type FileQueryCallback = (files: BinaryDataFile[]) => void
 
 const BINARY_DATA_BATCH_SIZE = 1500
 
-const IMAGES_PASS_END_TIME_BUFFER_MS = 60 * 60 * 1000
-
 interface FileQueryParams {
   organizationId: string
   locationId: string
@@ -227,8 +225,6 @@ export class FileQueryManager {
       partId,
       viamClient,
       passId,
-      passStart,
-      passEnd,
       onQuery,
       signal,
     } = params
@@ -239,21 +235,15 @@ export class FileQueryManager {
     const paginationKey = `images-${passId}`
     const paginationToken = this._paginationTokens.get(paginationKey)
 
-    // Add buffer to end time to account for sync delays
-    const bufferedEndTime = new Date(
-      passEnd.getTime() + IMAGES_PASS_END_TIME_BUFFER_MS
-    )
-
-    // TODO: we still need to add dynamic data capture tagging for camera images and backfill before we can rely on pass id
     const filter = new VIAM.dataApi.Filter({
       organizationIds: [organizationId],
       locationIds: [locationId],
       robotId: machineId,
       partId: partId,
       mimeType: ['image/png', 'image/jpeg'],
-      interval: new VIAM.dataApi.CaptureInterval({
-        start: VIAM.Timestamp.fromDate(passStart),
-        end: VIAM.Timestamp.fromDate(bufferedEndTime),
+      tagsFilter: new VIAM.dataApi.TagsFilter({
+        type: VIAM.dataApi.TagsFilterType.MATCH_BY_OR,
+        tags: [passId],
       }),
     })
 
@@ -281,7 +271,6 @@ export class FileQueryManager {
     const newImages = []
     for (const file of nextImages) {
       if (existingIds.has(file.binaryDataId)) continue
-      if (!file.isInTimeRange(passStart, passEnd)) continue
       newImages.push(file)
     }
 
