@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.19.0
+
+### Minor Changes
+
+- da1c77d: Use pass_id tags for querying images instead of time-based heuristic
+
 ## 1.18.0
 
 ### Minor Changes
