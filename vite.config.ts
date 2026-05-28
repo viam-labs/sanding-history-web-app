@@ -6,7 +6,7 @@ import { analyzer } from 'vite-bundle-analyzer'
 import glsl from 'vite-plugin-glsl'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/lib/__tests__/setup.ts'],
@@ -26,7 +26,9 @@ export default defineConfig({
     esbuildOptions: {
       loader: {
         '.glsl': 'text',
-        '.hdr': 'file',
+        // 'file' needs an output path that doesn't exist during the dev
+        // server's dependency pre-scan, so inline as a data URL outside prod.
+        '.hdr': mode === 'production' ? 'file' : 'dataurl',
       },
     },
   },
@@ -38,4 +40,4 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
-})
+}))
