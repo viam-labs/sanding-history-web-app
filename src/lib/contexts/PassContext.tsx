@@ -6,68 +6,13 @@ import {
   useEffect,
 } from 'react'
 import { Pass, PassNote, PassDiagnosis } from '../types'
-import { JsonValue } from '@viamrobotics/sdk'
 import { useViamClients } from './ViamClientContext'
 import { getPassMetadataManager } from '../passMetadataManager'
-
-const sandingSummaryName = 'sanding-summary'
-const sandingSummaryComponentType = 'rdk:component:sensor'
-const BATCH_SIZE = 1000
-
-/**
- * Transforms raw tabular data from MQL query into Pass objects
- */
-function processTabularDataToPasses(tabularData: any[]): Pass[] {
-  return tabularData.map((item: any) => {
-    const pass = item.data!.readings!
-    const buildInfo = pass.build_info ? pass.build_info : {}
-
-    return {
-      start: new Date(pass.start),
-      end: new Date(pass.end),
-      steps: pass.steps
-        ? pass.steps.map((x: any) => ({
-            name: x.name!,
-            start: new Date(x.start),
-            end: new Date(x.end),
-            pass_id: pass.pass_id,
-          }))
-        : [],
-      success: pass.success ?? true,
-      pass_id: pass.pass_id,
-      err_string: pass.err_string || null,
-      build_info: buildInfo,
-      pass_mode:
-        pass.pass_mode != null
-          ? String(pass.pass_mode)
-          : undefined,
-      sanding_distance_mm:
-        pass.sanding_distance_mm != null
-          ? Number(pass.sanding_distance_mm)
-          : undefined,
-      selected_zones:
-        pass.selected_zones != null
-          ? pass.selected_zones
-          : undefined,
-      selected_num_rounds:
-        pass.selected_num_rounds != null
-          ? Number(pass.selected_num_rounds)
-          : undefined,
-      piece_id:
-        pass.piece_id != null
-          ? String(pass.piece_id)
-          : undefined,
-      version:
-        pass.version != null
-          ? Number(pass.version)
-          : undefined,
-      current_state:
-        pass.current_state != null
-          ? String(pass.current_state)
-          : undefined,
-    }
-  })
-}
+import {
+  PASS_QUERY_BATCH_SIZE,
+  buildPassSummaryPipeline,
+  processTabularDataToPasses,
+} from '../passQuery'
 
 // TODO: decompose this more into a notes and diagnoses context and a pass summaries context which use this data
 interface PassContextType {
@@ -119,25 +64,12 @@ export function PassProvider({ children }: { children: ReactNode }) {
 
   const initialPassQuery = async () => {
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    const hdsQuery: any[] = [
-      {
-        $match: {
-          organization_id: organizationId,
-          location_id: locationId,
-          component_name: sandingSummaryName,
-          robot_id: machineId,
-          component_type: sandingSummaryComponentType,
-          time_received: {
-            $gte: oneWeekAgo,
-          },
-        },
-      },
-      // Sort by version descending so $first in $group picks the highest-version record per pass
-      { $sort: { 'data.readings.version': -1 } },
-      { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
-      { $replaceRoot: { newRoot: '$doc' } },
-      { $sort: { time_received: -1 } },
-    ]
+    const hdsQuery = buildPassSummaryPipeline({
+      organizationId,
+      locationId,
+      machineId,
+      since: oneWeekAgo,
+    })
 
     const hotDataStoreResults = await viamClient.dataClient.tabularDataByMQL(
       organizationId,
@@ -166,38 +98,13 @@ export function PassProvider({ children }: { children: ReactNode }) {
     let oldestTimeReceived: string | null = null
 
     while (hasMoreData) {
-      const baseQuery: Record<string, JsonValue>[] = [
-        {
-          $match: {
-            organization_id: organizationId,
-            location_id: locationId,
-            component_name: sandingSummaryName,
-            robot_id: machineId,
-            component_type: sandingSummaryComponentType,
-          },
-        },
-        // Sort by version descending so $first in $group picks the highest-version record per pass
-        { $sort: { 'data.readings.version': -1 } },
-        { $group: { _id: '$data.readings.pass_id', doc: { $first: '$$ROOT' } } },
-        { $replaceRoot: { newRoot: '$doc' } },
-        { $sort: { time_received: -1 } },
-      ]
-
-      // Add time filter for pagination after grouping, so the cursor operates on
-      // unique passes rather than raw version records
-      if (oldestTimeReceived) {
-        baseQuery.push({
-          $match: { time_received: { $lt: oldestTimeReceived } },
-        })
-      }
-
-      // Add limit
-      const mqlQuery = [
-        ...baseQuery,
-        {
-          $limit: BATCH_SIZE,
-        },
-      ]
+      const mqlQuery = buildPassSummaryPipeline({
+        organizationId,
+        locationId,
+        machineId,
+        olderThan: oldestTimeReceived ?? undefined,
+        limit: PASS_QUERY_BATCH_SIZE,
+      })
 
       console.log(
         `Fetching batch of sanding summaries${oldestTimeReceived ? ' older than ' + new Date(oldestTimeReceived).toISOString() : ''}`
@@ -226,7 +133,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
         allTabularData = [...allTabularData, ...batchData]
 
         // If we have fewer records than the batch size, we're done
-        if (batchData.length < BATCH_SIZE) {
+        if (batchData.length < PASS_QUERY_BATCH_SIZE) {
           hasMoreData = false
         }
       } else {

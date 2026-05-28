@@ -1,5 +1,9 @@
 import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
-import { getExecutionTimeMs, isInProgress } from '../../lib/passUtils'
+import {
+  formatSelectedZones,
+  getExecutionTimeMs,
+  isInProgress,
+} from '../../lib/passUtils'
 import { StatusBadge } from '../StatusBadge'
 import { useMemo, useState } from 'react'
 import { usePass } from '../../lib/contexts/PassContext'
@@ -227,28 +231,7 @@ export const CollapsedRow = ({
       <td className="text-zinc-700">
         {pass.steps ? `${pass.steps.length} steps` : '—'}
       </td>
-      <td className="text-zinc-700">
-        {pass.selected_zones !== undefined
-          ? (() => {
-              const zones = Array.isArray(pass.selected_zones)
-                ? pass.selected_zones
-                : [pass.selected_zones]
-
-              const zoneNumbers = zones
-                .map((zone) => {
-                  const str = String(zone)
-                  return str.startsWith('zone_')
-                    ? str.replace('zone_', '')
-                    : str
-                })
-                .map((zone) => parseInt(zone, 10))
-                .filter((num) => !isNaN(num))
-                .sort((a, b) => a - b)
-
-              return zoneNumbers.length > 0 ? zoneNumbers.join(', ') : '—'
-            })()
-          : '—'}
-      </td>
+      <td className="text-zinc-700">{formatSelectedZones(pass.selected_zones)}</td>
       <td className="text-zinc-700">
         {pass.selected_num_rounds !== undefined
           ? pass.selected_num_rounds
