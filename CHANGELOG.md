@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.20.1
+
+### Patch Changes
+
+- 3925a2b: fix: pass in props for motion tool component
+
 ## 1.20.0
 
 ### Minor Changes
