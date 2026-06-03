@@ -101,7 +101,7 @@ the following as flags or environment variables (flags take precedence):
 | `--host`        | `VIAM_HOST`          | Machine host, `name.LOCATION.viam.cloud`  |
 | `--api-key-id`  | `VIAM_API_KEY_ID`    | Viam API key id                           |
 | `--api-key`     | `VIAM_API_KEY`       | Viam API key secret                       |
-| `--robot-id`    | `VIAM_ROBOT_ID`      | Machine id to query                       |
+| `--machine-id`  | `VIAM_MACHINE_ID`    | Machine id to query                       |
 | `--org-id`      | `VIAM_ORG_ID`        | Organization id (defaults to the first org the key can see) |
 
 The location is parsed from `--host`: it is the segment immediately before
@@ -112,7 +112,7 @@ full `name.LOCATION.viam.cloud` form.
 export VIAM_HOST=my-machine-main.abcd1234.viam.cloud
 export VIAM_API_KEY_ID=...
 export VIAM_API_KEY=...
-export VIAM_ROBOT_ID=...
+export VIAM_MACHINE_ID=...
 ```
 
 ## `log`

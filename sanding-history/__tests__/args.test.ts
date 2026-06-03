@@ -78,7 +78,7 @@ describe('resolveConfig', () => {
     VIAM_HOST: 'r.loc.viam.cloud',
     VIAM_API_KEY_ID: 'env-id',
     VIAM_API_KEY: 'env-key',
-    VIAM_ROBOT_ID: 'env-robot',
+    VIAM_MACHINE_ID: 'env-machine',
     VIAM_ORG_ID: 'env-org',
   }
 
@@ -98,7 +98,7 @@ describe('resolveConfig', () => {
 
   it('reports every missing required value at once', () => {
     expect(() => resolveConfig({}, {})).toThrow(
-      /--host.*--api-key-id.*--api-key.*--robot-id/
+      /--host.*--api-key-id.*--api-key.*--machine-id/
     )
   })
 })

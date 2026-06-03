@@ -6,7 +6,7 @@ export const VALUE_FLAGS = [
   'api-key-id',
   'api-key',
   'org-id',
-  'robot-id',
+  'machine-id',
   'since',
   'limit',
 ] as const
@@ -77,7 +77,7 @@ export interface ViamConfig {
   apiKeyId: string
   apiKey: string
   locationId: string
-  robotId: string
+  machineId: string
   orgId?: string
 }
 
@@ -94,14 +94,14 @@ export function resolveConfig(
   const host = flags['host'] ?? env.VIAM_HOST
   const apiKeyId = flags['api-key-id'] ?? env.VIAM_API_KEY_ID
   const apiKey = flags['api-key'] ?? env.VIAM_API_KEY
-  const robotId = flags['robot-id'] ?? env.VIAM_ROBOT_ID
+  const machineId = flags['machine-id'] ?? env.VIAM_MACHINE_ID
   const orgId = flags['org-id'] ?? env.VIAM_ORG_ID
 
   const missing: string[] = []
   if (!host) missing.push('--host / $VIAM_HOST')
   if (!apiKeyId) missing.push('--api-key-id / $VIAM_API_KEY_ID')
   if (!apiKey) missing.push('--api-key / $VIAM_API_KEY')
-  if (!robotId) missing.push('--robot-id / $VIAM_ROBOT_ID')
+  if (!machineId) missing.push('--machine-id / $VIAM_MACHINE_ID')
 
   if (missing.length > 0) {
     throw new Error(`Missing required configuration: ${missing.join(', ')}`)
@@ -111,7 +111,7 @@ export function resolveConfig(
     host: host!,
     apiKeyId: apiKeyId!,
     apiKey: apiKey!,
-    robotId: robotId!,
+    machineId: machineId!,
     orgId: orgId || undefined,
     locationId: parseLocationId(host!),
   }

@@ -25,7 +25,7 @@ Auth/config (flags override environment):
   --api-key-id   Viam API key id                          [$VIAM_API_KEY_ID]
   --api-key      Viam API key secret                      [$VIAM_API_KEY]
   --org-id       organization id (default: first org)     [$VIAM_ORG_ID]
-  --robot-id     machine id to query                      [$VIAM_ROBOT_ID]
+  --machine-id   machine id to query                      [$VIAM_MACHINE_ID]
 
 log options:
   --since <dur>  time window, e.g. 7d/24h/30m or a date (default 7d)
@@ -69,7 +69,7 @@ async function runLog(flags: ReturnType<typeof parseArgs>['flags']): Promise<voi
 
   const diagnoses = await fetchDiagnosesForPasses(
     client,
-    config.robotId,
+    config.machineId,
     passes.map((p) => p.pass_id).filter(Boolean)
   )
 
@@ -96,8 +96,8 @@ async function runDetail(
   }
 
   const [diagnoses, notes] = await Promise.all([
-    fetchDiagnosesForPasses(client, config.robotId, [runId]),
-    fetchNotesForPasses(client, config.robotId, [runId]),
+    fetchDiagnosesForPasses(client, config.machineId, [runId]),
+    fetchNotesForPasses(client, config.machineId, [runId]),
   ])
 
   const record = {

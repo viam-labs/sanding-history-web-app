@@ -54,7 +54,7 @@ export async function fetchPasses(
     const pipeline = buildPassSummaryPipeline({
       organizationId,
       locationId: config.locationId,
-      machineId: config.robotId,
+      machineId: config.machineId,
       since: options.since,
       olderThan,
       limit: PASS_QUERY_BATCH_SIZE,
@@ -94,7 +94,7 @@ export async function fetchPassById(
   const pipeline = buildPassSummaryPipeline({
     organizationId,
     locationId: config.locationId,
-    machineId: config.robotId,
+    machineId: config.machineId,
     passId,
   })
 
