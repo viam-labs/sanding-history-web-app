@@ -7,6 +7,7 @@ yarn-error.log*
 # Production builds
 build/
 dist/
+dist-sanding-history/
 bin/
 module.tar.gz
 

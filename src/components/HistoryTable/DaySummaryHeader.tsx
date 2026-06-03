@@ -1,16 +1,8 @@
 import React from 'react'
 import { formatDurationMs } from '../../lib/uiUtils'
+import { DayAggregateData } from '../../lib/dayAggregates'
 
-export interface DayAggregateData {
-  totalFactoryTime: number
-  totalExecutionTime: number
-  totalOtherStepsTime: number
-  totalPassCount: number
-  executionPercentage: number
-  formattedDate: string
-  symptomCounts: Map<string, number>
-  causeCounts: Map<string, number>
-}
+export type { DayAggregateData }
 
 interface DaySummaryHeaderProps {
   data: DayAggregateData

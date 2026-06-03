@@ -105,6 +105,46 @@ export const isInProgress = (pass: Pass): boolean => {
   return !['Succeeded', 'Failed', 'Cancelled'].includes(pass.current_state)
 }
 
+// Human-readable status shown in the history table's Status column. Uses
+// current_state as the primary signal, with a success/failure fallback for
+// legacy records that predate current_state.
+export const getPassStatusLabel = (
+  pass: Pass,
+  isIncomplete: boolean
+): string => {
+  if (pass.current_state) {
+    if (pass.current_state === 'Succeeded') return 'Success'
+    if (pass.current_state === 'Failed') return 'Failed'
+    if (pass.current_state === 'Cancelled') return 'Cancelled'
+    // A non-most-recent in-progress pass was cut out before finishing
+    if (isIncomplete) return 'Incomplete'
+    // Any other state (e.g. Executing, GeneratingMesh) is actively in progress
+    return 'In Progress'
+  }
+  return pass.success ? 'Success' : 'Failed'
+}
+
+// Formats the history table's Selected zones column: strips the "zone_" prefix,
+// keeps numeric zones, sorts ascending, and joins with commas. Returns "—" when
+// there are no usable zones.
+export const formatSelectedZones = (
+  selectedZones: string | string[] | undefined
+): string => {
+  if (selectedZones === undefined) return '—'
+
+  const zones = Array.isArray(selectedZones) ? selectedZones : [selectedZones]
+  const zoneNumbers = zones
+    .map((zone) => {
+      const str = String(zone)
+      return str.startsWith('zone_') ? str.replace('zone_', '') : str
+    })
+    .map((zone) => parseInt(zone, 10))
+    .filter((num) => !isNaN(num))
+    .sort((a, b) => a - b)
+
+  return zoneNumbers.length > 0 ? zoneNumbers.join(', ') : '—'
+}
+
 // Compute total execution time (ms) for a pass by summing 'executing' steps
 export const getExecutionTimeMs = (pass: Pass): number => {
   if (!pass.steps || pass.steps.length === 0) return 0

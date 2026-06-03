@@ -53,6 +53,18 @@ export const formatTimeDifference = (time1: number, time2: number): string => {
   return `${Math.round(minutes)}m`
 }
 
+/**
+ * Formats a duration in milliseconds as "Xh Ym" (or "Ym" under an hour). Used
+ * by the day-summary totals.
+ */
+export const formatDurationMsText = (ms: number): string => {
+  const totalSeconds = Math.floor(ms / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+}
+
 export const formatDurationToMinutesSeconds = (
   start: Date,
   end: Date

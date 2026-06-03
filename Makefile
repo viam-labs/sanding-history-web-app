@@ -4,6 +4,10 @@ module: dist/index.html meta.json
 dist/index.html: node_modules
 	npm run build
 
+# Standalone history-inspection CLI (separate from the web app).
+sanding-history: node_modules
+	npm run build:sanding-history
+
 node_modules: package-lock.json
 	npm ci
 
