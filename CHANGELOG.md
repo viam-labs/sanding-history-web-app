@@ -1,5 +1,14 @@
 # sanding-monitoring-web-app
 
+## 1.21.0
+
+### Minor Changes
+
+- 3b98e92: Add a standalone `sanding-history` command-line tool for inspecting sanding-run history: `log` lists past runs as paged plain text (matching the history table), and `detail <run-id>` prints a run's full metadata as JSON. The history list's query, day-aggregation, and field formatting are extracted into shared modules so the CLI and the web app render from the same logic.
+- d28e437: Support `rdk:service:video` video stores in the video store dropdown alongside generic components (`rdk:component:generic`). The selector now constructs the SDK client that matches the selected resource's type — `VideoClient` for video services, `GenericComponentClient` for generic components — so `doCommand` routes to the correct gRPC API.
+
+  This required upgrading `@viamrobotics/sdk` from `^0.57.0` to `^0.72.0`: the video service runtime client (`VideoClient`) did not exist in 0.57.0, which only shipped its type stubs.
+
 ## 1.20.1
 
 ### Patch Changes
