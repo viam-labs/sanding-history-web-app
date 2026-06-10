@@ -32,7 +32,7 @@
     "@threlte/extras": "^9.20.1",
     "@viamrobotics/motion-tools": "1.22.0",
     "@viamrobotics/prime-core": "0.1.5",
-    "@viamrobotics/sdk": "^0.57.0",
+    "@viamrobotics/sdk": "^0.72.0",
     "@viamrobotics/svelte-sdk": "^1.0.1",
     "js-cookie": "^3.0.5",
     "koota": "^0.6.5",

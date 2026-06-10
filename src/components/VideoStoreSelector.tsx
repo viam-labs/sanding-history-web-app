@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import * as VIAM from '@viamrobotics/sdk'
 
 import { useViamClients } from '../lib/contexts/ViamClientContext'
+import type { VideoStoreClient } from '../lib/contexts/VideoStoreContext'
+import { isVideoStoreResource } from '../lib/videoStoreUtils'
 
 const STORAGE_KEY = 'selectedVideoStore'
 
 interface VideoStoreSelectorProps {
-  onVideoStoreSelected: (client: VIAM.GenericComponentClient | null) => void
+  onVideoStoreSelected: (client: VideoStoreClient | null) => void
 }
 
 interface Resource {
@@ -50,13 +52,8 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
         // Get resource names from the robot client
         const resourceNames = await robotClient.resourceNames()
 
-        // Filter for components with type "component" and subtype "generic", excluding webapp
-        const filteredResources = resourceNames.filter(
-          (resource: any) =>
-            resource.type === 'component' &&
-            resource.subtype === 'generic' &&
-            resource.name !== 'webapp'
-        )
+        // Keep generic components and video services (see isVideoStoreResource)
+        const filteredResources = resourceNames.filter(isVideoStoreResource)
 
         setResources(filteredResources)
       } catch (err) {
@@ -109,10 +106,14 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
 
     if (resourceName && robotClient) {
       try {
-        const videoStoreClient = new VIAM.GenericComponentClient(
-          robotClient,
-          resourceName
-        )
+        // A video service (rdk:service:video) and a generic component expose
+        // the same doCommand surface but route over different gRPC APIs, so
+        // construct the client that matches the selected resource's type.
+        const selected = resources.find((r) => r.name === resourceName)
+        const videoStoreClient: VideoStoreClient =
+          selected?.type === 'service'
+            ? new VIAM.VideoClient(robotClient, resourceName)
+            : new VIAM.GenericComponentClient(robotClient, resourceName)
         onVideoStoreSelected(videoStoreClient)
         localStorage.setItem(STORAGE_KEY, resourceName)
         setError(null)
