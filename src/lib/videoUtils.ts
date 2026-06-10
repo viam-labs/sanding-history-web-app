@@ -1,5 +1,6 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Step } from './types'
+import type { VideoStoreClient } from './contexts/VideoStoreContext'
 import { VIDEO_UPLOAD_PATH } from './constants'
 import { BinaryDataFile } from './BinaryDataFile'
 
@@ -118,7 +119,7 @@ const getVideoTimeWithBuffer = (date: Date, isStart: boolean): Date => {
 }
 
 export const generateVideo = async (
-  videoStoreClient: VIAM.GenericComponentClient,
+  videoStoreClient: VideoStoreClient,
   step: Step,
   last30s: boolean = false
 ) => {
