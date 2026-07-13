@@ -38,7 +38,7 @@ const HistoryTable: React.FC = () => {
             <th className="w-5"></th>
             <th>Day</th>
             <th>Pass ID</th>
-            <th>Piece ID</th>
+            <th>Piece</th>
             <th>Status</th>
             <th>Start time</th>
             <th>End time</th>

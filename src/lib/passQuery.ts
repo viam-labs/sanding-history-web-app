@@ -40,6 +40,9 @@ export function processTabularDataToPasses(tabularData: any[]): Pass[] {
           ? Number(pass.selected_num_rounds)
           : undefined,
       piece_id: pass.piece_id != null ? String(pass.piece_id) : undefined,
+      piece_type: pass.piece_type != null ? String(pass.piece_type) : undefined,
+      piece_model: pass.piece_model != null ? String(pass.piece_model) : undefined,
+      piece_serial: pass.piece_serial != null ? String(pass.piece_serial) : undefined,
       version: pass.version != null ? Number(pass.version) : undefined,
       current_state:
         pass.current_state != null ? String(pass.current_state) : undefined,
