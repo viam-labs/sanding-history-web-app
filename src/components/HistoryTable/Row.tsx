@@ -119,7 +119,7 @@ const Row = ({ globalIndex, pieceColor }: RowProps) => {
       />
       {isExpanded && (
         <tr className="expanded-content">
-          <td colSpan={14}>
+          <td colSpan={12}>
             <div className="pass-details">
               {/* Build information section moved inside expanded row */}
               <RenderIf condition={pass.build_info !== undefined}>
