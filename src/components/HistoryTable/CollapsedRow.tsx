@@ -156,62 +156,64 @@ export const CollapsedRow = ({
       </td>
       <td className="text-zinc-700 text-xs">
         {pass.piece_id || pass.piece_type || pass.piece_model || pass.piece_serial ? (
-          <div className="flex flex-col gap-0.5 items-start">
+          <div className="flex flex-col gap-1 items-start leading-tight">
             {(pass.piece_type || pass.piece_model) && (
-              <span className="text-zinc-700">
+              <span className="text-zinc-800">
                 {[pass.piece_type, pass.piece_model].filter(Boolean).join(' ')}
               </span>
             )}
             {pass.piece_serial && (
-              <span className="text-zinc-500">SN {pass.piece_serial}</span>
+              <span className="font-mono text-[11px] text-zinc-500">
+                SN {pass.piece_serial}
+              </span>
             )}
             {pass.piece_id && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              navigator.clipboard.writeText(pass.piece_id!)
-              const btn = e.currentTarget
-              const svg = btn.querySelector('svg')
-              const textSpan = btn.querySelector('span')
-              btn.classList.add('bg-green-100')
-              if (svg) {
-                svg.innerHTML =
-                  '<path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />'
-                svg.classList.remove('fill-gray-400')
-                svg.classList.add('fill-green-700')
-              }
-              if (textSpan) {
-                textSpan.classList.add('text-green-700')
-              }
-              setTimeout(() => {
-                btn.classList.remove('bg-green-100')
-                if (svg) {
-                  svg.innerHTML =
-                    '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />'
-                  svg.classList.remove('fill-green-700')
-                  svg.classList.add('fill-gray-400')
-                }
-                if (textSpan) {
-                  textSpan.classList.remove('text-green-700')
-                }
-              }, 1500)
-            }}
-            className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${pieceColor?.bg ?? 'bg-gray-100'} ${pieceColor?.hoverBg ?? 'hover:bg-gray-200'}`}
-            title={`Copy piece ID: ${pass.piece_id}`}
-          >
-            <span
-              className={`font-mono text-[11px] ${pieceColor?.text ?? 'text-zinc-600 hover:text-zinc-700 '}`}
-            >
-              {pass.piece_id.substring(0, 8)}
-            </span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="w-3 h-3 fill-gray-400 transition-colors duration-150"
-            >
-              <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
-            </svg>
-          </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigator.clipboard.writeText(pass.piece_id!)
+                  const btn = e.currentTarget
+                  const svg = btn.querySelector('svg')
+                  const textSpan = btn.querySelector('span')
+                  btn.classList.add('bg-green-100')
+                  if (svg) {
+                    svg.innerHTML =
+                      '<path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z" />'
+                    svg.classList.remove('fill-gray-400')
+                    svg.classList.add('fill-green-700')
+                  }
+                  if (textSpan) {
+                    textSpan.classList.add('text-green-700')
+                  }
+                  setTimeout(() => {
+                    btn.classList.remove('bg-green-100')
+                    if (svg) {
+                      svg.innerHTML =
+                        '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />'
+                      svg.classList.remove('fill-green-700')
+                      svg.classList.add('fill-gray-400')
+                    }
+                    if (textSpan) {
+                      textSpan.classList.remove('text-green-700')
+                    }
+                  }, 1500)
+                }}
+                className={`inline-flex items-center justify-center py-1 rounded text-xs font-medium cursor-pointer border-none gap-1.5 px-2.5 transition-colors duration-150 group ${pieceColor?.bg ?? 'bg-gray-100'} ${pieceColor?.hoverBg ?? 'hover:bg-gray-200'}`}
+                title={`Copy piece ID: ${pass.piece_id}`}
+              >
+                <span
+                  className={`font-mono text-[11px] ${pieceColor?.text ?? 'text-zinc-600 hover:text-zinc-700 '}`}
+                >
+                  {pass.piece_id.substring(0, 8)}
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className="w-3 h-3 fill-gray-400 transition-colors duration-150"
+                >
+                  <path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
+                </svg>
+              </button>
             )}
           </div>
         ) : (
