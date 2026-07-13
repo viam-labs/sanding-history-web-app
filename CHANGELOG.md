@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.21.2
+
+### Patch Changes
+
+- 79f8cab: Tighten history table columns
+
 ## 1.21.1
 
 ### Patch Changes
