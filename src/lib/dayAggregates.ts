@@ -12,12 +12,6 @@ export interface DayAggregateData {
   causeCounts: Map<string, number>
 }
 
-/**
- * Groups passes by local calendar day, keyed YYYY-MM-DD from each pass's start.
- * Local (not UTC) so headers align with the local times shown in each row.
- * Insertion order follows the input order, so a newest-first input yields
- * newest-first days.
- */
 export function groupPassesByDay(passes: Pass[]): Record<string, Pass[]> {
   return passes.reduce((acc: Record<string, Pass[]>, pass) => {
     const dateKey = localDayKey(pass.start)
