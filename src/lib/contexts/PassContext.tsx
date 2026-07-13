@@ -8,6 +8,7 @@ import {
 import { Pass, PassNote, PassDiagnosis } from '../types'
 import { useViamClients } from './ViamClientContext'
 import { getPassMetadataManager } from '../passMetadataManager'
+import { localDayKey } from '../passUtils'
 import {
   PASS_QUERY_BATCH_SIZE,
   buildPassSummaryPipeline,
@@ -165,8 +166,7 @@ export function PassProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const groupedByDay = passSummaries.reduce(
       (acc: Record<string, Pass[]>, pass) => {
-        // Use a consistent date key (YYYY-MM-DD)
-        const dateKey = pass.start.toISOString().split('T')[0]
+        const dateKey = localDayKey(pass.start)
         if (!acc[dateKey]) {
           acc[dateKey] = []
         }

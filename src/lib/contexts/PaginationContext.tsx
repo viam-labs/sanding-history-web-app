@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { usePass } from './PassContext'
 import { Pass } from '../types'
+import { localDayKey } from '../passUtils'
 export const DAYS_PER_PAGE = 7
 
 interface PaginationContextType {
@@ -38,8 +39,7 @@ export function PaginationProvider({ children }: { children: ReactNode }) {
 
   const groupedPasses = useMemo(() => {
     return currentPassSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
-      // Use a consistent date key (YYYY-MM-DD)
-      const dateKey = pass.start.toISOString().split('T')[0]
+      const dateKey = localDayKey(pass.start)
       if (!acc[dateKey]) {
         acc[dateKey] = []
       }
