@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.21.1
+
+### Patch Changes
+
+- da41d11: Group passes by local calendar day instead of UTC
+
 ## 1.21.0
 
 ### Minor Changes
