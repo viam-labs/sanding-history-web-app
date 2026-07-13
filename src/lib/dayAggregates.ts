@@ -1,5 +1,5 @@
 import { Pass, PassDiagnosis } from './types'
-import { isInProgress } from './passUtils'
+import { isInProgress, localDayKey } from './passUtils'
 
 export interface DayAggregateData {
   totalFactoryTime: number
@@ -13,13 +13,14 @@ export interface DayAggregateData {
 }
 
 /**
- * Groups passes by calendar day, keyed YYYY-MM-DD (UTC) from each pass's start.
+ * Groups passes by local calendar day, keyed YYYY-MM-DD from each pass's start.
+ * Local (not UTC) so headers align with the local times shown in each row.
  * Insertion order follows the input order, so a newest-first input yields
  * newest-first days.
  */
 export function groupPassesByDay(passes: Pass[]): Record<string, Pass[]> {
   return passes.reduce((acc: Record<string, Pass[]>, pass) => {
-    const dateKey = pass.start.toISOString().split('T')[0]
+    const dateKey = localDayKey(pass.start)
     if (!acc[dateKey]) {
       acc[dateKey] = []
     }

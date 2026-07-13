@@ -4,6 +4,7 @@ import {
   getExecutionTimeMs,
   getPassStatusLabel,
   getStepVideos,
+  localDayKey,
 } from '../passUtils'
 import type { Pass, Step } from '../types'
 
@@ -80,6 +81,18 @@ describe('getPassStatusLabel', () => {
   it('falls back to success flag when current_state is absent', () => {
     expect(getPassStatusLabel(withState(undefined, true), false)).toBe('Success')
     expect(getPassStatusLabel(withState(undefined, false), false)).toBe('Failed')
+  })
+})
+
+describe('localDayKey', () => {
+  it('returns the local Y-M-D, not UTC', () => {
+    const d = new Date(2026, 6, 12, 22, 0, 0)
+    expect(localDayKey(d)).toBe('2026-07-12')
+  })
+
+  it('zero-pads month and day', () => {
+    const d = new Date(2026, 0, 3, 0, 0, 0)
+    expect(localDayKey(d)).toBe('2026-01-03')
   })
 })
 

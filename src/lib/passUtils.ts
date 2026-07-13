@@ -145,6 +145,13 @@ export const formatSelectedZones = (
   return zoneNumbers.length > 0 ? zoneNumbers.join(', ') : '—'
 }
 
+export const localDayKey = (d: Date): string => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 // Compute total execution time (ms) for a pass by summing 'executing' steps
 export const getExecutionTimeMs = (pass: Pass): number => {
   if (!pass.steps || pass.steps.length === 0) return 0
