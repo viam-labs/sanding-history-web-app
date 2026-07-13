@@ -1,4 +1,4 @@
-import { formatDurationToMinutesSeconds } from '../../lib/videoUtils'
+import { formatDurationMsText } from '../../lib/videoUtils'
 import {
   formatSelectedZones,
   getExecutionTimeMs,
@@ -14,6 +14,19 @@ interface CollapsedRowProps {
   isExpanded: boolean
   toggleRowExpansion: () => void
   pieceColor?: PieceColor
+}
+
+const formatTimeRange = (start: Date, end: Date | null): string => {
+  const hm = (d: Date) => {
+    const h = d.getHours() % 12 || 12
+    const m = String(d.getMinutes()).padStart(2, '0')
+    return `${h}:${m}`
+  }
+  const period = (d: Date) => (d.getHours() >= 12 ? 'PM' : 'AM')
+  if (!end) return `${hm(start)} ${period(start)}`
+  return period(start) === period(end)
+    ? `${hm(start)} – ${hm(end)} ${period(end)}`
+    : `${hm(start)} ${period(start)} – ${hm(end)} ${period(end)}`
 }
 
 export const CollapsedRow = ({
@@ -54,7 +67,6 @@ export const CollapsedRow = ({
           ▶
         </span>
       </td>
-      <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
       <td className="text-zinc-700 text-xs">
         {pass.pass_id ? (
           <div className="flex items-center gap-1">
@@ -223,15 +235,14 @@ export const CollapsedRow = ({
       <td>
         <StatusBadge pass={pass} isIncomplete={isIncomplete} />
       </td>
-      <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
       <td className="text-zinc-700">
-        {isInProgress(pass) ? '—' : pass.end.toLocaleTimeString()}
+        {formatTimeRange(pass.start, isInProgress(pass) ? null : pass.end)}
       </td>
       <td className="text-zinc-700">
-        {isInProgress(pass) ? '—' : formatDurationToMinutesSeconds(pass.start, pass.end)}
+        {isInProgress(pass) ? '—' : formatDurationMsText(pass.end.getTime() - pass.start.getTime())}
       </td>
       <td className="text-zinc-700">
-        {isInProgress(pass) ? '—' : formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
+        {isInProgress(pass) ? '—' : formatDurationMsText(execMs)}
       </td>
       <td className="text-zinc-700">
         {pass.pass_mode ? (
@@ -243,7 +254,7 @@ export const CollapsedRow = ({
         )}
       </td>
       <td className="text-zinc-700">
-        {pass.steps ? `${pass.steps.length} steps` : '—'}
+        {pass.steps ? pass.steps.length : '—'}
       </td>
       <td className="text-zinc-700">{formatSelectedZones(pass.selected_zones)}</td>
       <td className="text-zinc-700">
