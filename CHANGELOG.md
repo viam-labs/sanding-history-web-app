@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.21.3
+
+### Patch Changes
+
+- da6d1ed: Combine piece identity into one column
+
 ## 1.21.2
 
 ### Patch Changes
