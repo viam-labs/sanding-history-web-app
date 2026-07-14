@@ -22,6 +22,9 @@ export interface Pass {
   selected_zones?: string | string[]
   selected_num_rounds?: number
   piece_id?: string
+  piece_type?: string
+  piece_model?: string
+  piece_serial?: string
   version?: number
   current_state?: string
 }
