@@ -16,6 +16,7 @@ import { PassFiles } from './components/HistoryTable/PassFiles'
 import RenderIf from './components/RenderIf'
 import { StatusBadge } from './components/StatusBadge'
 import {
+  CONFIG_HISTORY_ENABLED,
   getRobotConfigAtTime,
   getPassConfigComparison,
 } from './lib/configUtils'
@@ -37,7 +38,7 @@ function SinglePassPageContent() {
   //TODO: move fetching config metadata into a context so the function can be used by the Row and SinglePassPage components
   const fetchConfigMetadata = useCallback(
     async (currentPass: Pass, prevPass: Pass | null) => {
-      if (!partId) return
+      if (!partId || !CONFIG_HISTORY_ENABLED) return
 
       const passId = currentPass.pass_id
       const prevPassId = prevPass?.pass_id
