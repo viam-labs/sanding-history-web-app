@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.21.4
+
+### Patch Changes
+
+- 2169c96: Disable per-pass config history fetching and hide the Config information section.
+
 ## 1.21.3
 
 ### Patch Changes
