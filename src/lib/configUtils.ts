@@ -1,9 +1,6 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Pass, RobotConfigMetadata, RobotConfig } from './types'
 
-// ponytail: kill switch for per-pass config history. getRobotPartHistory pulls the
-// part's entire history on every call (the SDK exposes no time range or paging),
-// which is too heavy to run on every row expand. Flip back once it's scoped.
 export const CONFIG_HISTORY_ENABLED = false
 
 /**
