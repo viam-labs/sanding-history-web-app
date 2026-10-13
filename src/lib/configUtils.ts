@@ -1,6 +1,8 @@
 import * as VIAM from '@viamrobotics/sdk'
 import { Pass, RobotConfigMetadata, RobotConfig } from './types'
 
+export const CONFIG_HISTORY_ENABLED = false
+
 /**
  * Extract metadata from a robot part history entry
  */

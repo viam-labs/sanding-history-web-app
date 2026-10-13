@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pass, RobotConfigMetadata } from '../../lib/types'
 import { getExecutionTimeMs } from '../../lib/passUtils'
 import {
+  CONFIG_HISTORY_ENABLED,
   downloadRobotConfig,
   getPassConfigComparison,
   getRobotConfigAtTime,
@@ -170,60 +171,62 @@ export const PassInfo: React.FC<PassInfoProps> = ({
           </div>
         )}
       </div>
-      <div className="info-section">
-        <div className="flex items-center mb-3">
-          <h4 className="m-0">Config information</h4>
-          {/* Only show the badge if the metadata for both passes has been loaded and they are different. */}
-          {configChanged && (
-            <div className="ml-3 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">
-              Config changed since last run
-            </div>
-          )}
-        </div>
+      {CONFIG_HISTORY_ENABLED && (
+        <div className="info-section">
+          <div className="flex items-center mb-3">
+            <h4 className="m-0">Config information</h4>
+            {/* Only show the badge if the metadata for both passes has been loaded and they are different. */}
+            {configChanged && (
+              <div className="ml-3 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">
+                Config changed since last run
+              </div>
+            )}
+          </div>
 
-        {loadingConfigMetadata ? (
-          <div className="flex items-center gap-2 mb-3 text-gray-500 text-sm">
-            <div className="w-4 h-4 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-            Loading config info...
-          </div>
-        ) : configMetadata.has(pass.pass_id) ? (
-          <div className="info-grid mb-3">
-            {(() => {
-              const metadata = configMetadata.get(pass.pass_id)!
-              return (
-                <>
-                  <div className="info-item">
-                    <span className="info-label">Timestamp</span>
-                    <span className="info-value">
-                      {metadata.configTimestamp.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="info-item">
-                    <button
-                      onClick={() => handleDownloadConfig(pass)}
-                      disabled={downloadingConfig}
-                      className={`px-3 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center gap-1.5 ${
-                        downloadingConfig
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
-                      }`}
-                    >
-                      {downloadingConfig ? (
-                        <>
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>Download config</>
-                      )}
-                    </button>
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        ) : null}
-      </div>
+          {loadingConfigMetadata ? (
+            <div className="flex items-center gap-2 mb-3 text-gray-500 text-sm">
+              <div className="w-4 h-4 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+              Loading config info...
+            </div>
+          ) : configMetadata.has(pass.pass_id) ? (
+            <div className="info-grid mb-3">
+              {(() => {
+                const metadata = configMetadata.get(pass.pass_id)!
+                return (
+                  <>
+                    <div className="info-item">
+                      <span className="info-label">Timestamp</span>
+                      <span className="info-value">
+                        {metadata.configTimestamp.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <button
+                        onClick={() => handleDownloadConfig(pass)}
+                        disabled={downloadingConfig}
+                        className={`px-3 py-1.5 text-xs text-white border-none rounded transition-colors duration-200 flex items-center gap-1.5 ${
+                          downloadingConfig
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-500 hover:bg-blue-600 cursor-pointer'
+                        }`}
+                      >
+                        {downloadingConfig ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            Downloading...
+                          </>
+                        ) : (
+                          <>Download config</>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }

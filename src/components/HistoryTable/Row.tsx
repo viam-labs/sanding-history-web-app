@@ -7,7 +7,10 @@ import { PassFiles } from './PassFiles'
 import { usePass } from '../../lib/contexts/PassContext'
 import { usePagination } from '../../lib/contexts/PaginationContext'
 import { useState } from 'react'
-import { getRobotConfigAtTime } from '../../lib/configUtils'
+import {
+  CONFIG_HISTORY_ENABLED,
+  getRobotConfigAtTime,
+} from '../../lib/configUtils'
 import { getPassConfigComparison } from '../../lib/configUtils'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useSinglePass } from '../../lib/contexts/SinglePassContext.tsx'
@@ -69,7 +72,7 @@ const Row = ({ globalIndex, pieceColor }: RowProps) => {
   }
 
   const fetchConfigMetadata = async (pass: Pass, prevPass: Pass | null) => {
-    if (!partId) return
+    if (!partId || !CONFIG_HISTORY_ENABLED) return
 
     const passId = pass.pass_id
     const prevPassId = prevPass?.pass_id
