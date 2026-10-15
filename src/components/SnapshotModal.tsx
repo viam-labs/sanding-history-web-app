@@ -1,6 +1,6 @@
 import React from 'react'
 import SnapshotComponent from './Snapshot/Snapshot'
-import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
+import { SnapshotProto } from '@viamrobotics/visualization/lib'
 import { useEffect } from 'react'
 
 interface SnapshotModalProps {
