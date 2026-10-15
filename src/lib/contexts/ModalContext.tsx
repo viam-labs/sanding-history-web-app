@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, Suspense } from 'react'
-import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
+import { SnapshotProto } from '@viamrobotics/visualization/lib'
 import { lazy } from 'react'
 import LoadingModal from '../../components/LoadingModal.tsx'
 import { BinaryDataFile } from '../BinaryDataFile.ts'
