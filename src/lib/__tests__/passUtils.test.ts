@@ -4,6 +4,7 @@ import {
   getExecutionTimeMs,
   getPassStatusLabel,
   getStepVideos,
+  stepVideoTag,
   localDayKey,
 } from '../passUtils'
 import type { Pass, Step } from '../types'
@@ -105,11 +106,10 @@ describe('getStepVideos', () => {
     })
   })
 
-  it('matches video by pass_id and step name in filename', () => {
+  it('matches video by pass_id and step start tag in filename', () => {
     const step = makeStep('executing', 0, 1000, 'pass-abc')
     const mockFile = {
-      fileName: 'path/pass-abc_executing_2024-01-01.mp4',
-      getFileTimestamp: () => null,
+      fileName: `path/tag=pass-abc_tag=${stepVideoTag(step)}_executing.mp4`,
     } as any
 
     const { fullVideos, last30sVideos } = getStepVideos(step, [mockFile])
@@ -117,11 +117,21 @@ describe('getStepVideos', () => {
     expect(last30sVideos).toHaveLength(0)
   })
 
+  it('separates videos for same-named steps in one pass (pause/resume)', () => {
+    const first = makeStep('Executing', 1_000_000, 2_000_000, 'pass-abc')
+    const second = makeStep('Executing', 3_000_000, 4_000_000, 'pass-abc')
+    const firstVideo = {
+      fileName: `path/tag=Executing_tag=pass-abc_tag=${stepVideoTag(first)}_tag=full_x.mp4`,
+    } as any
+
+    expect(getStepVideos(first, [firstVideo]).fullVideos).toHaveLength(1)
+    expect(getStepVideos(second, [firstVideo]).fullVideos).toHaveLength(0)
+  })
+
   it('routes last30s videos to correct bucket', () => {
     const step = makeStep('executing', 0, 1000, 'pass-abc')
     const mockFile = {
-      fileName: 'path/pass-abc_last30s_executing.mp4',
-      getFileTimestamp: () => null,
+      fileName: `path/tag=${stepVideoTag(step)}_pass-abc_last30s_executing.mp4`,
     } as any
 
     const { fullVideos, last30sVideos } = getStepVideos(step, [mockFile])
