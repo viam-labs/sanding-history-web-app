@@ -3,6 +3,7 @@ import { Step } from './types'
 import type { VideoStoreClient } from './contexts/VideoStoreContext'
 import { VIDEO_UPLOAD_PATH } from './constants'
 import { BinaryDataFile } from './BinaryDataFile'
+import { stepVideoTag } from './passUtils'
 
 export const createVideoStreamFromBase64 = (
   base64Data: Uint8Array
@@ -147,7 +148,7 @@ export const generateVideo = async (
     formatDateToVideoStoreFormat(videoStart)
   )
 
-  const tags = [step.pass_id, step.name]
+  const tags = [step.pass_id, step.name, stepVideoTag(step)]
   if (last30s) {
     tags.push('last30s')
   } else {

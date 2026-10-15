@@ -52,6 +52,19 @@ export const getBeforeAfterImages = (
  * @param videoFiles - A map of all available video files.
  * @returns An object with fullVideos and last30sVideos arrays.
  */
+/**
+ * Video-store tag identifying a step. Step names repeat within a pass
+ * (Executing → Stopped → Resuming → Executing), so the start time is what
+ * distinguishes one step from another.
+ */
+export const stepVideoTag = (step: Step): string =>
+  `start-${step.start.getTime()}`
+
+// ponytail: videos generated before the start tag existed match no step; regenerate them
+export const isVideoForStep = (file: BinaryDataFile, step: Step): boolean =>
+  file.fileName.includes(step.pass_id) &&
+  file.fileName.includes(stepVideoTag(step))
+
 export const getStepVideos = (
   step: Step,
   videoFiles: BinaryDataFile[]
@@ -67,32 +80,11 @@ export const getStepVideos = (
     // TODO: add a tag for these 30 second videos when videoStore DoCommand is updaated
     const isLast30s = file.fileName.includes('_last30s_')
 
-    // 1. Try matching by metadata in filename (pass_id and step name)
-    const hasMetadataMatch =
-      file.fileName.includes(step.pass_id) && file.fileName.includes(step.name)
-
-    if (hasMetadataMatch) {
-      if (isLast30s) {
-        last30sVideos.push(file)
-      } else {
-        fullVideos.push(file)
-      }
-      return
-    }
-
-    // 2. Try matching by timestamp in filename (only for full videos, not last30s)
-    if (!isLast30s) {
-      const videoTime = file.getFileTimestamp()
-      if (videoTime) {
-        const stepEnd = step.end.getTime()
-        const vidTime = videoTime.getTime()
-
-        // The video timestamp is typically step.end + 10s buffer
-        const windowMs = 10_000
-        if (Math.abs(vidTime - stepEnd) < windowMs) {
-          fullVideos.push(file)
-        }
-      }
+    if (!isVideoForStep(file, step)) return
+    if (isLast30s) {
+      last30sVideos.push(file)
+    } else {
+      fullVideos.push(file)
     }
   })
 
