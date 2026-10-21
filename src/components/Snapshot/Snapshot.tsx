@@ -1,4 +1,4 @@
-import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
+import { SnapshotProto } from '@viamrobotics/visualization/lib'
 import useSvelte from '../../lib/hooks/useSvelte'
 import SvelteSnapshot from './SvelteSnapshot.svelte'
 

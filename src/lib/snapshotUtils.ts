@@ -1,5 +1,5 @@
 import * as VIAM from '@viamrobotics/sdk'
-import { SnapshotProto } from '@viamrobotics/motion-tools/lib'
+import { SnapshotProto } from '@viamrobotics/visualization/lib'
 
 export const getSnapshotFromGzipBinaryData = async (
   binaryData: VIAM.dataApi.BinaryData
