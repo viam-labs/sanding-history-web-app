@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.21.5
+
+### Patch Changes
+
+- 72ec4a8: Match generated step videos by step start time so repeated steps in a pass (e.g. two Executing steps around a pause/resume) no longer share a video. Videos generated before this change no longer appear on their step; regenerate them.
+
 ## 1.21.4
 
 ### Patch Changes
