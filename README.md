@@ -170,7 +170,7 @@ sanding-history detail 8f3c1a9b-2d4e-4f6a-9c1b-7e0a2d5f8b31
 
 # Making Changes
 
-When making a change to this repo, please run `npx @changesets/cli` to properly update the package.json using semantic versioning.
+Merging to `main` releases and deploys a new patch version automatically; there is no version to bump by hand.
 
 run `npm run start` to run the production build of the app locally and also ensure you start a module proxy `viam module local-app-testing --app-url http://localhost:3000 --machine-id <MACHINE_ID>`
 

@@ -1,0 +1,148 @@
+# see https://github.com/viamrobotics/build-action for help
+name: Deploy
+
+# `release: published` covers releases made by hand in the GitHub UI;
+# `workflow_call` covers the ones main.yml creates on merge.
+on:
+  release:
+    types: [published]
+  workflow_call:
+    inputs:
+      tag_name:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.tag_name || github.ref_name }}
+
+      - name: Get release info
+        id: release-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          RELEASE=$(gh release view "$TAG" --json body,name,tagName,isPrerelease,url)
+          {
+            echo "tag=$TAG"
+            echo "name=$(echo "$RELEASE" | jq -r '.name')"
+            echo "prerelease=$(echo "$RELEASE" | jq -r '.isPrerelease')"
+            echo "url=$(echo "$RELEASE" | jq -r '.url')"
+            echo 'body<<RELEASE_BODY_EOF'
+            echo "$RELEASE" | jq -r '.body'
+            echo 'RELEASE_BODY_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # viamrobotics/build-action@v1.7.4
+      - uses: viamrobotics/build-action@76223a61df515ed39aed8836611e71e868c06d66
+        with:
+          # note: you can replace this line with 'version: ""' if
+          # you want to test the build process without deploying
+          version: ${{ inputs.tag_name || github.ref_name }}
+          ref: ${{ github.sha }}
+          key-id: ${{ secrets.viam_key_id }}
+          key-value: ${{ secrets.viam_key_value }}
+          token: ${{ github.token }} # only required for private git repos
+
+      - name: Generate Slack payload
+        if: always()
+        env:
+          RELEASE_BODY: ${{ steps.release-info.outputs.body }}
+        run: |
+          STATUS_EMOJI="${{ job.status == 'success' && '✅' || '❌' }}"
+          RELEASE_TYPE="${{ steps.release-info.outputs.prerelease == 'true' && 'Pre-release' || 'Release' }}"
+          RELEASE_NAME="${{ steps.release-info.outputs.name }}"
+          RELEASE_TAG="${{ steps.release-info.outputs.tag }}"
+          JOB_STATUS="${{ job.status == 'success' && '✅ Success' || '❌ Failed' }}"
+          REPOSITORY="${{ github.repository }}"
+          RELEASE_URL="${{ steps.release-info.outputs.url }}"
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # GitHub release notes are GitHub markdown; Slack mrkdwn has no headers, uses *single* bold, and shows HTML comments verbatim
+          RELEASE_BODY=$(echo "$RELEASE_BODY" | jq -Rs '
+            gsub("<!--[\\s\\S]*?-->\\s*"; "")
+            | gsub("##+ (What.s Changed|Other Changes)\\s*"; "")
+            | gsub("\\*\\*Full Changelog\\*\\*: (?<u>\\S+)"; "<\(.u)|Full changelog>")
+            | gsub("(?m)^#+ +(?<h>[^\\n]+)"; "*\(.h)*")
+            | gsub("(?m)^\\* "; "• ")
+            | gsub("(?<u>https://github\\.com/\\S+/pull/(?<n>[0-9]+))"; "<\(.u)|#\(.n)>")
+            | gsub("\\n{3,}"; "\n\n")
+          ')
+
+          jq -n \
+            --arg text "${STATUS_EMOJI} ${RELEASE_TYPE}: ${REPOSITORY} - ${RELEASE_NAME}" \
+            --arg header_text "${STATUS_EMOJI} ${RELEASE_TYPE}: ${REPOSITORY}" \
+            --arg version "${RELEASE_TAG}" \
+            --arg type "${RELEASE_TYPE}" \
+            --arg status "${JOB_STATUS}" \
+            --arg repository "${REPOSITORY}" \
+            --argjson release_notes "${RELEASE_BODY}" \
+            --arg release_url "${RELEASE_URL}" \
+            --arg workflow_url "${WORKFLOW_URL}" \
+            --arg newline $'\n' \
+            '{
+              text: $text,
+              blocks: [
+                {
+                  type: "header",
+                  text: {
+                    type: "plain_text",
+                    text: $header_text
+                  }
+                },
+                {
+                  type: "section",
+                  fields: [
+                    {
+                      type: "mrkdwn",
+                      text: ("*Version:*" + $newline + $version)
+                    },
+                    {
+                      type: "mrkdwn",
+                      text: ("*Type:*" + $newline + $type)
+                    },
+                    {
+                      type: "mrkdwn",
+                      text: ("*Status:*" + $newline + $status)
+                    },
+                    {
+                      type: "mrkdwn",
+                      text: ("*Repository:*" + $newline + $repository)
+                    }
+                  ]
+                },
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("*Release Notes:*" + $newline + $release_notes)
+                  }
+                },
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("<" + $release_url + "|View Release on GitHub> | <" + $workflow_url + "|View Workflow Run>")
+                  }
+                }
+              ]
+            }' > slack-payload.json
+
+      - name: Post Release to Surface Finishing Channel
+        if: always()
+        # slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@37ebaef184d7626c5f204ab8d3baff4262dd30f0
+        with:
+          channel-id: ${{ secrets.SURFACE_FINISHING_SLACK_CHANNEL_ID }}
+          payload-file-path: slack-payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SANDING_MODULE_TESTING_SLACK_BOT_TOKEN }}

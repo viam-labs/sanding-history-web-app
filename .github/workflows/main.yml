@@ -5,20 +5,31 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_version: ${{ steps.new-version.outputs.new_version }}
 
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v4
+        # actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        # actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22
           cache: npm
@@ -28,38 +39,48 @@ jobs:
           npm ci
           npm run build
 
-      - name: Create git tag if version changed
-        id: create-tag
+      # Rollback tags carry a suffix, so only plain x.y.z tags count as releases.
+      - name: Get latest tag
+        id: latest-tag
         run: |
-          git fetch --tags
-          VERSION=$(node -p "require('./package.json').version")
-          TAG="$VERSION"
+          TAG=$(git tag --list --sort=-v:refname \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -n 1)
+          if [ -z "$TAG" ]; then
+            TAG="0.0.0"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-          echo "Current version: $VERSION"
-          echo "Checking for tag: $TAG"
+      - name: Bump version
+        id: new-version
+        env:
+          LATEST: ${{ steps.latest-tag.outputs.tag }}
+        run: |
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+          NEW="$MAJOR.$MINOR.$((PATCH+1))"
 
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists. Skipping tag creation."
-            echo "created=false" >> $GITHUB_OUTPUT
-          else
-            git tag "$TAG"
-            git push origin "$TAG"
-            echo "Created tag $TAG"
-            echo "created=true" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if git rev-parse -q --verify "refs/tags/$NEW" >/dev/null; then
+            echo "Computed tag $NEW already exists — refusing to overwrite." >&2
+            exit 1
           fi
 
-      - name: Viam Build 🚀
-        if: steps.create-tag.outputs.created == 'true'
-        uses: viamrobotics/build-action@v1.7
-        with:
-          version: ${{ steps.create-tag.outputs.version }}
-          ref: ${{ github.sha }}
-          key-id: ${{ secrets.viam_key_id }}
-          key-value: ${{ secrets.viam_key_value }}
+          echo "new_version=$NEW" >> "$GITHUB_OUTPUT"
 
-      - name: Create Release Pull Request
-        id: changesets
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release
+        # softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64
+        with:
+          tag_name: ${{ steps.new-version.outputs.new_version }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.new-version.outputs.new_version }}
+          generate_release_notes: true
+          make_latest: true
+
+  # A release created with GITHUB_TOKEN does not fire `release: published`,
+  # so the deploy is called directly instead of waiting on that event.
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      tag_name: ${{ needs.build.outputs.new_version }}
