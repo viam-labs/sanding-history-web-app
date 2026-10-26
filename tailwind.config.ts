@@ -8,7 +8,7 @@ export default {
   content: [
     './src/**/*.{html,js,svelte,ts,tsx}',
     './node_modules/@viamrobotics/prime-core/**/*.{ts,svelte}',
-    './node_modules/@viamrobotics/motion-tools/dist/**/*.{js,svelte}',
+    './node_modules/@viamrobotics/visualization/dist/**/*.{js,svelte}',
   ],
   theme,
   plugins,
