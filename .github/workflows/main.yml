@@ -57,7 +57,7 @@ jobs:
           LATEST: ${{ steps.latest-tag.outputs.tag }}
         run: |
           IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
-          NEW="$MAJOR.$((MINOR+1)).0"
+          NEW="$MAJOR.$MINOR.$((PATCH+1))"
 
           if git rev-parse -q --verify "refs/tags/$NEW" >/dev/null; then
             echo "Computed tag $NEW already exists — refusing to overwrite." >&2

@@ -44,7 +44,7 @@ npm run view-bundle            # Analyze bundle size (sets ANALYZE_DEBUG=true)
 ```
 
 ### Version Management
-Every merge to `main` cuts a release: CI bumps the minor version from the latest `x.y.z` tag, publishes a GitHub release, and deploys that version to the Viam registry. Do not bump `package.json` or create releases by hand.
+Every merge to `main` cuts a release: CI bumps the patch version from the latest `x.y.z` tag, publishes a GitHub release, and deploys that version to the Viam registry. Do not bump `package.json` or create releases by hand.
 
 ### Module Deployment
 
