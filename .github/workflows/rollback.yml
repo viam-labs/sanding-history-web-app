@@ -8,43 +8,56 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   rollback:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        # actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Determine rollback commit
         id: rollback
+        env:
+          ROLLBACK_TAG: ${{ inputs.rollback_tag }}
         run: |
-          git fetch --tags
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          COMMIT=$(git rev-list -n 1 "${{ inputs.rollback_tag }}")
-          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
-          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          LATEST=$(git tag --list --sort=-v:refname \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -n 1)
+          COMMIT=$(git rev-list -n 1 "$ROLLBACK_TAG")
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
 
       - name: Determine next patch version
         id: version
+        env:
+          ROLLBACK_TAG: ${{ inputs.rollback_tag }}
+          LATEST: ${{ steps.rollback.outputs.latest }}
         run: |
-          IFS='.' read -r MAJOR MINOR PATCH <<< "${{ steps.rollback.outputs.package_version }}"
-          NEXT_PATCH=$((PATCH + 1))
-          NEW_TAG_VERSION="$MAJOR.$MINOR.$NEXT_PATCH"
-          NEW_TAG="${NEW_TAG_VERSION}-rollback-${{inputs.rollback_tag}}-$(date +%Y%m%d%H%M%S)"
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST"
+          NEW_TAG="$MAJOR.$MINOR.$((PATCH + 1))-rollback-${ROLLBACK_TAG}-$(date +%Y%m%d%H%M%S)"
+          echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Create rollback tag
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new_tag }}
+          COMMIT: ${{ steps.rollback.outputs.commit }}
         run: |
-          git tag "${{ steps.version.outputs.new_tag }}" \
-            "${{ steps.rollback.outputs.commit }}"
-          git push origin "${{ steps.version.outputs.new_tag }}"
+          git tag "$NEW_TAG" "$COMMIT"
+          git push origin "$NEW_TAG"
 
       - name: Viam Build 🚀
-        uses: viamrobotics/build-action@v1
+        # viamrobotics/build-action@v1.7.4
+        uses: viamrobotics/build-action@76223a61df515ed39aed8836611e71e868c06d66
         with:
           version: ${{ steps.version.outputs.new_tag }}
           ref: ${{ steps.rollback.outputs.commit }}

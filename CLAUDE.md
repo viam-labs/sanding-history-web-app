@@ -44,10 +44,7 @@ npm run view-bundle            # Analyze bundle size (sets ANALYZE_DEBUG=true)
 ```
 
 ### Version Management
-When making changes to the repo, use changesets for semantic versioning:
-```bash
-npx @changesets/cli            # Create a changeset for your changes
-```
+Every merge to `main` cuts a release: CI bumps the minor version from the latest `x.y.z` tag, publishes a GitHub release, and deploys that version to the Viam registry. Do not bump `package.json` or create releases by hand.
 
 ### Module Deployment
 
