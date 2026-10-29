@@ -18,9 +18,8 @@ export default defineConfig(({ mode }) => ({
     svelte(),
     tailwindcss(),
     glsl(),
-    analyzer({
-      analyzerMode: process.env.ANALYZE_BUNDLE ? 'server' : 'json',
-    }),
+    // Opt-in only: the analyzer adds ~0.6 GB of heap, and the Viam cloud build gives Node 2 GB.
+    process.env.ANALYZE_BUNDLE ? analyzer({ analyzerMode: 'server' }) : null,
   ],
   optimizeDeps: {
     esbuildOptions: {
