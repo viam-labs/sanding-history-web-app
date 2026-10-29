@@ -6,7 +6,6 @@ import {
 } from '../../lib/constants'
 import { useViamClients } from '../../lib/contexts/ViamClientContext'
 import { useToast } from '../../lib/contexts/ToastContext.tsx'
-import { getSnapshotFromGzipBinaryData } from '../../lib/snapshotUtils'
 import { useState } from 'react'
 import RenderIf from '../RenderIf.tsx'
 import { LoadingIndicator } from '../LoadingIndicator.tsx'
@@ -37,6 +36,9 @@ export const StepsVizSnapshotCard = () => {
       })
       return
     }
+    // Loaded on click: a static import puts three.js and the visualizer (~1.35 MB) on the history page.
+    const { getSnapshotFromGzipBinaryData } =
+      await import('../../lib/snapshotUtils')
     const snapshot = await getSnapshotFromGzipBinaryData(fileBinaryData)
     setLoadingSnapshot(false)
     openModal({
