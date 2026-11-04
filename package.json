@@ -34,7 +34,7 @@
     "@viamrobotics/sdk": "^0.78.0",
     "@viamrobotics/svelte-sdk": "^1.5.4",
     "@viamrobotics/tweakpane-config": "^0.2.2",
-    "@viamrobotics/visualization": "2.11.2",
+    "@viamrobotics/visualization": "3.1.0",
     "js-cookie": "^3.0.5",
     "koota": "^0.6.5",
     "react": "^18.2.0",
